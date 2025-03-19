@@ -9,6 +9,10 @@ $settings = get_option('hpo_settings', array(
     'update_price' => 'yes',
     'price_display' => 'next_to_option'
 ));
+
+// Get the product base price
+global $product;
+$base_price = $product ? $product->get_price() : 0;
 ?>
 <div class="hpo-options-container" data-update-price="<?php echo esc_attr($settings['update_price']); ?>">
     <h3><?php echo esc_html__('Product Options', 'hierarchical-product-options'); ?></h3>
