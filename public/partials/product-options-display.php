@@ -89,22 +89,65 @@ jQuery(document).ready(function($) {
     $('.hpo-accordion-item:first-child .hpo-accordion-content').show();
     $('.hpo-accordion-item:first-child').addClass('active');
     
+    // Initialize selected options array to keep track of all selections
+    var selectedOptions = [];
+    
     // Handle radio button selection
     $('.hpo-product-option').on('change', function() {
         var optionId = $(this).val();
-        var optionPrice = $(this).data('price');
+        var optionPrice = parseFloat($(this).data('price'));
         var optionName = $(this).data('name');
+        var isChecked = $(this).prop('checked');
         
+        // Store selected option in hidden field for form submission
         $('#hpo-selected-option').val(optionId);
+        
+        // Handle the selected option in our tracking array
+        if ($(this).attr('type') === 'radio') {
+            // For radio buttons, replace any option from the same group
+            var groupName = $(this).attr('name');
+            
+            // Remove previous selection from this group
+            selectedOptions = selectedOptions.filter(function(option) {
+                return option.group !== groupName;
+            });
+            
+            // Add new selection
+            if (isChecked) {
+                selectedOptions.push({
+                    id: optionId,
+                    price: optionPrice,
+                    name: optionName,
+                    group: groupName
+                });
+            }
+        } else {
+            // For checkboxes, add or remove based on checked state
+            if (isChecked) {
+                // Add this option if checked
+                selectedOptions.push({
+                    id: optionId,
+                    price: optionPrice,
+                    name: optionName
+                });
+            } else {
+                // Remove this option if unchecked
+                selectedOptions = selectedOptions.filter(function(option) {
+                    return option.id !== optionId;
+                });
+            }
+        }
         
         // Update product price if enabled
         if ($('.hpo-options-container').data('update-price') === 'yes') {
-            updateProductPrice(optionPrice);
+            updateProductPrice();
         }
+        
+        console.log("Current selected options:", selectedOptions);
     });
     
-    // Function to update product price
-    function updateProductPrice(price) {
+    // Function to update product price based on all selected options
+    function updateProductPrice() {
         // Get the original price
         var originalPrice = $('input[name="hpo_original_price"]').val();
         if (!originalPrice) {
@@ -131,14 +174,17 @@ jQuery(document).ready(function($) {
             originalPrice = parseFloat(originalPrice);
         }
         
-        // Parse the price parameter as float to ensure proper addition
-        price = parseFloat(price);
-        console.log("Option price:", price);
+        // Calculate total price from all selected options
+        var totalOptionsPrice = 0;
+        for (var i = 0; i < selectedOptions.length; i++) {
+            totalOptionsPrice += selectedOptions[i].price;
+        }
+        console.log("Total options price:", totalOptionsPrice);
         
-        // Make sure both values are numbers before adding
-        if (!isNaN(originalPrice) && !isNaN(price)) {
-            // Update displayed price - ADD the option price to the original price
-            var newPrice = originalPrice + price;
+        // Make sure values are numbers before adding
+        if (!isNaN(originalPrice) && !isNaN(totalOptionsPrice)) {
+            // Update displayed price - ADD all option prices to the original price
+            var newPrice = originalPrice + totalOptionsPrice;
             console.log("New calculated price:", newPrice);
             
             // Ensure we have a properly formatted number with 0 decimal places for Tomans
@@ -148,7 +194,7 @@ jQuery(document).ready(function($) {
             // Update price
             $('<?php echo apply_filters('hpo_price_selector', '.price .amount'); ?>').html(formattedPrice);
         } else {
-            console.log("Invalid price values - originalPrice:", originalPrice, "optionPrice:", price);
+            console.log("Invalid price values - originalPrice:", originalPrice, "optionsPrice:", totalOptionsPrice);
         }
     }
     
