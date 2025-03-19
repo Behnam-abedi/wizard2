@@ -105,9 +105,6 @@ jQuery(document).ready(function($) {
     
     // Function to update product price
     function updateProductPrice(price) {
-        // Check if there's a special flag indicating the product has zero base price
-        var zeroBasePrice = $('input[name="hpo_zero_base_price"]').val();
-        
         // Get the original price
         var originalPrice = $('input[name="hpo_original_price"]').val();
         if (!originalPrice) {
@@ -115,30 +112,23 @@ jQuery(document).ready(function($) {
             var priceText = $('<?php echo apply_filters('hpo_price_selector', '.price .amount'); ?>').first().text();
             console.log("Original price text:", priceText);
             
-            // Check if the displayed price is a placeholder (e.g., a very small amount like 399)
-            // In WooCommerce, sometimes even zero-priced products show a placeholder price
+            // Extract numeric value from price text, handling various formats
             var extractedPrice = priceText.replace(/[^\d.]/g, '');
             console.log("Cleaned price:", extractedPrice);
             
             originalPrice = parseFloat(extractedPrice);
             console.log("Parsed original price:", originalPrice);
             
-            // Check if this is likely a placeholder price (less than 1000)
-            if (originalPrice < 1000) {
-                console.log("Detected placeholder price. Setting base price to 0");
+            // Only check for the specific value 399 which is known to be a placeholder
+            if (originalPrice === 399) {
+                console.log("Detected exact placeholder price (399). Setting base price to 0");
                 originalPrice = 0;
-                // Store a flag indicating we've detected a zero base price
-                $('body').append('<input type="hidden" name="hpo_zero_base_price" value="true">');
             }
             
             // Store the original price for future reference
             $('body').append('<input type="hidden" name="hpo_original_price" value="' + originalPrice + '">');
         } else {
             originalPrice = parseFloat(originalPrice);
-            // If we previously detected a zero base price, keep using 0
-            if (zeroBasePrice === "true") {
-                originalPrice = 0;
-            }
         }
         
         // Parse the price parameter as float to ensure proper addition
