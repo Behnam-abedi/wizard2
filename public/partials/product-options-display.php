@@ -331,8 +331,8 @@ jQuery(document).ready(function($) {
         // Format price with WooCommerce currency format
         var formattedPrice = '<?php echo get_woocommerce_currency_symbol(); ?>' + numberWithCommas(calculatedPrice.toFixed(0));
         
-        // Update all WooCommerce price displays on the page
-        $('.woocommerce-Price-amount.amount').html(formattedPrice);
+        // Update only the main product price, not option prices
+        $('.single-product div.product p.price .woocommerce-Price-amount, .single-product div.product .woocommerce-variation-price .woocommerce-Price-amount').html(formattedPrice);
         
         console.log('Price calculation:', {
             basePrice: baseProductPrice,
