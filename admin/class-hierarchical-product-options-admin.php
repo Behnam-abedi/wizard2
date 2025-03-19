@@ -166,6 +166,11 @@ class Hierarchical_Product_Options_Admin {
         add_action('wp_ajax_hpo_reorder_weights', array($this, 'ajax_reorder_weights'));
         add_action('wp_ajax_hpo_get_weights', array($this, 'ajax_get_weights'));
         add_action('wp_ajax_hpo_rebuild_tables', array($this, 'ajax_rebuild_tables'));
+        add_action('wp_ajax_hpo_add_grinder', array($this, 'ajax_add_grinder'));
+        add_action('wp_ajax_hpo_update_grinder', array($this, 'ajax_update_grinder'));
+        add_action('wp_ajax_hpo_delete_grinder', array($this, 'ajax_delete_grinder'));
+        add_action('wp_ajax_hpo_reorder_grinders', array($this, 'ajax_reorder_grinders'));
+        add_action('wp_ajax_hpo_get_grinders', array($this, 'ajax_get_grinders'));
     }
     
     /**
@@ -645,6 +650,144 @@ class Hierarchical_Product_Options_Admin {
             error_log('Exception during table rebuild: ' . $e->getMessage());
             wp_send_json_error($e->getMessage());
         }
+    }
+
+    /**
+     * AJAX: Add a new grinder option
+     */
+    public function ajax_add_grinder() {
+        check_ajax_referer('hpo_nonce', 'nonce');
+        
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(__('Permission denied', 'hierarchical-product-options'));
+            return;
+        }
+        
+        $name = isset($_POST['name']) ? sanitize_text_field($_POST['name']) : '';
+        $price = isset($_POST['price']) ? floatval($_POST['price']) : 0;
+        
+        if (empty($name)) {
+            wp_send_json_error(__('Grinder name is required', 'hierarchical-product-options'));
+            return;
+        }
+        
+        $db = new Hierarchical_Product_Options_DB();
+        $id = $db->add_grinder($name, $price);
+        
+        if ($id) {
+            wp_send_json_success(array(
+                'id' => $id,
+                'name' => $name,
+                'price' => $price
+            ));
+        } else {
+            wp_send_json_error(__('Failed to add grinder option', 'hierarchical-product-options'));
+        }
+    }
+    
+    /**
+     * AJAX: Update a grinder option
+     */
+    public function ajax_update_grinder() {
+        check_ajax_referer('hpo_nonce', 'nonce');
+        
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(__('Permission denied', 'hierarchical-product-options'));
+            return;
+        }
+        
+        $id = isset($_POST['id']) ? intval($_POST['id']) : 0;
+        $name = isset($_POST['name']) ? sanitize_text_field($_POST['name']) : '';
+        $price = isset($_POST['price']) ? floatval($_POST['price']) : 0;
+        
+        if (empty($id) || empty($name)) {
+            wp_send_json_error(__('Invalid data', 'hierarchical-product-options'));
+            return;
+        }
+        
+        $db = new Hierarchical_Product_Options_DB();
+        $result = $db->update_grinder($id, array(
+            'name' => $name,
+            'price' => $price
+        ));
+        
+        if ($result !== false) {
+            wp_send_json_success();
+        } else {
+            wp_send_json_error(__('Failed to update grinder option', 'hierarchical-product-options'));
+        }
+    }
+    
+    /**
+     * AJAX: Delete a grinder option
+     */
+    public function ajax_delete_grinder() {
+        check_ajax_referer('hpo_nonce', 'nonce');
+        
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(__('Permission denied', 'hierarchical-product-options'));
+            return;
+        }
+        
+        $id = isset($_POST['id']) ? intval($_POST['id']) : 0;
+        
+        if (empty($id)) {
+            wp_send_json_error(__('Invalid data', 'hierarchical-product-options'));
+            return;
+        }
+        
+        $db = new Hierarchical_Product_Options_DB();
+        $result = $db->delete_grinder($id);
+        
+        if ($result) {
+            wp_send_json_success();
+        } else {
+            wp_send_json_error(__('Failed to delete grinder option', 'hierarchical-product-options'));
+        }
+    }
+    
+    /**
+     * AJAX: Reorder grinder options
+     */
+    public function ajax_reorder_grinders() {
+        check_ajax_referer('hpo_nonce', 'nonce');
+        
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(__('Permission denied', 'hierarchical-product-options'));
+            return;
+        }
+        
+        $items = isset($_POST['items']) ? $_POST['items'] : array();
+        
+        if (empty($items) || !is_array($items)) {
+            wp_send_json_error(__('Invalid data', 'hierarchical-product-options'));
+            return;
+        }
+        
+        $db = new Hierarchical_Product_Options_DB();
+        
+        foreach ($items as $index => $id) {
+            $db->update_grinder($id, array('sort_order' => $index));
+        }
+        
+        wp_send_json_success();
+    }
+    
+    /**
+     * AJAX: Get all grinder options
+     */
+    public function ajax_get_grinders() {
+        check_ajax_referer('hpo_nonce', 'nonce');
+        
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(__('Permission denied', 'hierarchical-product-options'));
+            return;
+        }
+        
+        $db = new Hierarchical_Product_Options_DB();
+        $grinders = $db->get_all_grinders();
+        
+        wp_send_json_success($grinders);
     }
 
     /**

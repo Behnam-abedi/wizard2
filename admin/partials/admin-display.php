@@ -8,12 +8,13 @@
 <div class="wrap hpo-admin">
     <h1><?php echo esc_html(get_admin_page_title()); ?></h1>
     
-    <h2 class="nav-tab-wrapper">
-        <a href="#tab-categories" class="nav-tab nav-tab-active"><?php echo esc_html__('Categories & Products', 'hierarchical-product-options'); ?></a>
-        <a href="#tab-assignments" class="nav-tab"><?php echo esc_html__('Assignments', 'hierarchical-product-options'); ?></a>
-        <a href="#tab-weights" class="nav-tab"><?php echo esc_html__('Weight Options', 'hierarchical-product-options'); ?></a>
-        <a href="#tab-settings" class="nav-tab"><?php echo esc_html__('Settings', 'hierarchical-product-options'); ?></a>
-    </h2>
+    <nav class="nav-tab-wrapper">
+        <a href="#tab-categories" class="nav-tab nav-tab-active"><?php _e('Categories', 'hierarchical-product-options'); ?></a>
+        <a href="#tab-products" class="nav-tab"><?php _e('Products', 'hierarchical-product-options'); ?></a>
+        <a href="#tab-weights" class="nav-tab"><?php _e('Weights', 'hierarchical-product-options'); ?></a>
+        <a href="#tab-grinders" class="nav-tab"><?php _e('Grinders', 'hierarchical-product-options'); ?></a>
+        <a href="#tab-settings" class="nav-tab"><?php _e('Settings', 'hierarchical-product-options'); ?></a>
+    </nav>
     
     <div id="tab-categories" class="tab-content">
         <div class="hpo-admin-container">
@@ -76,42 +77,59 @@
         </div>
     </div>
     
-    <div id="tab-assignments" class="tab-content" style="display: none;">
-        <!-- Existing assignments tab content -->
+    <div id="tab-products" class="tab-content" style="display: none;">
+        <!-- Existing products tab content -->
         <!-- ... -->
     </div>
     
     <div id="tab-weights" class="tab-content" style="display: none;">
-        <div class="hpo-admin-panel">
-            <h2><?php echo esc_html__('Product Weight Options', 'hierarchical-product-options'); ?></h2>
-            
-            <p><?php echo esc_html__('Define weight options for products. Each weight option has a name (e.g., "100 grams") and a coefficient. The product price will be multiplied by this coefficient when this weight is selected.', 'hierarchical-product-options'); ?></p>
-            
-            <form id="hpo-weights-form">
-                <div class="hpo-form-row">
-                    <label for="hpo-weight-product"><?php echo esc_html__('WooCommerce Product', 'hierarchical-product-options'); ?></label>
-                    <select id="hpo-weight-product" name="wc_product_id">
-                        <option value=""><?php echo esc_html__('Select a product...', 'hierarchical-product-options'); ?></option>
-                        <?php
-                        $products = wc_get_products(array('limit' => -1));
-                        foreach ($products as $product): ?>
-                        <option value="<?php echo esc_attr($product->get_id()); ?>"><?php echo esc_html($product->get_name()); ?></option>
-                        <?php endforeach; ?>
-                    </select>
-                </div>
-                
-                <div id="hpo-weights-container" style="display: none;">
-                    <h3><?php echo esc_html__('Weight Options for Selected Product', 'hierarchical-product-options'); ?></h3>
-                    
-                    <div class="hpo-weight-list">
-                        <!-- Weight options will be populated via JavaScript -->
+        <?php include 'admin-weights.php'; ?>
+    </div>
+    
+    <div id="tab-grinders" class="tab-content" style="display: none;">
+        <h2><?php _e('Manage Grinder Options', 'hierarchical-product-options'); ?></h2>
+        <p><?php _e('Add and manage grinding machines with their associated costs.', 'hierarchical-product-options'); ?></p>
+
+        <div class="hpo-admin-columns">
+            <div class="hpo-main-column">
+                <table class="wp-list-table widefat fixed striped">
+                    <thead>
+                        <tr>
+                            <th class="hpo-handle-column"><?php _e('Order', 'hierarchical-product-options'); ?></th>
+                            <th><?php _e('ID', 'hierarchical-product-options'); ?></th>
+                            <th><?php _e('Name', 'hierarchical-product-options'); ?></th>
+                            <th><?php _e('Price', 'hierarchical-product-options'); ?></th>
+                            <th class="hpo-actions-column"><?php _e('Actions', 'hierarchical-product-options'); ?></th>
+                        </tr>
+                    </thead>
+                    <tbody id="hpo-grinders-list">
+                        <tr class="hpo-empty-row">
+                            <td colspan="5"><?php _e('No grinder options found', 'hierarchical-product-options'); ?></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="hpo-side-column">
+                <div class="postbox">
+                    <h2 class="hndle"><?php _e('Add New Grinder Option', 'hierarchical-product-options'); ?></h2>
+                    <div class="inside">
+                        <form id="hpo-add-grinder-form">
+                            <div class="form-field">
+                                <label for="hpo-grinder-name"><?php _e('Name', 'hierarchical-product-options'); ?></label>
+                                <input type="text" id="hpo-grinder-name" name="name" required>
+                            </div>
+                            <div class="form-field">
+                                <label for="hpo-grinder-price"><?php _e('Price', 'hierarchical-product-options'); ?></label>
+                                <input type="number" id="hpo-grinder-price" name="price" step="0.01" min="0" value="0">
+                            </div>
+                            <p class="submit">
+                                <button type="submit" class="button button-primary"><?php _e('Add Grinder Option', 'hierarchical-product-options'); ?></button>
+                            </p>
+                        </form>
                     </div>
-                    
-                    <div class="hpo-form-row">
-                        <button type="button" id="hpo-add-weight" class="button button-secondary"><?php echo esc_html__('Add Weight Option', 'hierarchical-product-options'); ?></button>
-                    </div>
                 </div>
-            </form>
+            </div>
         </div>
     </div>
     

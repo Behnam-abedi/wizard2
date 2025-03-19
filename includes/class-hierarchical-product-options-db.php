@@ -13,6 +13,7 @@ class Hierarchical_Product_Options_DB {
     private $products_table;
     private $assignments_table;
     private $weights_table;
+    private $grinders_table;
 
     /**
      * Initialize the class
@@ -24,6 +25,7 @@ class Hierarchical_Product_Options_DB {
         $this->products_table = $wpdb->prefix . 'hpo_products';
         $this->assignments_table = $wpdb->prefix . 'hpo_product_assignments';
         $this->weights_table = $wpdb->prefix . 'hpo_weights';
+        $this->grinders_table = $wpdb->prefix . 'hpo_grinders';
     }
 
     /**
@@ -72,6 +74,15 @@ class Hierarchical_Product_Options_DB {
             sort_order int(11) DEFAULT 0,
             PRIMARY KEY  (id),
             KEY wc_product_id (wc_product_id)
+        ) $charset_collate;";
+        
+        // Grinders table
+        $sql .= "CREATE TABLE $this->grinders_table (
+            id mediumint(9) NOT NULL AUTO_INCREMENT,
+            name varchar(255) NOT NULL,
+            price decimal(10,2) NOT NULL DEFAULT 0,
+            sort_order int(11) DEFAULT 0,
+            PRIMARY KEY  (id)
         ) $charset_collate;";
         
         require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
@@ -445,5 +456,92 @@ class Hierarchical_Product_Options_DB {
         $sql = $wpdb->prepare("SELECT * FROM $this->weights_table WHERE id = %d", $id);
         
         return $wpdb->get_row($sql);
+    }
+
+    /**
+     * Get all grinder options
+     *
+     * @return array Grinder options
+     */
+    public function get_all_grinders() {
+        global $wpdb;
+        
+        $sql = "SELECT * FROM $this->grinders_table ORDER BY sort_order";
+        
+        return $wpdb->get_results($sql);
+    }
+    
+    /**
+     * Get grinder by ID
+     *
+     * @param int $id Grinder ID
+     * @return object Grinder
+     */
+    public function get_grinder($id) {
+        global $wpdb;
+        
+        $sql = $wpdb->prepare("SELECT * FROM $this->grinders_table WHERE id = %d", $id);
+        
+        return $wpdb->get_row($sql);
+    }
+    
+    /**
+     * Add a new grinder option
+     *
+     * @param string $name Grinder name
+     * @param float $price Grinder price
+     * @param int $sort_order Sort order
+     * @return int New grinder ID
+     */
+    public function add_grinder($name, $price, $sort_order = 0) {
+        global $wpdb;
+        
+        $result = $wpdb->insert(
+            $this->grinders_table,
+            array(
+                'name' => $name,
+                'price' => $price,
+                'sort_order' => $sort_order
+            )
+        );
+        
+        if ($result === false) {
+            error_log('Failed to insert grinder: ' . $wpdb->last_error);
+            return 0;
+        }
+        
+        return $wpdb->insert_id;
+    }
+    
+    /**
+     * Update a grinder option
+     *
+     * @param int $id Grinder ID
+     * @param array $data Grinder data
+     * @return bool Success
+     */
+    public function update_grinder($id, $data) {
+        global $wpdb;
+        
+        return $wpdb->update(
+            $this->grinders_table,
+            $data,
+            array('id' => $id)
+        );
+    }
+    
+    /**
+     * Delete a grinder option
+     *
+     * @param int $id Grinder ID
+     * @return bool Success
+     */
+    public function delete_grinder($id) {
+        global $wpdb;
+        
+        return $wpdb->delete(
+            $this->grinders_table,
+            array('id' => $id)
+        );
     }
 } 

@@ -746,6 +746,205 @@
                 console.error('AJAX error:', xhr.responseText);
             });
         });
+
+        // Grinder Management
+        // Load all grinders on tab open
+        $('.nav-tab[href="#tab-grinders"]').on('click', function(e) {
+            loadGrinders();
+        });
+
+        // Load grinders
+        function loadGrinders() {
+            var data = {
+                action: 'hpo_get_grinders',
+                nonce: hpo_data.nonce
+            };
+            
+            $.post(hpo_data.ajax_url, data, function(response) {
+                if (response.success) {
+                    renderGrinders(response.data);
+                } else {
+                    alert(response.data || 'Error loading grinders');
+                }
+            });
+        }
+
+        // Render grinders in the table
+        function renderGrinders(grinders) {
+            var $container = $('#hpo-grinders-list');
+            $container.empty();
+            
+            if (grinders && grinders.length > 0) {
+                $.each(grinders, function(index, grinder) {
+                    var $row = $('<tr data-id="' + grinder.id + '" class="hpo-grinder-row">');
+                    $row.append('<td class="hpo-handle-column"><span class="hpo-drag-handle dashicons dashicons-menu"></span></td>');
+                    $row.append('<td>' + grinder.id + '</td>');
+                    $row.append('<td class="hpo-grinder-name">' + grinder.name + '</td>');
+                    $row.append('<td class="hpo-grinder-price">' + grinder.price + '</td>');
+                    
+                    var $actions = $('<td class="hpo-actions-column">');
+                    $actions.append('<button type="button" class="button button-small hpo-edit-grinder">' + (hpo_data.strings.edit || 'Edit') + '</button> ');
+                    $actions.append('<button type="button" class="button button-small hpo-delete-grinder">' + (hpo_data.strings.delete || 'Delete') + '</button>');
+                    
+                    $row.append($actions);
+                    $container.append($row);
+                });
+                
+                // Make grinder rows sortable
+                $container.sortable({
+                    handle: '.hpo-drag-handle',
+                    update: function(event, ui) {
+                        updateGrinderOrder();
+                    }
+                });
+            } else {
+                $container.append('<tr class="hpo-empty-row"><td colspan="5">' + (hpo_data.strings.no_grinders || 'No grinder options found') + '</td></tr>');
+            }
+        }
+
+        // Add new grinder
+        $('#hpo-add-grinder-form').on('submit', function(e) {
+            e.preventDefault();
+            
+            var name = $('#hpo-grinder-name').val();
+            var price = $('#hpo-grinder-price').val();
+            
+            if (!name) {
+                alert(hpo_data.strings.grinder_name_required || 'Grinder name is required');
+                return;
+            }
+            
+            var data = {
+                action: 'hpo_add_grinder',
+                nonce: hpo_data.nonce,
+                name: name,
+                price: price
+            };
+            
+            $.post(hpo_data.ajax_url, data, function(response) {
+                if (response.success) {
+                    // Clear the form
+                    $('#hpo-grinder-name').val('');
+                    $('#hpo-grinder-price').val('0');
+                    
+                    // Reload grinders
+                    loadGrinders();
+                } else {
+                    alert(response.data || 'Error adding grinder');
+                }
+            });
+        });
+
+        // Edit grinder
+        $(document).on('click', '.hpo-edit-grinder', function(e) {
+            e.preventDefault();
+            
+            var $row = $(this).closest('tr');
+            var grinderId = $row.data('id');
+            var grinderName = $row.find('.hpo-grinder-name').text();
+            var grinderPrice = $row.find('.hpo-grinder-price').text();
+            
+            // Create edit form
+            var $editForm = $('<div class="hpo-modal-overlay">' +
+                '<div class="hpo-modal">' +
+                    '<h3>' + (hpo_data.strings.edit_grinder || 'Edit Grinder Option') + '</h3>' +
+                    '<form id="hpo-edit-grinder-form">' +
+                        '<div class="form-field">' +
+                            '<label for="hpo-edit-grinder-name">' + (hpo_data.strings.name || 'Name') + '</label>' +
+                            '<input type="text" id="hpo-edit-grinder-name" name="name" value="' + grinderName + '" required>' +
+                        '</div>' +
+                        '<div class="form-field">' +
+                            '<label for="hpo-edit-grinder-price">' + (hpo_data.strings.price || 'Price') + '</label>' +
+                            '<input type="number" id="hpo-edit-grinder-price" name="price" step="0.01" min="0" value="' + grinderPrice + '">' +
+                        '</div>' +
+                        '<div class="form-field">' +
+                            '<button type="submit" class="button button-primary">' + (hpo_data.strings.save || 'Save') + '</button>' +
+                            '<button type="button" class="button hpo-cancel">' + (hpo_data.strings.cancel || 'Cancel') + '</button>' +
+                        '</div>' +
+                    '</form>' +
+                '</div>' +
+            '</div>');
+            
+            // Add to the page
+            $('body').append($editForm);
+            
+            // Handle form submission
+            $editForm.find('form').on('submit', function(e) {
+                e.preventDefault();
+                
+                var data = {
+                    action: 'hpo_update_grinder',
+                    nonce: hpo_data.nonce,
+                    id: grinderId,
+                    name: $('#hpo-edit-grinder-name').val(),
+                    price: $('#hpo-edit-grinder-price').val()
+                };
+                
+                $.post(hpo_data.ajax_url, data, function(response) {
+                    if (response.success) {
+                        // Remove the edit form
+                        $editForm.remove();
+                        
+                        // Reload grinders
+                        loadGrinders();
+                    } else {
+                        alert(response.data || 'Error updating grinder');
+                    }
+                });
+            });
+            
+            // Handle cancel button
+            $editForm.find('.hpo-cancel').on('click', function() {
+                $editForm.remove();
+            });
+        });
+
+        // Delete grinder
+        $(document).on('click', '.hpo-delete-grinder', function(e) {
+            e.preventDefault();
+            
+            if (!confirm(hpo_data.strings.confirm_delete_grinder || 'Are you sure you want to delete this grinder option?')) {
+                return;
+            }
+            
+            var grinderId = $(this).closest('tr').data('id');
+            
+            var data = {
+                action: 'hpo_delete_grinder',
+                nonce: hpo_data.nonce,
+                id: grinderId
+            };
+            
+            $.post(hpo_data.ajax_url, data, function(response) {
+                if (response.success) {
+                    // Reload grinders
+                    loadGrinders();
+                } else {
+                    alert(response.data || 'Error deleting grinder');
+                }
+            });
+        });
+
+        // Update grinder order
+        function updateGrinderOrder() {
+            var items = [];
+            
+            $('.hpo-grinder-row').each(function() {
+                items.push($(this).data('id'));
+            });
+            
+            var data = {
+                action: 'hpo_reorder_grinders',
+                nonce: hpo_data.nonce,
+                items: items
+            };
+            
+            $.post(hpo_data.ajax_url, data, function(response) {
+                if (!response.success) {
+                    alert(response.data || 'Error updating grinder order');
+                }
+            });
+        }
     });
     
 })(jQuery); 
