@@ -118,20 +118,10 @@ $base_price = $product ? $product->get_price() : 0;
         </div>
     </div>
 
-    <div class="hpo-product-info">
-        <div class="hpo-current-price" data-base-price="<?php echo esc_attr($base_price); ?>">
-            <?php echo wc_price($base_price); ?>
-        </div>
-        <div class="hpo-quantity-control">
-            <button type="button" class="hpo-quantity-decrease">-</button>
-            <input type="number" name="quantity" value="1" min="1" class="hpo-quantity-input">
-            <button type="button" class="hpo-quantity-increase">+</button>
-        </div>
-    </div>
-
     <div class="hpo-selected-options">
         <input type="hidden" name="hpo_selected_option" id="hpo-selected-option" value="">
         <input type="hidden" name="hpo_selected_weight" id="hpo-selected-weight" value="">
+        <input type="hidden" name="hpo_base_price" id="hpo-base-price" value="<?php echo esc_attr($base_price); ?>">
     </div>
 </div>
 
@@ -158,53 +148,30 @@ jQuery(document).ready(function($) {
     $('.hpo-accordion-item:first-child .hpo-accordion-content').show();
     $('.hpo-accordion-item:first-child').addClass('active');
     
-    // Initialize selected options array to keep track of all selections
+    // Initialize variables
     var selectedOptions = [];
-    var selectedWeight = null; // Changed from array to single object for radio buttons
+    var selectedWeight = null;
+    var selectedGrindingMachine = null;
+    var quantity = 1;
     
-    // Initialize on page load - get base product price from a hidden field we'll add
-    var baseProductPrice = <?php echo floatval(get_post_meta(get_the_ID(), '_price', true)); ?>;
-    console.log("Actual product base price from WooCommerce:", baseProductPrice);
+    // Get base product price from WooCommerce
+    var baseProductPrice = parseFloat($('#hpo-base-price').val());
+    console.log("Base product price:", baseProductPrice);
     
-    // Debug: Let's inspect how prices are stored in data attributes
-    console.log("Checking all product options for price data:");
-    $('input.hpo-product-option').each(function() {
-        var rawPrice = $(this).data('price');
-        var optionName = $(this).data('name');
-        console.log("Option:", optionName, "- Raw price data:", rawPrice, "- Type:", typeof rawPrice);
-    });
-    
-    // Handle product options selection (both radio buttons and checkboxes)
-    $('input.hpo-product-option').on('change', function() {
-        console.log("Option changed:", this);
+    // Handle product options selection
+    $('.hpo-product-option').on('change', function() {
         var optionId = $(this).val();
-        
-        // Get the raw price data and ensure proper parsing
-        var rawPrice = $(this).data('price');
-        console.log("Raw price data:", rawPrice, "- Type:", typeof rawPrice);
-        
-        // Ensure proper parsing of price data (handle both number and string formats)
-        var optionPrice;
-        if (typeof rawPrice === 'string') {
-            // For string prices, remove any non-numeric characters except digits and decimal point
-            optionPrice = parseFloat(rawPrice.replace(/[^\d.]/g, ''));
-        } else {
-            // For numeric prices, just use the value directly
-            optionPrice = parseFloat(rawPrice);
-        }
-        
-        console.log("Parsed option price:", optionPrice);
+        var optionPrice = parseFloat($(this).data('price'));
         var optionName = $(this).data('name');
         var isChecked = $(this).prop('checked');
         
-        // For form submission - the last selected option
+        // For form submission
         $('#hpo-selected-option').val(optionId);
         
         // Handle the selected option in our tracking array
         if ($(this).attr('type') === 'radio') {
             // For radio buttons, replace any option from the same group
             var groupName = $(this).attr('name');
-            console.log("Radio button changed, group:", groupName);
             
             // Remove previous selection from this group
             selectedOptions = selectedOptions.filter(function(option) {
@@ -222,8 +189,6 @@ jQuery(document).ready(function($) {
             }
         } else {
             // For checkboxes, add or remove based on checked state
-            console.log("Checkbox changed, checked:", isChecked);
-            
             if (isChecked) {
                 // Add this option if checked
                 selectedOptions.push({
@@ -241,24 +206,20 @@ jQuery(document).ready(function($) {
         
         console.log("Current selected options:", selectedOptions);
         
-        // Update product price if enabled
-        if ($('.hpo-options-container').data('update-price') === 'yes') {
-            updateProductPrice();
-        }
+        // Update product price
+        updateProductPrice();
     });
     
-    // Handle weight options selection (now radio buttons)
-    $('input.hpo-weight-option').on('change', function() {
-        console.log("Weight option changed:", this);
+    // Handle weight options selection
+    $('input[name="hpo_weight"]').on('change', function() {
         var weightId = $(this).val();
         var coefficient = parseFloat($(this).data('coefficient'));
         var weightName = $(this).data('name');
         
-        // Since it's a radio button, it's always checked when this event fires
         // Store the selected weight for form submission
         $('#hpo-selected-weight').val(weightId);
         
-        // Replace the previous selection with the new one (single weight only)
+        // Replace the previous selection with the new one
         selectedWeight = {
             id: weightId,
             coefficient: coefficient,
@@ -267,13 +228,74 @@ jQuery(document).ready(function($) {
         
         console.log("Selected weight:", selectedWeight);
         
-        // Update product price if enabled
-        if ($('.hpo-options-container').data('update-price') === 'yes') {
+        // Update product price
+        updateProductPrice();
+    });
+    
+    // Handle grinding option selection
+    $('input[name="hpo_grinding"]').on('change', function() {
+        var grindingOption = $(this).val();
+        
+        if (grindingOption === 'ground') {
+            $('.hpo-grinding-machines').show();
+            $('#hpo-grinding-machine').prop('required', true);
+        } else {
+            $('.hpo-grinding-machines').hide();
+            $('#hpo-grinding-machine').val('').prop('required', false);
+            selectedGrindingMachine = null;
             updateProductPrice();
         }
     });
     
-    // Function to update product price based on all selected options and weight
+    // Handle grinding machine selection
+    $('#hpo-grinding-machine').on('change', function() {
+        var grinderId = $(this).val();
+        
+        if (grinderId) {
+            var $selectedOption = $(this).find('option:selected');
+            selectedGrindingMachine = {
+                id: grinderId,
+                name: $selectedOption.text(),
+                price: $selectedOption.data('price')
+            };
+        } else {
+            selectedGrindingMachine = null;
+        }
+        
+        console.log('Selected grinding machine:', selectedGrindingMachine);
+        updateProductPrice();
+    });
+    
+    // Handle quantity changes
+    $('.hpo-quantity-decrease').on('click', function() {
+        var $input = $('input.qty, .hpo-quantity-input');
+        var currentValue = parseInt($input.val(), 10);
+        if (currentValue > 1) {
+            $input.val(currentValue - 1).trigger('change');
+            quantity = currentValue - 1;
+            updateProductPrice();
+        }
+    });
+    
+    $('.hpo-quantity-increase').on('click', function() {
+        var $input = $('input.qty, .hpo-quantity-input');
+        var currentValue = parseInt($input.val(), 10);
+        $input.val(currentValue + 1).trigger('change');
+        quantity = currentValue + 1;
+        updateProductPrice();
+    });
+    
+    $('input.qty, .hpo-quantity-input').on('change', function() {
+        var currentValue = parseInt($(this).val(), 10);
+        if (currentValue < 1) {
+            $(this).val(1);
+            currentValue = 1;
+        }
+        quantity = currentValue;
+        updateProductPrice();
+    });
+    
+    // Unified function to update product price based on all selections
     function updateProductPrice() {
         // Calculate total price from all selected options
         var totalOptionsPrice = 0;
@@ -294,7 +316,7 @@ jQuery(document).ready(function($) {
                 calculatedPrice = calculatedPrice * coefficient;
             }
         }
-
+        
         // Add grinding machine price if selected
         if (selectedGrindingMachine) {
             var grindingPrice = parseFloat(selectedGrindingMachine.price);
@@ -306,9 +328,19 @@ jQuery(document).ready(function($) {
         // Apply quantity
         calculatedPrice = calculatedPrice * quantity;
         
+        // Format price with WooCommerce currency format
+        var formattedPrice = '<?php echo get_woocommerce_currency_symbol(); ?>' + numberWithCommas(calculatedPrice.toFixed(0));
+        
         // Update all WooCommerce price displays on the page
-        $('.woocommerce-variation-price .amount, .woocommerce-Price-amount.amount, .price .amount').each(function() {
-            $(this).html('<?php echo get_woocommerce_currency_symbol(); ?>' + numberWithCommas(calculatedPrice.toFixed(0)));
+        $('.woocommerce-Price-amount.amount').html(formattedPrice);
+        
+        console.log('Price calculation:', {
+            basePrice: baseProductPrice,
+            optionsPrice: totalOptionsPrice,
+            weightMultiplier: selectedWeight ? selectedWeight.coefficient : 1,
+            grindingPrice: selectedGrindingMachine ? selectedGrindingMachine.price : 0,
+            quantity: quantity,
+            finalPrice: calculatedPrice
         });
     }
     
@@ -316,194 +348,6 @@ jQuery(document).ready(function($) {
     function numberWithCommas(x) {
         return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
     }
-
-    var basePriceElement = $('.hpo-current-price');
-    var basePrice = parseFloat(basePriceElement.data('base-price'));
-    var selectedCategories = [];
-    var selectedProducts = [];
-    var selectedGrindingMachine = null;
-    var quantity = 1;
-    
-    function updateProductPrice() {
-        var totalPrice = basePrice;
-        var selectedCategoriesPrice = 0;
-        var selectedProductsPrice = 0;
-        var weightMultiplier = 1;
-        var grindingPrice = 0;
-        
-        // Calculate price from selected categories
-        $.each(selectedCategories, function(i, category) {
-            selectedCategoriesPrice += parseFloat(category.price || 0);
-        });
-        
-        // Calculate price from selected products
-        $.each(selectedProducts, function(i, product) {
-            selectedProductsPrice += parseFloat(product.price || 0);
-        });
-        
-        // Apply weight multiplier if a weight is selected
-        if (selectedWeight) {
-            weightMultiplier = parseFloat(selectedWeight.coefficient || 1);
-        }
-        
-        // Add grinding machine price if selected
-        if (selectedGrindingMachine) {
-            grindingPrice = parseFloat(selectedGrindingMachine.price || 0);
-        }
-        
-        // Calculate total price
-        totalPrice = (totalPrice + selectedCategoriesPrice + selectedProductsPrice) * weightMultiplier;
-        totalPrice += grindingPrice;
-        totalPrice = totalPrice * quantity;
-        
-        // Update the price display
-        basePriceElement.html(formatPrice(totalPrice));
-        
-        console.log('Price update calculation:', {
-            basePrice: basePrice,
-            categoriesPrice: selectedCategoriesPrice,
-            productsPrice: selectedProductsPrice,
-            weightMultiplier: weightMultiplier,
-            grindingPrice: grindingPrice,
-            quantity: quantity,
-            totalPrice: totalPrice
-        });
-    }
-    
-    // Format price according to WooCommerce settings
-    function formatPrice(price) {
-        return '<?php echo get_woocommerce_currency_symbol(); ?>' + parseFloat(price).toFixed(2);
-    }
-    
-    // Handle category selection
-    $('.hpo-category-option input[type="checkbox"]').on('change', function() {
-        var $this = $(this);
-        var categoryId = $this.val();
-        var categoryName = $this.data('name');
-        var categoryPrice = $this.data('price');
-        
-        if ($this.prop('checked')) {
-            selectedCategories.push({
-                id: categoryId,
-                name: categoryName,
-                price: categoryPrice
-            });
-        } else {
-            selectedCategories = selectedCategories.filter(function(category) {
-                return category.id !== categoryId;
-            });
-        }
-        
-        console.log('Selected categories:', selectedCategories);
-        updateProductPrice();
-    });
-    
-    // Handle product selection
-    $('.hpo-product-option input[type="checkbox"]').on('change', function() {
-        var $this = $(this);
-        var productId = $this.val();
-        var productName = $this.data('name');
-        var productPrice = $this.data('price');
-        
-        if ($this.prop('checked')) {
-            selectedProducts.push({
-                id: productId,
-                name: productName,
-                price: productPrice
-            });
-        } else {
-            selectedProducts = selectedProducts.filter(function(product) {
-                return product.id !== productId;
-            });
-        }
-        
-        console.log('Selected products:', selectedProducts);
-        updateProductPrice();
-    });
-    
-    // Handle weight selection
-    $('.hpo-weight-option input[type="radio"]').on('change', function() {
-        var $this = $(this);
-        var weightId = $this.val();
-        var weightName = $this.data('name');
-        var coefficient = $this.data('coefficient');
-        
-        selectedWeight = {
-            id: weightId,
-            name: weightName,
-            coefficient: coefficient
-        };
-        
-        console.log('Selected weight:', selectedWeight);
-        updateProductPrice();
-    });
-    
-    // Handle grinding option selection
-    $('input[name="hpo_grinding"]').on('change', function() {
-        var grindingOption = $(this).val();
-        
-        if (grindingOption === 'ground') {
-            $('.hpo-grinding-machines').show();
-            // Make grinding machine selection required
-            $('#hpo-grinding-machine').prop('required', true);
-        } else {
-            $('.hpo-grinding-machines').hide();
-            // Reset grinding machine selection
-            $('#hpo-grinding-machine').val('').prop('required', false);
-            selectedGrindingMachine = null;
-            updateProductPrice();
-        }
-    });
-    
-    // Handle grinding machine selection
-    $('#hpo-grinding-machine').on('change', function() {
-        var $this = $(this);
-        var grinderId = $this.val();
-        
-        if (grinderId) {
-            var $selectedOption = $this.find('option:selected');
-            selectedGrindingMachine = {
-                id: grinderId,
-                name: $selectedOption.text(),
-                price: $selectedOption.data('price')
-            };
-        } else {
-            selectedGrindingMachine = null;
-        }
-        
-        console.log('Selected grinding machine:', selectedGrindingMachine);
-        updateProductPrice();
-    });
-    
-    // Handle quantity changes
-    $('.hpo-quantity-decrease').on('click', function() {
-        var $input = $('.hpo-quantity-input');
-        var currentValue = parseInt($input.val(), 10);
-        if (currentValue > 1) {
-            $input.val(currentValue - 1);
-            quantity = currentValue - 1;
-            updateProductPrice();
-        }
-    });
-    
-    $('.hpo-quantity-increase').on('click', function() {
-        var $input = $('.hpo-quantity-input');
-        var currentValue = parseInt($input.val(), 10);
-        $input.val(currentValue + 1);
-        quantity = currentValue + 1;
-        updateProductPrice();
-    });
-    
-    $('.hpo-quantity-input').on('change', function() {
-        var $input = $(this);
-        var currentValue = parseInt($input.val(), 10);
-        if (currentValue < 1) {
-            $input.val(1);
-            currentValue = 1;
-        }
-        quantity = currentValue;
-        updateProductPrice();
-    });
     
     // Add form validation before adding to cart
     $('form.cart').on('submit', function(e) {
