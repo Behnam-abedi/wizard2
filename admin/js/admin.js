@@ -482,9 +482,9 @@
             if (weights && weights.length > 0) {
                 $.each(weights, function(index, weight) {
                     var template = $('#hpo-weight-template').html();
-                    template = template.replace('{id}', weight.id)
-                                     .replace('{name}', weight.name)
-                                     .replace('{coefficient}', weight.coefficient);
+                    template = template.replace(/{id}/g, weight.id)
+                                     .replace(/{name}/g, weight.name)
+                                     .replace(/{coefficient}/g, weight.coefficient);
                     
                     $container.append(template);
                 });
@@ -496,7 +496,10 @@
                     }
                 });
             } else {
-                $container.append('<p>' + hpo_data.strings.no_weights + '</p>');
+                // Use a default message if the string is not available
+                var noWeightsMessage = hpo_data.strings && hpo_data.strings.no_weights ? 
+                                      hpo_data.strings.no_weights : 'No weight options found for this product.';
+                $container.append('<p>' + noWeightsMessage + '</p>');
             }
         }
         
@@ -507,7 +510,10 @@
             var productId = $('#hpo-weight-product').val();
             
             if (!productId) {
-                alert(hpo_data.strings.select_product);
+                // Use a default message if the string is not available
+                var selectProductMessage = hpo_data.strings && hpo_data.strings.select_product ? 
+                                         hpo_data.strings.select_product : 'Please select a product first.';
+                alert(selectProductMessage);
                 return;
             }
             

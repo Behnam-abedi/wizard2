@@ -197,12 +197,12 @@
         <h3><?php echo esc_html__('Add Weight Option', 'hierarchical-product-options'); ?></h3>
         <form class="hpo-weight-form">
             <div class="hpo-form-row">
-                <label for="name"><?php echo esc_html__('Name', 'hierarchical-product-options'); ?></label>
-                <input type="text" name="name" required placeholder="<?php echo esc_attr__('e.g., 100 grams', 'hierarchical-product-options'); ?>">
+                <label for="weight-name"><?php echo esc_html__('Name', 'hierarchical-product-options'); ?></label>
+                <input type="text" id="weight-name" name="name" required placeholder="<?php echo esc_attr__('e.g., 100 grams', 'hierarchical-product-options'); ?>">
             </div>
             <div class="hpo-form-row">
-                <label for="coefficient"><?php echo esc_html__('Coefficient', 'hierarchical-product-options'); ?></label>
-                <input type="number" name="coefficient" step="0.01" min="0.01" value="1" required>
+                <label for="weight-coefficient"><?php echo esc_html__('Coefficient', 'hierarchical-product-options'); ?></label>
+                <input type="number" id="weight-coefficient" name="coefficient" step="0.01" min="0.01" value="1" required>
                 <p class="description"><?php echo esc_html__('The product price will be multiplied by this value when this weight is selected.', 'hierarchical-product-options'); ?></p>
             </div>
             <input type="hidden" name="wc_product_id" value="">

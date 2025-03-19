@@ -92,7 +92,10 @@ class Hierarchical_Product_Options_Admin {
                     'cancel' => __('Cancel', 'hierarchical-product-options'),
                     'confirm_delete_category' => __('Are you sure you want to delete this category? All subcategories and products will also be deleted.', 'hierarchical-product-options'),
                     'confirm_delete_product' => __('Are you sure you want to delete this product?', 'hierarchical-product-options'),
-                    'confirm_delete_weight' => __('Are you sure you want to delete this weight option?', 'hierarchical-product-options')
+                    'confirm_delete_weight' => __('Are you sure you want to delete this weight option?', 'hierarchical-product-options'),
+                    'no_weights' => __('No weight options found for this product.', 'hierarchical-product-options'),
+                    'select_product' => __('Please select a product first.', 'hierarchical-product-options'),
+                    'edit_weight' => __('Edit Weight Option', 'hierarchical-product-options')
                 )
             )
         );
