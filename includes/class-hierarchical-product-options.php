@@ -424,6 +424,12 @@ class Hierarchical_Product_Options {
                 // Make sure we're using the correct decimal format for toman/rial
                 $calculated_price = round($calculated_price);
                 $cart_item['data']->set_price($calculated_price);
+                
+                // Store the price in WooCommerce's price meta to ensure it persists
+                $cart_item['data']->update_meta_data('_price', $calculated_price);
+                $cart_item['data']->update_meta_data('_regular_price', $calculated_price);
+                $cart_item['data']->save_meta_data();
+                
                 continue;
             }
             
@@ -432,8 +438,17 @@ class Hierarchical_Product_Options {
             
             // Set the new price
             $cart_item['data']->set_price($total_price);
-            // Store in cart item data for future reference
+            
+            // Store the calculated price in cart item data for future reference
             $cart_item['hpo_calculated_price'] = $total_price;
+            
+            // Store the price in WooCommerce's price meta to ensure it persists
+            $cart_item['data']->update_meta_data('_price', $total_price);
+            $cart_item['data']->update_meta_data('_regular_price', $total_price);
+            $cart_item['data']->save_meta_data();
+            
+            // Update the cart item in session
+            WC()->session->set('cart_' . $cart_item_key, $cart_item);
         }
     }
 
@@ -450,11 +465,21 @@ class Hierarchical_Product_Options {
             return $price;
         }
         
-        // Get the actual price we've already calculated and set on the product
-        $current_price = $cart_item['data']->get_price();
+        // First try to get the calculated price from cart item data
+        if (isset($cart_item['hpo_calculated_price']) && $cart_item['hpo_calculated_price'] > 0) {
+            $current_price = (float)$cart_item['hpo_calculated_price'];
+        } else {
+            // Fallback to the price stored in product meta
+            $current_price = $cart_item['data']->get_meta('_price');
+            if (!$current_price) {
+                $current_price = $cart_item['data']->get_price();
+            }
+        }
+        
+        // Make sure we're using the correct decimal format for toman/rial
+        $current_price = round($current_price);
         
         // Format the price with WooCommerce's currency formatter
-        // This will display the price in the correct format (toman)
         return wc_price($current_price);
     }
 
@@ -471,8 +496,19 @@ class Hierarchical_Product_Options {
             return $price_html;
         }
         
-        // Get the actual price we've already calculated and set on the product
-        $current_price = $cart_item['data']->get_price();
+        // First try to get the calculated price from cart item data
+        if (isset($cart_item['hpo_calculated_price']) && $cart_item['hpo_calculated_price'] > 0) {
+            $current_price = (float)$cart_item['hpo_calculated_price'];
+        } else {
+            // Fallback to the price stored in product meta
+            $current_price = $cart_item['data']->get_meta('_price');
+            if (!$current_price) {
+                $current_price = $cart_item['data']->get_price();
+            }
+        }
+        
+        // Make sure we're using the correct decimal format for toman/rial
+        $current_price = round($current_price);
         
         // Get the quantity
         $quantity = $cart_item['quantity'];
