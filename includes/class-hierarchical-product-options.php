@@ -77,6 +77,12 @@ class Hierarchical_Product_Options {
         
         // This critical filter ensures the correct price is used for order totals
         add_filter('woocommerce_before_calculate_totals', array($this, 'before_calculate_totals'), 10, 1);
+
+        // Save order item meta data
+        add_action('woocommerce_checkout_create_order_line_item', array($this, 'save_order_item_meta'), 10, 4);
+
+        // Display order item meta in admin
+        add_action('woocommerce_admin_order_data_after_order_details', array($this, 'display_order_meta_in_admin'), 10, 1);
     }
 
     /**
@@ -567,5 +573,189 @@ class Hierarchical_Product_Options {
         
         // Round the price for toman/rial (no decimal places)
         return round($total_price);
+    }
+
+    /**
+     * Save order item meta data during checkout
+     *
+     * @param WC_Order_Item_Product $item
+     * @param string $cart_item_key
+     * @param array $values
+     * @param WC_Order $order
+     */
+    public function save_order_item_meta($item, $cart_item_key, $values, $order) {
+        // Save selected categories
+        if (!empty($values['hpo_categories'])) {
+            $categories_data = array();
+            foreach ($values['hpo_categories'] as $category) {
+                if (isset($category['name'])) {
+                    $categories_data[] = array(
+                        'name' => $category['name'],
+                        'price' => isset($category['price']) ? $category['price'] : 0
+                    );
+                }
+            }
+            $item->add_meta_data('_hpo_categories', $categories_data);
+        }
+
+        // Save selected products
+        if (!empty($values['hpo_products'])) {
+            $products_data = array();
+            foreach ($values['hpo_products'] as $product) {
+                if (isset($product['name'])) {
+                    $products_data[] = array(
+                        'name' => $product['name'],
+                        'price' => isset($product['price']) ? $product['price'] : 0
+                    );
+                }
+            }
+            $item->add_meta_data('_hpo_products', $products_data);
+        }
+
+        // Save weight option
+        if (!empty($values['hpo_weight'])) {
+            $weight_data = array(
+                'name' => $values['hpo_weight']['name'],
+                'coefficient' => $values['hpo_weight']['coefficient']
+            );
+            $item->add_meta_data('_hpo_weight', $weight_data);
+        }
+
+        // Save grinding option
+        if (isset($values['hpo_grinding'])) {
+            $grinding_data = array(
+                'type' => $values['hpo_grinding']
+            );
+            
+            if ($values['hpo_grinding'] === 'ground' && !empty($values['hpo_grinding_machine'])) {
+                $grinding_data['machine'] = array(
+                    'name' => $values['hpo_grinding_machine']['name'],
+                    'price' => $values['hpo_grinding_machine']['price']
+                );
+            }
+            
+            $item->add_meta_data('_hpo_grinding', $grinding_data);
+        }
+
+        // Save calculated price
+        if (isset($values['hpo_calculated_price'])) {
+            $item->add_meta_data('_hpo_calculated_price', $values['hpo_calculated_price']);
+        }
+    }
+
+    /**
+     * Display order meta data in admin order page
+     *
+     * @param WC_Order $order
+     */
+    public function display_order_meta_in_admin($order) {
+        echo '<div class="hpo-order-options">';
+        echo '<h3>' . __('Product Options Details', 'hierarchical-product-options') . '</h3>';
+        
+        foreach ($order->get_items() as $item_id => $item) {
+            echo '<div class="hpo-order-item-options">';
+            echo '<h4>' . $item->get_name() . '</h4>';
+            
+            // Display categories
+            $categories = $item->get_meta('_hpo_categories');
+            if (!empty($categories)) {
+                echo '<p><strong>' . __('Selected Categories:', 'hierarchical-product-options') . '</strong></p>';
+                echo '<ul>';
+                foreach ($categories as $category) {
+                    echo '<li>' . esc_html($category['name']);
+                    if (isset($category['price']) && $category['price'] > 0) {
+                        echo ' (' . wc_price($category['price']) . ')';
+                    }
+                    echo '</li>';
+                }
+                echo '</ul>';
+            }
+            
+            // Display products
+            $products = $item->get_meta('_hpo_products');
+            if (!empty($products)) {
+                echo '<p><strong>' . __('Selected Products:', 'hierarchical-product-options') . '</strong></p>';
+                echo '<ul>';
+                foreach ($products as $product) {
+                    echo '<li>' . esc_html($product['name']);
+                    if (isset($product['price']) && $product['price'] > 0) {
+                        echo ' (' . wc_price($product['price']) . ')';
+                    }
+                    echo '</li>';
+                }
+                echo '</ul>';
+            }
+            
+            // Display weight
+            $weight = $item->get_meta('_hpo_weight');
+            if (!empty($weight)) {
+                echo '<p><strong>' . __('Weight Option:', 'hierarchical-product-options') . '</strong> ';
+                echo esc_html($weight['name']) . ' (×' . $weight['coefficient'] . ')</p>';
+            }
+            
+            // Display grinding
+            $grinding = $item->get_meta('_hpo_grinding');
+            if (!empty($grinding)) {
+                echo '<p><strong>' . __('Grinding Option:', 'hierarchical-product-options') . '</strong> ';
+                if ($grinding['type'] === 'ground') {
+                    echo __('Ground', 'hierarchical-product-options');
+                    if (!empty($grinding['machine'])) {
+                        echo ' - ' . esc_html($grinding['machine']['name']);
+                        if ($grinding['machine']['price'] > 0) {
+                            echo ' (' . wc_price($grinding['machine']['price']) . ')';
+                        }
+                    }
+                } else {
+                    echo __('Whole (No Grinding)', 'hierarchical-product-options');
+                }
+                echo '</p>';
+            }
+            
+            // Display calculated price
+            $calculated_price = $item->get_meta('_hpo_calculated_price');
+            if (!empty($calculated_price)) {
+                echo '<p><strong>' . __('Final Unit Price:', 'hierarchical-product-options') . '</strong> ';
+                echo wc_price($calculated_price) . '</p>';
+            }
+            
+            echo '</div>';
+            echo '<hr>';
+        }
+        echo '</div>';
+        
+        // Add some CSS to style the output
+        ?>
+        <style>
+            .hpo-order-options {
+                margin: 20px 0;
+                padding: 15px;
+                background: #fff;
+                border: 1px solid #ddd;
+                border-radius: 4px;
+            }
+            .hpo-order-options h3 {
+                margin-top: 0;
+                padding-bottom: 10px;
+                border-bottom: 1px solid #eee;
+            }
+            .hpo-order-item-options {
+                margin: 15px 0;
+            }
+            .hpo-order-item-options h4 {
+                color: #23282d;
+                margin: 0 0 10px;
+            }
+            .hpo-order-item-options ul {
+                margin: 5px 0 15px 20px;
+                list-style: disc;
+            }
+            .hpo-order-item-options p {
+                margin: 5px 0;
+            }
+            .hpo-order-item-options strong {
+                color: #23282d;
+            }
+        </style>
+        <?php
     }
 } 
