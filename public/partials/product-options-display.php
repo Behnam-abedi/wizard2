@@ -283,26 +283,33 @@ jQuery(document).ready(function($) {
                 totalOptionsPrice += price;
             }
         }
-        console.log("Total options price:", totalOptionsPrice);
         
         // Calculate base price + options
         var calculatedPrice = baseProductPrice + totalOptionsPrice;
-        console.log("Price before weight coefficient:", calculatedPrice);
         
         // Apply weight coefficient if selected
         if (selectedWeight !== null) {
             var coefficient = parseFloat(selectedWeight.coefficient);
             if (!isNaN(coefficient) && coefficient > 0) {
                 calculatedPrice = calculatedPrice * coefficient;
-                console.log("After applying coefficient " + coefficient + ":", calculatedPrice);
+            }
+        }
+
+        // Add grinding machine price if selected
+        if (selectedGrindingMachine) {
+            var grindingPrice = parseFloat(selectedGrindingMachine.price);
+            if (!isNaN(grindingPrice)) {
+                calculatedPrice += grindingPrice;
             }
         }
         
-        // Format price with WooCommerce currency format
-        var formattedPrice = '<?php echo get_woocommerce_currency_symbol(); ?>' + numberWithCommas(calculatedPrice.toFixed(0));
+        // Apply quantity
+        calculatedPrice = calculatedPrice * quantity;
         
-        // Update price on the page
-        $('<?php echo apply_filters('hpo_price_selector', '.price .amount'); ?>').html(formattedPrice);
+        // Update all WooCommerce price displays on the page
+        $('.woocommerce-variation-price .amount, .woocommerce-Price-amount.amount, .price .amount').each(function() {
+            $(this).html('<?php echo get_woocommerce_currency_symbol(); ?>' + numberWithCommas(calculatedPrice.toFixed(0)));
+        });
     }
     
     // Helper function to format numbers with commas for thousands
