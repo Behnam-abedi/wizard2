@@ -124,7 +124,40 @@ $base_price = $product ? $product->get_price() : 0;
         <input type="hidden" name="hpo_base_price" id="hpo-base-price" value="<?php echo esc_attr($base_price); ?>">
         <input type="hidden" name="hpo_calculated_price" id="hpo-calculated-price" value="">
     </div>
+
+    <!-- اضافه کردن فیلد توضیحات -->
+    <div class="hpo-customer-notes">
+        <h4>توضیحات اضافی</h4>
+        <textarea name="hpo_customer_notes" id="hpo-customer-notes" rows="3" placeholder="اگر توضیح خاصی در مورد سفارش خود دارید، اینجا بنویسید..."></textarea>
+    </div>
 </div>
+
+<style>
+    .hpo-customer-notes {
+        margin: 20px 0;
+        padding: 15px;
+        background: #f8f9fa;
+        border-radius: 8px;
+    }
+    .hpo-customer-notes h4 {
+        margin: 0 0 10px;
+        color: #2271b1;
+        font-size: 14px;
+    }
+    .hpo-customer-notes textarea {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        resize: vertical;
+        font-family: inherit;
+    }
+    .hpo-customer-notes textarea:focus {
+        border-color: #2271b1;
+        box-shadow: 0 0 0 1px #2271b1;
+        outline: none;
+    }
+</style>
 
 <script>
 jQuery(document).ready(function($) {

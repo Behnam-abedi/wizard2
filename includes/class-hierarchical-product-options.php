@@ -215,6 +215,11 @@ class Hierarchical_Product_Options {
             $cart_item_data['hpo_grinding'] = 'whole';
         }
         
+        // Store customer notes if provided
+        if (isset($_POST['hpo_customer_notes']) && !empty($_POST['hpo_customer_notes'])) {
+            $cart_item_data['hpo_customer_notes'] = sanitize_textarea_field($_POST['hpo_customer_notes']);
+        }
+        
         // Capture the calculated price at the moment of adding to cart
         if (isset($_POST['hpo_calculated_price']) && !empty($_POST['hpo_calculated_price'])) {
             $cart_item_data['hpo_calculated_price'] = floatval($_POST['hpo_calculated_price']);
@@ -637,6 +642,11 @@ class Hierarchical_Product_Options {
             $item->add_meta_data('_hpo_grinding', $grinding_data);
         }
 
+        // Save customer notes
+        if (!empty($values['hpo_customer_notes'])) {
+            $item->add_meta_data('_hpo_customer_notes', $values['hpo_customer_notes']);
+        }
+
         // Save calculated price
         if (isset($values['hpo_calculated_price'])) {
             $item->add_meta_data('_hpo_calculated_price', $values['hpo_calculated_price']);
@@ -675,6 +685,7 @@ class Hierarchical_Product_Options {
                         <th>نوع قهوه</th>
                         <th>مقدار</th>
                         <th>وضعیت آسیاب</th>
+                        <th>توضیحات مشتری</th>
                         <th>قیمت نهایی (هر واحد)</th>
                     </tr>
                 </thead>
@@ -728,6 +739,16 @@ class Hierarchical_Product_Options {
                                 } else {
                                     echo '<span class="grinding-status whole">آسیاب نشده</span>';
                                 }
+                            } else {
+                                echo '-';
+                            }
+                            ?>
+                        </td>
+                        <td>
+                            <?php
+                            $customer_notes = $item->get_meta('_hpo_customer_notes');
+                            if (!empty($customer_notes)) {
+                                echo '<div class="customer-notes">' . nl2br(esc_html($customer_notes)) . '</div>';
                             } else {
                                 echo '-';
                             }
@@ -811,6 +832,15 @@ class Hierarchical_Product_Options {
             .final-price {
                 color: #2271b1;
                 font-size: 1.1em;
+            }
+            .customer-notes {
+                background: #f8f9fa;
+                padding: 8px;
+                border-radius: 4px;
+                font-size: 0.9em;
+                color: #50575e;
+                max-width: 300px;
+                white-space: pre-wrap;
             }
         </style>
         <?php
