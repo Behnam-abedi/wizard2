@@ -65,6 +65,9 @@ class Hierarchical_Product_Options {
         add_filter('woocommerce_add_cart_item_data', array($this, 'add_option_data_to_cart'), 10, 3);
         add_filter('woocommerce_get_cart_item_from_session', array($this, 'get_cart_item_from_session'), 10, 2);
         add_filter('woocommerce_cart_item_price', array($this, 'change_cart_item_price'), 10, 3);
+        
+        // This critical filter ensures the correct price is used for order totals
+        add_filter('woocommerce_before_calculate_totals', array($this, 'before_calculate_totals'), 10, 1);
     }
 
     /**
@@ -152,11 +155,20 @@ class Hierarchical_Product_Options {
                 $product = $db->get_product($option_id);
                 
                 if ($product) {
+                    // Get the base product price
+                    $base_price = floatval(get_post_meta($product_id, '_price', true));
+                    
+                    // Store both the option details and the combined price
                     $cart_item_data['hpo_option'] = array(
                         'id' => $product->id,
                         'name' => $product->name,
-                        'price' => $product->price
+                        'price' => $product->price,
+                        'base_price' => $base_price,
+                        'total_price' => $base_price + floatval($product->price)
                     );
+                    
+                    // Add a unique key to ensure WooCommerce treats this as a unique cart item
+                    $cart_item_data['unique_key'] = md5(microtime() . rand());
                 }
             }
         }
@@ -170,6 +182,11 @@ class Hierarchical_Product_Options {
     public function get_cart_item_from_session($cart_item, $values) {
         if (isset($values['hpo_option'])) {
             $cart_item['hpo_option'] = $values['hpo_option'];
+            
+            // If we have the unique key, copy it too
+            if (isset($values['unique_key'])) {
+                $cart_item['unique_key'] = $values['unique_key'];
+            }
         }
         
         return $cart_item;
@@ -185,10 +202,39 @@ class Hierarchical_Product_Options {
             ));
             
             if ($settings['update_price'] === 'yes') {
-                $price = wc_price($cart_item['hpo_option']['price']);
+                // Use the total price (base + option) that we calculated in add_option_data_to_cart
+                if (isset($cart_item['hpo_option']['total_price'])) {
+                    $price = wc_price($cart_item['hpo_option']['total_price']);
+                } else {
+                    // Fallback to calculating it here if not already calculated
+                    $base_price = isset($cart_item['hpo_option']['base_price']) ? 
+                                 floatval($cart_item['hpo_option']['base_price']) : 0;
+                    $option_price = floatval($cart_item['hpo_option']['price']);
+                    $price = wc_price($base_price + $option_price);
+                }
             }
         }
         
         return $price;
+    }
+
+    /**
+     * Update the product price before cart totals are calculated
+     */
+    public function before_calculate_totals($cart) {
+        // Loop through cart items
+        foreach ($cart->get_cart() as $cart_item_key => $cart_item) {
+            if (isset($cart_item['hpo_option']) && isset($cart_item['hpo_option']['total_price'])) {
+                // Get the settings
+                $settings = get_option('hpo_settings', array(
+                    'update_price' => 'yes'
+                ));
+                
+                if ($settings['update_price'] === 'yes') {
+                    // Set the product price to our calculated total price
+                    $cart_item['data']->set_price($cart_item['hpo_option']['total_price']);
+                }
+            }
+        }
     }
 } 
