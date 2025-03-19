@@ -108,9 +108,18 @@ jQuery(document).ready(function($) {
         // Get the original price
         var originalPrice = $('input[name="hpo_original_price"]').val();
         if (!originalPrice) {
-            // Store original price first time
-            originalPrice = $('<?php echo apply_filters('hpo_price_selector', '.price .amount'); ?>').first().text();
-            originalPrice = parseFloat(originalPrice.replace(/[^0-9\.]/g, ''));
+            // Store original price first time - properly extract numeric value
+            var priceText = $('<?php echo apply_filters('hpo_price_selector', '.price .amount'); ?>').first().text();
+            console.log("Original price text:", priceText);
+            
+            // Remove all non-numeric characters except digits and decimal point
+            originalPrice = priceText.replace(/[^\d.]/g, '');
+            console.log("Cleaned price:", originalPrice);
+            
+            originalPrice = parseFloat(originalPrice);
+            console.log("Parsed original price:", originalPrice);
+            
+            // Store the original price for future reference
             $('body').append('<input type="hidden" name="hpo_original_price" value="' + originalPrice + '">');
         } else {
             originalPrice = parseFloat(originalPrice);
@@ -118,11 +127,13 @@ jQuery(document).ready(function($) {
         
         // Parse the price parameter as float to ensure proper addition
         price = parseFloat(price);
+        console.log("Option price:", price);
         
         // Make sure both values are numbers before adding
         if (!isNaN(originalPrice) && !isNaN(price)) {
             // Update displayed price - ADD the option price to the original price
             var newPrice = originalPrice + price;
+            console.log("New calculated price:", newPrice);
             
             // Ensure we have a properly formatted number with 0 decimal places for Tomans
             // Format price with WooCommerce currency format
@@ -130,6 +141,8 @@ jQuery(document).ready(function($) {
             
             // Update price
             $('<?php echo apply_filters('hpo_price_selector', '.price .amount'); ?>').html(formattedPrice);
+        } else {
+            console.log("Invalid price values - originalPrice:", originalPrice, "optionPrice:", price);
         }
     }
     
