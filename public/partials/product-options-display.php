@@ -69,11 +69,11 @@ $settings = get_option('hpo_settings', array(
     if (!empty($weights)): ?>
     <div class="hpo-weight-options">
         <h4><?php echo esc_html__('Weight Options', 'hierarchical-product-options'); ?></h4>
-        <div class="hpo-weight-checkboxes">
+        <div class="hpo-weight-radio-buttons">
             <?php foreach ($weights as $weight): ?>
             <div class="hpo-weight-option-wrapper">
                 <label>
-                    <input type="checkbox" name="hpo_weight_option" class="hpo-weight-option" 
+                    <input type="radio" name="hpo_weight_option" class="hpo-weight-option" 
                            value="<?php echo esc_attr($weight->id); ?>"
                            data-coefficient="<?php echo esc_attr(floatval($weight->coefficient)); ?>"
                            data-name="<?php echo esc_attr($weight->name); ?>">
@@ -119,7 +119,7 @@ jQuery(document).ready(function($) {
     
     // Initialize selected options array to keep track of all selections
     var selectedOptions = [];
-    var selectedWeights = [];
+    var selectedWeight = null; // Changed from array to single object for radio buttons
     
     // Initialize on page load - get base product price from a hidden field we'll add
     var baseProductPrice = <?php echo floatval(get_post_meta(get_the_ID(), '_price', true)); ?>;
@@ -206,36 +206,25 @@ jQuery(document).ready(function($) {
         }
     });
     
-    // Handle weight options selection
+    // Handle weight options selection (now radio buttons)
     $('input.hpo-weight-option').on('change', function() {
         console.log("Weight option changed:", this);
         var weightId = $(this).val();
         var coefficient = parseFloat($(this).data('coefficient'));
         var weightName = $(this).data('name');
-        var isChecked = $(this).prop('checked');
         
-        // Store selected weight for form submission
-        var selectedWeightIds = selectedWeights.map(function(weight) {
-            return weight.id;
-        });
-        $('#hpo-selected-weight').val(selectedWeightIds.join(','));
+        // Since it's a radio button, it's always checked when this event fires
+        // Store the selected weight for form submission
+        $('#hpo-selected-weight').val(weightId);
         
-        // Handle the selected weight in our tracking array
-        if (isChecked) {
-            // Add this weight if checked
-            selectedWeights.push({
-                id: weightId,
-                coefficient: coefficient,
-                name: weightName
-            });
-        } else {
-            // Remove this weight if unchecked
-            selectedWeights = selectedWeights.filter(function(weight) {
-                return weight.id !== weightId;
-            });
-        }
+        // Replace the previous selection with the new one (single weight only)
+        selectedWeight = {
+            id: weightId,
+            coefficient: coefficient,
+            name: weightName
+        };
         
-        console.log("Current selected weights:", selectedWeights);
+        console.log("Selected weight:", selectedWeight);
         
         // Update product price if enabled
         if ($('.hpo-options-container').data('update-price') === 'yes') {
@@ -243,7 +232,7 @@ jQuery(document).ready(function($) {
         }
     });
     
-    // Function to update product price based on all selected options and weights
+    // Function to update product price based on all selected options and weight
     function updateProductPrice() {
         // Calculate total price from all selected options
         var totalOptionsPrice = 0;
@@ -259,15 +248,12 @@ jQuery(document).ready(function($) {
         var calculatedPrice = baseProductPrice + totalOptionsPrice;
         console.log("Price before weight coefficient:", calculatedPrice);
         
-        // Apply weight coefficients if any are selected
-        if (selectedWeights.length > 0) {
-            // Apply each selected weight coefficient
-            for (var j = 0; j < selectedWeights.length; j++) {
-                var coefficient = parseFloat(selectedWeights[j].coefficient);
-                if (!isNaN(coefficient) && coefficient > 0) {
-                    calculatedPrice = calculatedPrice * coefficient;
-                    console.log("After applying coefficient " + coefficient + ":", calculatedPrice);
-                }
+        // Apply weight coefficient if selected
+        if (selectedWeight !== null) {
+            var coefficient = parseFloat(selectedWeight.coefficient);
+            if (!isNaN(coefficient) && coefficient > 0) {
+                calculatedPrice = calculatedPrice * coefficient;
+                console.log("After applying coefficient " + coefficient + ":", calculatedPrice);
             }
         }
         

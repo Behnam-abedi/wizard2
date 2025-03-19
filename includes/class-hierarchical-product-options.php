@@ -171,37 +171,20 @@ class Hierarchical_Product_Options {
             }
         }
         
-        // Add weight options
+        // Add weight option (now a single selection)
         if (isset($_POST['hpo_selected_weight']) && !empty($_POST['hpo_selected_weight'])) {
-            $weight_ids = explode(',', $_POST['hpo_selected_weight']);
-            $weight_options = array();
-            $coefficient_total = 1; // Start with 1 (neutral)
+            $weight_id = absint($_POST['hpo_selected_weight']);
             
-            if (!empty($weight_ids)) {
+            if ($weight_id > 0) {
                 $db = new Hierarchical_Product_Options_DB();
+                $weight = $db->get_weight($weight_id);
                 
-                foreach ($weight_ids as $weight_id) {
-                    $weight_id = absint($weight_id);
-                    if ($weight_id > 0) {
-                        $weight = $db->get_weight($weight_id);
-                        if ($weight) {
-                            // Add to weight options
-                            $weight_options[] = array(
-                                'id' => $weight->id,
-                                'name' => $weight->name,
-                                'coefficient' => floatval($weight->coefficient)
-                            );
-                            
-                            // Multiply coefficient
-                            $coefficient_total *= floatval($weight->coefficient);
-                        }
-                    }
-                }
-                
-                if (!empty($weight_options)) {
-                    $cart_item_data['hpo_weights'] = array(
-                        'options' => $weight_options,
-                        'coefficient_total' => $coefficient_total
+                if ($weight) {
+                    // Add to weight option
+                    $cart_item_data['hpo_weight'] = array(
+                        'id' => $weight->id,
+                        'name' => $weight->name,
+                        'coefficient' => floatval($weight->coefficient)
                     );
                 }
             }
@@ -221,8 +204,8 @@ class Hierarchical_Product_Options {
             $cart_item['hpo_option'] = $values['hpo_option'];
         }
         
-        if (isset($values['hpo_weights'])) {
-            $cart_item['hpo_weights'] = $values['hpo_weights'];
+        if (isset($values['hpo_weight'])) {
+            $cart_item['hpo_weight'] = $values['hpo_weight'];
         }
         
         // If we have the unique key, copy it too
@@ -237,7 +220,7 @@ class Hierarchical_Product_Options {
      * Change cart item price
      */
     public function change_cart_item_price($price, $cart_item, $cart_item_key) {
-        if (isset($cart_item['hpo_option']) || isset($cart_item['hpo_weights'])) {
+        if (isset($cart_item['hpo_option']) || isset($cart_item['hpo_weight'])) {
             $settings = get_option('hpo_settings', array(
                 'update_price' => 'yes'
             ));
@@ -254,9 +237,9 @@ class Hierarchical_Product_Options {
                     $product_price = floatval(get_post_meta($product_id, '_price', true));
                 }
                 
-                // Apply weight coefficients if any
-                if (isset($cart_item['hpo_weights']) && isset($cart_item['hpo_weights']['coefficient_total'])) {
-                    $coefficient = floatval($cart_item['hpo_weights']['coefficient_total']);
+                // Apply weight coefficient if any
+                if (isset($cart_item['hpo_weight']) && isset($cart_item['hpo_weight']['coefficient'])) {
+                    $coefficient = floatval($cart_item['hpo_weight']['coefficient']);
                     if ($coefficient > 0) {
                         $product_price = $product_price * $coefficient;
                     }
@@ -292,9 +275,9 @@ class Hierarchical_Product_Options {
                     $product_price = floatval(get_post_meta($product_id, '_price', true));
                 }
                 
-                // Apply weight coefficients if any
-                if (isset($cart_item['hpo_weights']) && isset($cart_item['hpo_weights']['coefficient_total'])) {
-                    $coefficient = floatval($cart_item['hpo_weights']['coefficient_total']);
+                // Apply weight coefficient if any
+                if (isset($cart_item['hpo_weight']) && isset($cart_item['hpo_weight']['coefficient'])) {
+                    $coefficient = floatval($cart_item['hpo_weight']['coefficient']);
                     if ($coefficient > 0) {
                         $product_price = $product_price * $coefficient;
                     }
