@@ -116,14 +116,26 @@ jQuery(document).ready(function($) {
             originalPrice = parseFloat(originalPrice);
         }
         
-        // Update displayed price - ADD the option price to the original price instead of replacing it
-        var newPrice = originalPrice + parseFloat(price);
+        // Parse the price parameter as float to ensure proper addition
+        price = parseFloat(price);
         
-        // Format price with WooCommerce currency format
-        var formattedPrice = '<?php echo get_woocommerce_currency_symbol(); ?>' + newPrice.toFixed(2);
-        
-        // Update price
-        $('<?php echo apply_filters('hpo_price_selector', '.price .amount'); ?>').html(formattedPrice);
+        // Make sure both values are numbers before adding
+        if (!isNaN(originalPrice) && !isNaN(price)) {
+            // Update displayed price - ADD the option price to the original price
+            var newPrice = originalPrice + price;
+            
+            // Ensure we have a properly formatted number with 0 decimal places for Tomans
+            // Format price with WooCommerce currency format
+            var formattedPrice = '<?php echo get_woocommerce_currency_symbol(); ?>' + numberWithCommas(newPrice.toFixed(0));
+            
+            // Update price
+            $('<?php echo apply_filters('hpo_price_selector', '.price .amount'); ?>').html(formattedPrice);
+        }
+    }
+    
+    // Helper function to format numbers with commas for thousands
+    function numberWithCommas(x) {
+        return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
     }
 });
 </script>
