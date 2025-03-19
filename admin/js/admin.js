@@ -567,20 +567,35 @@
                 
                 $.post(hpo_data.ajax_url, data, function(response) {
                     console.log('AJAX response:', response);
-                    if (response.success) {
+                    if (response && response.success) {
                         // Reload the weights
                         loadWeights(productId);
                         
                         // Close the modal
                         $form.remove();
                     } else {
-                        var errorMsg = response.data || 'Error adding weight option';
+                        var errorMsg = (response && response.data) ? response.data : 'Error adding weight option: No response data';
                         console.error('Error:', errorMsg);
                         alert(errorMsg);
                     }
                 }).fail(function(xhr, status, error) {
                     console.error('AJAX request failed:', status, error);
-                    alert('Failed to add weight option: ' + (error || 'Unknown error'));
+                    console.error('Response text:', xhr.responseText);
+                    
+                    // Try to parse the response if it's JSON
+                    var responseData = '';
+                    try {
+                        if (xhr.responseText) {
+                            var jsonResponse = JSON.parse(xhr.responseText);
+                            if (jsonResponse && jsonResponse.data) {
+                                responseData = jsonResponse.data;
+                            }
+                        }
+                    } catch (e) {
+                        responseData = xhr.responseText || 'Unknown error';
+                    }
+                    
+                    alert('Failed to add weight option: ' + responseData);
                 });
             });
             
@@ -715,13 +730,20 @@
                 $button.prop('disabled', false).text('Rebuild Database Tables');
                 
                 if (response.success) {
-                    $result.html('<p style="color: green;">Tables rebuilt successfully!</p>');
+                    var successMsg = response.data || 'Tables rebuilt successfully!';
+                    // Format the response data for better readability
+                    if (typeof successMsg === 'string' && successMsg.includes('\n')) {
+                        successMsg = successMsg.replace(/\n/g, '<br>');
+                    }
+                    $result.html('<div style="color: green; background: #f0f8f0; padding: 10px; border: 1px solid #d0e0d0; border-radius: 4px;">' + successMsg + '</div>');
                 } else {
-                    $result.html('<p style="color: red;">Error: ' + (response.data || 'Unknown error') + '</p>');
+                    var errorMsg = response.data || 'Unknown error';
+                    $result.html('<p style="color: red; background: #fff0f0; padding: 10px; border: 1px solid #e0d0d0; border-radius: 4px;">Error: ' + errorMsg + '</p>');
                 }
-            }).fail(function() {
+            }).fail(function(xhr, status, error) {
                 $button.prop('disabled', false).text('Rebuild Database Tables');
-                $result.html('<p style="color: red;">Error: Could not complete the request.</p>');
+                $result.html('<p style="color: red; background: #fff0f0; padding: 10px; border: 1px solid #e0d0d0; border-radius: 4px;">Error: Could not complete the request. ' + (status || '') + ' ' + (error || '') + '</p>');
+                console.error('AJAX error:', xhr.responseText);
             });
         });
     });

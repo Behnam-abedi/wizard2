@@ -427,29 +427,62 @@ class Hierarchical_Product_Options_Admin {
         
         if (!current_user_can('manage_options')) {
             wp_send_json_error(__('Permission denied', 'hierarchical-product-options'));
+            return;
         }
         
         $name = isset($_POST['name']) ? sanitize_text_field($_POST['name']) : '';
         $coefficient = isset($_POST['coefficient']) ? floatval($_POST['coefficient']) : 1;
         $wc_product_id = isset($_POST['wc_product_id']) ? intval($_POST['wc_product_id']) : 0;
         
+        // Log request data for debugging
+        error_log('Weight add request: ' . wp_json_encode([
+            'name' => $name,
+            'coefficient' => $coefficient,
+            'wc_product_id' => $wc_product_id
+        ]));
+        
         if (empty($name) || empty($wc_product_id)) {
-            wp_send_json_error(__('Invalid data', 'hierarchical-product-options'));
+            wp_send_json_error(__('Invalid data: Name or product ID is empty', 'hierarchical-product-options'));
+            return;
         }
         
-        $db = new Hierarchical_Product_Options_DB();
-        $id = $db->add_weight($name, $coefficient, $wc_product_id);
-        
-        if ($id) {
-            wp_send_json_success(array(
-                'id' => $id,
-                'name' => $name,
-                'coefficient' => $coefficient,
-                'wc_product_id' => $wc_product_id
-            ));
-        } else {
-            wp_send_json_error(__('Failed to add weight option', 'hierarchical-product-options'));
+        try {
+            global $wpdb;
+            $db = new Hierarchical_Product_Options_DB();
+            
+            // Check if the weights table exists
+            $table_name = $wpdb->prefix . 'hpo_weights';
+            $table_exists = $wpdb->get_var("SHOW TABLES LIKE '{$table_name}'") === $table_name;
+            
+            if (!$table_exists) {
+                // Table doesn't exist, create it
+                error_log('Weights table does not exist, creating...');
+                $db->create_tables();
+            }
+            
+            // Add the weight option
+            $id = $db->add_weight($name, $coefficient, $wc_product_id);
+            
+            if ($id) {
+                error_log('Weight added successfully: ' . $id);
+                wp_send_json_success(array(
+                    'id' => $id,
+                    'name' => $name,
+                    'coefficient' => $coefficient,
+                    'wc_product_id' => $wc_product_id
+                ));
+            } else {
+                $last_error = $wpdb->last_error;
+                error_log('Failed to add weight option: ' . $last_error);
+                wp_send_json_error(__('Failed to add weight option: Database error', 'hierarchical-product-options') . ' - ' . $last_error);
+            }
+        } catch (Exception $e) {
+            error_log('Exception while adding weight: ' . $e->getMessage());
+            wp_send_json_error(__('Exception occurred: ', 'hierarchical-product-options') . $e->getMessage());
         }
+        
+        // Safety exit to ensure a response is always sent
+        wp_send_json_error(__('Unknown error occurred', 'hierarchical-product-options'));
     }
     
     /**
@@ -570,11 +603,46 @@ class Hierarchical_Product_Options_Admin {
         $db = new Hierarchical_Product_Options_DB();
         
         try {
+            global $wpdb;
+            
+            // Get current table status
+            $weights_table = $wpdb->prefix . 'hpo_weights';
+            $table_exists = $wpdb->get_var("SHOW TABLES LIKE '{$weights_table}'") === $weights_table;
+            
+            $status_report = "Table status before rebuild:\n";
+            $status_report .= "Weights table exists: " . ($table_exists ? 'Yes' : 'No') . "\n";
+            
+            if ($table_exists) {
+                $count = $wpdb->get_var("SELECT COUNT(*) FROM {$weights_table}");
+                $status_report .= "Weights table record count: {$count}\n";
+            }
+            
             // Create/recreate tables
             $db->create_tables();
             
-            wp_send_json_success(__('Database tables rebuilt successfully', 'hierarchical-product-options'));
+            // Get new table status
+            $table_exists = $wpdb->get_var("SHOW TABLES LIKE '{$weights_table}'") === $weights_table;
+            $status_report .= "\nTable status after rebuild:\n";
+            $status_report .= "Weights table exists: " . ($table_exists ? 'Yes' : 'No') . "\n";
+            
+            if ($table_exists) {
+                $count = $wpdb->get_var("SELECT COUNT(*) FROM {$weights_table}");
+                $status_report .= "Weights table record count: {$count}\n";
+                
+                // Try to insert a test record
+                $test_result = $db->add_weight('Test Weight', 1.0, 1, 0);
+                $status_report .= "Test insert result: " . ($test_result ? "Success (ID: {$test_result})" : "Failed") . "\n";
+                
+                if ($test_result) {
+                    // Clean up test record
+                    $wpdb->delete($weights_table, ['id' => $test_result]);
+                }
+            }
+            
+            error_log($status_report);
+            wp_send_json_success($status_report);
         } catch (Exception $e) {
+            error_log('Exception during table rebuild: ' . $e->getMessage());
             wp_send_json_error($e->getMessage());
         }
     }
