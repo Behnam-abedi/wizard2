@@ -92,20 +92,45 @@ jQuery(document).ready(function($) {
     // Initialize selected options array to keep track of all selections
     var selectedOptions = [];
     
-    // Handle radio button selection
-    $('.hpo-product-option').on('change', function() {
+    // Initialize on page load - get base product price
+    var baseProductPrice = 0;
+    function initializeBasePrice() {
+        var priceText = $('<?php echo apply_filters('hpo_price_selector', '.price .amount'); ?>').first().text();
+        console.log("Original price text:", priceText);
+        
+        // Extract numeric value from price text, handling various formats
+        var extractedPrice = priceText.replace(/[^\d.]/g, '');
+        console.log("Cleaned price:", extractedPrice);
+        
+        baseProductPrice = parseFloat(extractedPrice);
+        console.log("Base product price:", baseProductPrice);
+        
+        // Only check for the specific value 399 which is known to be a placeholder
+        if (baseProductPrice === 399) {
+            console.log("Detected exact placeholder price (399). Setting base price to 0");
+            baseProductPrice = 0;
+        }
+    }
+    
+    // Run initialization on page load
+    initializeBasePrice();
+    
+    // Handle all product options selection (both radio buttons and checkboxes)
+    $('input.hpo-product-option').on('change', function() {
+        console.log("Option changed:", this);
         var optionId = $(this).val();
         var optionPrice = parseFloat($(this).data('price'));
         var optionName = $(this).data('name');
         var isChecked = $(this).prop('checked');
         
-        // Store selected option in hidden field for form submission
+        // For form submission - the last selected option
         $('#hpo-selected-option').val(optionId);
         
         // Handle the selected option in our tracking array
         if ($(this).attr('type') === 'radio') {
             // For radio buttons, replace any option from the same group
             var groupName = $(this).attr('name');
+            console.log("Radio button changed, group:", groupName);
             
             // Remove previous selection from this group
             selectedOptions = selectedOptions.filter(function(option) {
@@ -123,6 +148,8 @@ jQuery(document).ready(function($) {
             }
         } else {
             // For checkboxes, add or remove based on checked state
+            console.log("Checkbox changed, checked:", isChecked);
+            
             if (isChecked) {
                 // Add this option if checked
                 selectedOptions.push({
@@ -138,64 +165,36 @@ jQuery(document).ready(function($) {
             }
         }
         
+        console.log("Current selected options:", selectedOptions);
+        
         // Update product price if enabled
         if ($('.hpo-options-container').data('update-price') === 'yes') {
             updateProductPrice();
         }
-        
-        console.log("Current selected options:", selectedOptions);
     });
     
     // Function to update product price based on all selected options
     function updateProductPrice() {
-        // Get the original price
-        var originalPrice = $('input[name="hpo_original_price"]').val();
-        if (!originalPrice) {
-            // Store original price first time - properly extract numeric value
-            var priceText = $('<?php echo apply_filters('hpo_price_selector', '.price .amount'); ?>').first().text();
-            console.log("Original price text:", priceText);
-            
-            // Extract numeric value from price text, handling various formats
-            var extractedPrice = priceText.replace(/[^\d.]/g, '');
-            console.log("Cleaned price:", extractedPrice);
-            
-            originalPrice = parseFloat(extractedPrice);
-            console.log("Parsed original price:", originalPrice);
-            
-            // Only check for the specific value 399 which is known to be a placeholder
-            if (originalPrice === 399) {
-                console.log("Detected exact placeholder price (399). Setting base price to 0");
-                originalPrice = 0;
-            }
-            
-            // Store the original price for future reference
-            $('body').append('<input type="hidden" name="hpo_original_price" value="' + originalPrice + '">');
-        } else {
-            originalPrice = parseFloat(originalPrice);
-        }
-        
         // Calculate total price from all selected options
         var totalOptionsPrice = 0;
         for (var i = 0; i < selectedOptions.length; i++) {
-            totalOptionsPrice += selectedOptions[i].price;
+            var price = parseFloat(selectedOptions[i].price);
+            if (!isNaN(price)) {
+                totalOptionsPrice += price;
+            }
         }
         console.log("Total options price:", totalOptionsPrice);
         
-        // Make sure values are numbers before adding
-        if (!isNaN(originalPrice) && !isNaN(totalOptionsPrice)) {
-            // Update displayed price - ADD all option prices to the original price
-            var newPrice = originalPrice + totalOptionsPrice;
-            console.log("New calculated price:", newPrice);
-            
-            // Ensure we have a properly formatted number with 0 decimal places for Tomans
-            // Format price with WooCommerce currency format
-            var formattedPrice = '<?php echo get_woocommerce_currency_symbol(); ?>' + numberWithCommas(newPrice.toFixed(0));
-            
-            // Update price
-            $('<?php echo apply_filters('hpo_price_selector', '.price .amount'); ?>').html(formattedPrice);
-        } else {
-            console.log("Invalid price values - originalPrice:", originalPrice, "optionsPrice:", totalOptionsPrice);
-        }
+        // Calculate final price (base + options)
+        var newPrice = baseProductPrice + totalOptionsPrice;
+        console.log("New calculated price:", newPrice);
+        
+        // Ensure we have a properly formatted number with 0 decimal places for Tomans
+        // Format price with WooCommerce currency format
+        var formattedPrice = '<?php echo get_woocommerce_currency_symbol(); ?>' + numberWithCommas(newPrice.toFixed(0));
+        
+        // Update price on the page
+        $('<?php echo apply_filters('hpo_price_selector', '.price .amount'); ?>').html(formattedPrice);
     }
     
     // Helper function to format numbers with commas for thousands
