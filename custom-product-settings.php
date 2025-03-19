@@ -378,8 +378,8 @@ class Custom_Product_Settings {
 }
 
 // فایل‌های اضافی
-require_once plugin_dir_path(__FILE__) . 'includes/admin-scripts.php';
-require_once plugin_dir_path(__FILE__) . 'includes/admin-styles.php';
+// require_once plugin_dir_path(__FILE__) . 'includes/admin-scripts.php';
+// require_once plugin_dir_path(__FILE__) . 'includes/admin-styles.php';
 
 // راه‌اندازی کلاس اصلی
 $custom_product_settings = new Custom_Product_Settings();
