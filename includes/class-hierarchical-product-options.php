@@ -82,7 +82,7 @@ class Hierarchical_Product_Options {
         add_action('woocommerce_checkout_create_order_line_item', array($this, 'save_order_item_meta'), 10, 4);
 
         // Display order item meta in admin
-        add_action('woocommerce_admin_order_data_after_order_details', array($this, 'display_order_meta_in_admin'), 10, 1);
+        add_action('add_meta_boxes', array($this, 'add_order_meta_box'));
     }
 
     /**
@@ -644,149 +644,173 @@ class Hierarchical_Product_Options {
     }
 
     /**
+     * Add meta box to order page
+     */
+    public function add_order_meta_box() {
+        add_meta_box(
+            'hpo_order_options',
+            'جزئیات آپشن‌های محصولات',
+            array($this, 'display_order_meta_in_admin'),
+            'shop_order',
+            'normal',
+            'high'
+        );
+    }
+
+    /**
      * Display order meta data in admin order page
      *
-     * @param WC_Order $order
+     * @param WP_Post $post
      */
-    public function display_order_meta_in_admin($order) {
-        echo '<div class="hpo-order-options">';
-        echo '<h3>' . __('جزئیات سفارش محصول', 'hierarchical-product-options') . '</h3>';
-        
-        foreach ($order->get_items() as $item_id => $item) {
-            echo '<div class="hpo-order-item-options">';
-            echo '<h4>' . $item->get_name() . '</h4>';
-            
-            echo '<div class="hpo-option-details">';
-            
-            // نمایش نوع قهوه (محصولات انتخاب شده)
-            $products = $item->get_meta('_hpo_products');
-            if (!empty($products)) {
-                echo '<div class="hpo-detail-row">';
-                echo '<span class="hpo-detail-label">' . __('نوع قهوه:', 'hierarchical-product-options') . '</span>';
-                echo '<span class="hpo-detail-value">';
-                $product_names = array();
-                foreach ($products as $product) {
-                    $product_names[] = $product['name'] . 
-                        (isset($product['price']) && $product['price'] > 0 ? ' (' . wc_price($product['price']) . ')' : '');
-                }
-                echo implode(' + ', $product_names);
-                echo '</span>';
-                echo '</div>';
-            }
-            
-            // نمایش وزن انتخاب شده
-            $weight = $item->get_meta('_hpo_weight');
-            if (!empty($weight)) {
-                echo '<div class="hpo-detail-row">';
-                echo '<span class="hpo-detail-label">' . __('مقدار:', 'hierarchical-product-options') . '</span>';
-                echo '<span class="hpo-detail-value">' . esc_html($weight['name']);
-                if (isset($weight['coefficient']) && $weight['coefficient'] != 1) {
-                    echo ' (ضریب: ×' . $weight['coefficient'] . ')';
-                }
-                echo '</span>';
-                echo '</div>';
-            }
-            
-            // نمایش وضعیت آسیاب
-            $grinding = $item->get_meta('_hpo_grinding');
-            if (!empty($grinding)) {
-                echo '<div class="hpo-detail-row">';
-                echo '<span class="hpo-detail-label">' . __('وضعیت آسیاب:', 'hierarchical-product-options') . '</span>';
-                echo '<span class="hpo-detail-value">';
-                if ($grinding['type'] === 'ground') {
-                    echo 'آسیاب شده';
-                    if (!empty($grinding['machine'])) {
-                        echo ' - دستگاه: ' . esc_html($grinding['machine']['name']);
-                        if ($grinding['machine']['price'] > 0) {
-                            echo ' (' . wc_price($grinding['machine']['price']) . ')';
-                        }
-                    }
-                } else {
-                    echo 'آسیاب نشده';
-                }
-                echo '</span>';
-                echo '</div>';
-            }
-            
-            // نمایش قیمت نهایی
-            $calculated_price = $item->get_meta('_hpo_calculated_price');
-            if (!empty($calculated_price)) {
-                echo '<div class="hpo-detail-row total-price">';
-                echo '<span class="hpo-detail-label">' . __('قیمت نهایی هر واحد:', 'hierarchical-product-options') . '</span>';
-                echo '<span class="hpo-detail-value">' . wc_price($calculated_price) . '</span>';
-                echo '</div>';
-            }
-            
-            echo '</div>'; // .hpo-option-details
-            echo '</div>'; // .hpo-order-item-options
-            echo '<hr>';
-        }
-        echo '</div>';
-        
-        // Add some CSS to style the output
+    public function display_order_meta_in_admin($post) {
+        $order = wc_get_order($post->ID);
+        if (!$order) return;
+
         ?>
+        <div class="hpo-order-details">
+            <table class="widefat">
+                <thead>
+                    <tr>
+                        <th class="row-title">نام محصول</th>
+                        <th>نوع قهوه</th>
+                        <th>مقدار</th>
+                        <th>وضعیت آسیاب</th>
+                        <th>قیمت نهایی (هر واحد)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($order->get_items() as $item_id => $item): ?>
+                    <tr>
+                        <td class="row-title">
+                            <label><?php echo esc_html($item->get_name()); ?></label>
+                        </td>
+                        <td>
+                            <?php
+                            $products = $item->get_meta('_hpo_products');
+                            if (!empty($products)) {
+                                $product_names = array();
+                                foreach ($products as $product) {
+                                    $product_names[] = $product['name'] . 
+                                        (isset($product['price']) && $product['price'] > 0 ? 
+                                        ' <span class="price-tag">(' . wc_price($product['price']) . ')</span>' : '');
+                                }
+                                echo implode(' + ', $product_names);
+                            } else {
+                                echo '-';
+                            }
+                            ?>
+                        </td>
+                        <td>
+                            <?php
+                            $weight = $item->get_meta('_hpo_weight');
+                            if (!empty($weight)) {
+                                echo esc_html($weight['name']);
+                                if (isset($weight['coefficient']) && $weight['coefficient'] != 1) {
+                                    echo ' <span class="coefficient">(×' . $weight['coefficient'] . ')</span>';
+                                }
+                            } else {
+                                echo '-';
+                            }
+                            ?>
+                        </td>
+                        <td>
+                            <?php
+                            $grinding = $item->get_meta('_hpo_grinding');
+                            if (!empty($grinding)) {
+                                if ($grinding['type'] === 'ground') {
+                                    echo '<span class="grinding-status ground">آسیاب شده</span>';
+                                    if (!empty($grinding['machine'])) {
+                                        echo '<br><span class="machine-name">دستگاه: ' . esc_html($grinding['machine']['name']) . '</span>';
+                                        if ($grinding['machine']['price'] > 0) {
+                                            echo ' <span class="price-tag">(' . wc_price($grinding['machine']['price']) . ')</span>';
+                                        }
+                                    }
+                                } else {
+                                    echo '<span class="grinding-status whole">آسیاب نشده</span>';
+                                }
+                            } else {
+                                echo '-';
+                            }
+                            ?>
+                        </td>
+                        <td>
+                            <?php
+                            $calculated_price = $item->get_meta('_hpo_calculated_price');
+                            if (!empty($calculated_price)) {
+                                echo '<strong class="final-price">' . wc_price($calculated_price) . '</strong>';
+                            } else {
+                                echo '-';
+                            }
+                            ?>
+                        </td>
+                    </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
         <style>
-            .hpo-order-options {
-                margin: 20px 0;
-                padding: 20px;
-                background: #fff;
-                border: 1px solid #ddd;
-                border-radius: 8px;
-                box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-            }
-            .hpo-order-options h3 {
-                margin: 0 0 20px;
-                padding-bottom: 15px;
-                border-bottom: 2px solid #eee;
-                color: #2271b1;
-                font-size: 16px;
-            }
-            .hpo-order-item-options {
+            .hpo-order-details {
                 margin: 15px 0;
-                padding: 15px;
-                background: #f8f9fa;
-                border-radius: 6px;
             }
-            .hpo-order-item-options h4 {
+            .hpo-order-details table {
+                border-collapse: collapse;
+                width: 100%;
+                background: white;
+                border-radius: 8px;
+                overflow: hidden;
+            }
+            .hpo-order-details th {
+                background: #f0f0f1;
+                padding: 12px;
+                text-align: right;
+                font-weight: 600;
                 color: #1d2327;
-                margin: 0 0 15px;
-                font-size: 14px;
+                border-bottom: 2px solid #c3c4c7;
+            }
+            .hpo-order-details td {
+                padding: 12px;
+                border-bottom: 1px solid #f0f0f1;
+                vertical-align: top;
+            }
+            .hpo-order-details tr:hover {
+                background: #f8f9fa;
+            }
+            .hpo-order-details .row-title {
                 font-weight: 600;
+                color: #2271b1;
             }
-            .hpo-option-details {
-                display: flex;
-                flex-direction: column;
-                gap: 12px;
+            .price-tag {
+                color: #666;
+                font-size: 0.9em;
             }
-            .hpo-detail-row {
-                display: flex;
-                align-items: baseline;
-                padding: 8px 0;
-                border-bottom: 1px dashed #eee;
+            .coefficient {
+                color: #666;
+                font-size: 0.9em;
+                font-style: italic;
             }
-            .hpo-detail-label {
-                flex: 0 0 120px;
-                font-weight: 600;
+            .grinding-status {
+                display: inline-block;
+                padding: 4px 8px;
+                border-radius: 4px;
+                font-size: 0.9em;
+            }
+            .grinding-status.ground {
+                background: #edf7ed;
+                color: #1e4620;
+            }
+            .grinding-status.whole {
+                background: #fff4e5;
+                color: #663c00;
+            }
+            .machine-name {
+                display: inline-block;
+                margin-top: 5px;
+                font-size: 0.9em;
                 color: #50575e;
             }
-            .hpo-detail-value {
-                flex: 1;
-                color: #2c3338;
-            }
-            .total-price {
-                margin-top: 15px;
-                padding-top: 10px;
-                border-top: 2px solid #eee;
-                font-size: 14px;
-            }
-            .total-price .hpo-detail-value {
+            .final-price {
                 color: #2271b1;
-                font-weight: 600;
-            }
-            hr {
-                margin: 20px 0;
-                border: 0;
-                border-top: 1px solid #eee;
+                font-size: 1.1em;
             }
         </style>
         <?php
