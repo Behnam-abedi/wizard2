@@ -92,28 +92,9 @@ jQuery(document).ready(function($) {
     // Initialize selected options array to keep track of all selections
     var selectedOptions = [];
     
-    // Initialize on page load - get base product price
-    var baseProductPrice = 0;
-    function initializeBasePrice() {
-        var priceText = $('<?php echo apply_filters('hpo_price_selector', '.price .amount'); ?>').first().text();
-        console.log("Original price text:", priceText);
-        
-        // Extract numeric value from price text, handling various formats
-        var extractedPrice = priceText.replace(/[^\d.]/g, '');
-        console.log("Cleaned price:", extractedPrice);
-        
-        baseProductPrice = parseFloat(extractedPrice);
-        console.log("Base product price:", baseProductPrice);
-        
-        // Only check for the specific value 399 which is known to be a placeholder
-        if (baseProductPrice === 399) {
-            console.log("Detected exact placeholder price (399). Setting base price to 0");
-            baseProductPrice = 0;
-        }
-    }
-    
-    // Run initialization on page load
-    initializeBasePrice();
+    // Initialize on page load - get base product price from a hidden field we'll add
+    var baseProductPrice = <?php echo floatval(get_post_meta(get_the_ID(), '_price', true)); ?>;
+    console.log("Actual product base price from WooCommerce:", baseProductPrice);
     
     // Debug: Let's inspect how prices are stored in data attributes
     console.log("Checking all product options for price data:");
