@@ -116,8 +116,8 @@ jQuery(document).ready(function($) {
             originalPrice = parseFloat(originalPrice);
         }
         
-        // Update displayed price
-        var newPrice = price;
+        // Update displayed price - ADD the option price to the original price instead of replacing it
+        var newPrice = originalPrice + parseFloat(price);
         
         // Format price with WooCommerce currency format
         var formattedPrice = '<?php echo get_woocommerce_currency_symbol(); ?>' + newPrice.toFixed(2);
