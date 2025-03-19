@@ -496,13 +496,41 @@ class Hierarchical_Product_Options_DB {
     public function add_grinder($name, $price, $sort_order = 0) {
         global $wpdb;
         
+        // Debug logging
+        error_log('DB add_grinder called with: Name=' . $name . ', Price=' . $price);
+        
+        // Make sure the table exists
+        $table_exists = $wpdb->get_var("SHOW TABLES LIKE '$this->grinders_table'") === $this->grinders_table;
+        error_log('Grinders table exists check: ' . ($table_exists ? 'Yes' : 'No'));
+        
+        if (!$table_exists) {
+            error_log('Grinders table does not exist, creating tables...');
+            $this->create_tables();
+            
+            // Check again after creation
+            $table_exists = $wpdb->get_var("SHOW TABLES LIKE '$this->grinders_table'") === $this->grinders_table;
+            error_log('Grinders table exists after creation: ' . ($table_exists ? 'Yes' : 'No'));
+            
+            if (!$table_exists) {
+                error_log('Failed to create grinders table');
+                return 0;
+            }
+        }
+        
+        // Debug - show the table name being used
+        error_log('Grinders table name: ' . $this->grinders_table);
+        
+        $data = array(
+            'name' => $name,
+            'price' => $price,
+            'sort_order' => $sort_order
+        );
+        
+        error_log('Attempting to insert grinder with data: ' . wp_json_encode($data));
+        
         $result = $wpdb->insert(
             $this->grinders_table,
-            array(
-                'name' => $name,
-                'price' => $price,
-                'sort_order' => $sort_order
-            )
+            $data
         );
         
         if ($result === false) {
@@ -510,7 +538,10 @@ class Hierarchical_Product_Options_DB {
             return 0;
         }
         
-        return $wpdb->insert_id;
+        $insert_id = $wpdb->insert_id;
+        error_log('Successfully inserted grinder with ID: ' . $insert_id);
+        
+        return $insert_id;
     }
     
     /**

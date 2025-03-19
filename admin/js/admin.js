@@ -764,8 +764,18 @@
                 if (response.success) {
                     renderGrinders(response.data);
                 } else {
-                    alert(response.data || 'Error loading grinders');
+                    // Check if response.data is an object with a message property
+                    var errorMessage = response.data;
+                    if (response.data && response.data.message) {
+                        errorMessage = response.data.message;
+                    }
+                    console.error('AJAX error response:', response);
+                    alert(errorMessage || 'Error loading grinders');
                 }
+            }).fail(function(xhr, status, error) {
+                console.error('AJAX request failed:', status, error);
+                console.error('Response text:', xhr.responseText);
+                alert('Failed to load grinders: ' + error);
             });
         }
 
@@ -830,8 +840,18 @@
                     // Reload grinders
                     loadGrinders();
                 } else {
-                    alert(response.data || 'Error adding grinder');
+                    // Check if response.data is an object with a message property
+                    var errorMessage = response.data;
+                    if (response.data && response.data.message) {
+                        errorMessage = response.data.message;
+                    }
+                    console.error('AJAX error response:', response);
+                    alert(errorMessage || 'Error adding grinder');
                 }
+            }).fail(function(xhr, status, error) {
+                console.error('AJAX request failed:', status, error);
+                console.error('Response text:', xhr.responseText);
+                alert('Failed to add grinder: ' + error);
             });
         });
 
@@ -888,8 +908,18 @@
                         // Reload grinders
                         loadGrinders();
                     } else {
-                        alert(response.data || 'Error updating grinder');
+                        // Check if response.data is an object with a message property
+                        var errorMessage = response.data;
+                        if (response.data && response.data.message) {
+                            errorMessage = response.data.message;
+                        }
+                        console.error('AJAX error response:', response);
+                        alert(errorMessage || 'Error updating grinder');
                     }
+                }).fail(function(xhr, status, error) {
+                    console.error('AJAX request failed:', status, error);
+                    console.error('Response text:', xhr.responseText);
+                    alert('Failed to update grinder: ' + error);
                 });
             });
             
@@ -920,8 +950,18 @@
                     // Reload grinders
                     loadGrinders();
                 } else {
-                    alert(response.data || 'Error deleting grinder');
+                    // Check if response.data is an object with a message property
+                    var errorMessage = response.data;
+                    if (response.data && response.data.message) {
+                        errorMessage = response.data.message;
+                    }
+                    console.error('AJAX error response:', response);
+                    alert(errorMessage || 'Error deleting grinder');
                 }
+            }).fail(function(xhr, status, error) {
+                console.error('AJAX request failed:', status, error);
+                console.error('Response text:', xhr.responseText);
+                alert('Failed to delete grinder: ' + error);
             });
         });
 
@@ -941,8 +981,18 @@
             
             $.post(hpo_data.ajax_url, data, function(response) {
                 if (!response.success) {
-                    alert(response.data || 'Error updating grinder order');
+                    // Check if response.data is an object with a message property
+                    var errorMessage = response.data;
+                    if (response.data && response.data.message) {
+                        errorMessage = response.data.message;
+                    }
+                    console.error('AJAX error response:', response);
+                    alert(errorMessage || 'Error reordering grinders');
                 }
+            }).fail(function(xhr, status, error) {
+                console.error('AJAX request failed:', status, error);
+                console.error('Response text:', xhr.responseText);
+                alert('Failed to reorder grinders: ' + error);
             });
         }
     });
