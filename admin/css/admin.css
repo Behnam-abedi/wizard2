@@ -1,0 +1,166 @@
+/**
+ * Admin CSS for Hierarchical Product Options
+ */
+
+/* Container */
+.hpo-admin-container {
+    display: flex;
+    flex-wrap: wrap;
+    margin-top: 20px;
+}
+
+.hpo-admin-panel {
+    background: #fff;
+    border: 1px solid #ccc;
+    padding: 20px;
+    margin-right: 20px;
+    margin-bottom: 20px;
+    border-radius: 5px;
+    min-width: 400px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.hpo-actions {
+    margin-bottom: 20px;
+}
+
+/* Lists */
+.hpo-categories-list, .hpo-products-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.hpo-category-item, .hpo-product-item {
+    border: 1px solid #ddd;
+    margin-bottom: 10px;
+    background: #f9f9f9;
+    border-radius: 3px;
+}
+
+.hpo-item-header {
+    display: flex;
+    align-items: center;
+    padding: 10px;
+    position: relative;
+}
+
+.hpo-drag-handle {
+    cursor: move;
+    margin-right: 10px;
+    color: #999;
+}
+
+.hpo-item-name {
+    flex-grow: 1;
+    font-weight: bold;
+}
+
+.hpo-item-price {
+    margin-right: 15px;
+    color: #82b54b;
+    font-weight: bold;
+}
+
+.hpo-item-actions {
+    display: flex;
+    align-items: center;
+}
+
+.hpo-item-actions button {
+    margin-left: 5px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 5px;
+    border-radius: 3px;
+}
+
+.hpo-item-actions button:hover {
+    background: #f1f1f1;
+}
+
+/* Nested lists */
+.hpo-category-item .hpo-categories-list {
+    margin-left: 20px;
+    padding-left: 20px;
+    border-left: 2px solid #eee;
+    margin-bottom: 10px;
+}
+
+.hpo-products-list {
+    margin-left: 20px;
+    padding-left: 20px;
+    border-left: 2px solid #f1f1f1;
+    margin-bottom: 10px;
+}
+
+/* Form */
+.hpo-form-row {
+    margin-bottom: 15px;
+}
+
+.hpo-form-row label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+
+.hpo-form-row input[type="text"],
+.hpo-form-row input[type="number"],
+.hpo-form-row select {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 3px;
+}
+
+/* Modal */
+.hpo-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.7);
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.hpo-item-form {
+    background: #fff;
+    padding: 20px;
+    border-radius: 5px;
+    min-width: 400px;
+    max-width: 600px;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.3);
+}
+
+/* Sortable placeholder */
+.hpo-sortable-placeholder {
+    border: 2px dashed #ccc;
+    background: #f9f9f9;
+    margin-bottom: 10px;
+    height: 40px;
+    border-radius: 3px;
+}
+
+/* Checkbox list */
+.hpo-checkbox-list {
+    max-height: 200px;
+    overflow-y: auto;
+    border: 1px solid #ddd;
+    padding: 10px;
+    border-radius: 3px;
+    background: #f9f9f9;
+}
+
+.hpo-checkbox-item {
+    margin-bottom: 5px;
+}
+
+.hpo-checkbox-item:last-child {
+    margin-bottom: 0;
+} 
