@@ -68,25 +68,15 @@ class Hierarchical_Product_Options {
         // Display options in cart
         add_filter('woocommerce_get_item_data', array($this, 'add_cart_item_data'), 10, 2);
         
-        // Ensure the calculated price is always used
-        add_filter('woocommerce_product_get_price', array($this, 'filter_product_price'), 100, 2);
-        add_filter('woocommerce_product_variation_get_price', array($this, 'filter_product_price'), 100, 2);
-        add_filter('woocommerce_product_get_regular_price', array($this, 'filter_product_price'), 100, 2);
-        add_filter('woocommerce_product_variation_get_regular_price', array($this, 'filter_product_price'), 100, 2);
-        
         // Update prices in cart
         add_filter('woocommerce_cart_item_price', array($this, 'update_product_price'), 10, 3);
         add_filter('woocommerce_cart_item_subtotal', array($this, 'update_product_price'), 10, 3);
         
         // Mini-cart specific hooks
         add_filter('woocommerce_widget_cart_item_quantity', array($this, 'update_mini_cart_price'), 10, 3);
-        add_filter('woocommerce_mini_cart_item_price', array($this, 'update_product_price'), 10, 3);
-        
-        // Update cart item data after quantity update
-        add_action('woocommerce_after_cart_item_quantity_update', array($this, 'after_cart_item_quantity_update'), 10, 4);
         
         // This critical filter ensures the correct price is used for order totals
-        add_filter('woocommerce_before_calculate_totals', array($this, 'before_calculate_totals'), 999, 1);
+        add_filter('woocommerce_before_calculate_totals', array($this, 'before_calculate_totals'), 10, 1);
     }
 
     /**
@@ -261,20 +251,6 @@ class Hierarchical_Product_Options {
         
         if (isset($values['hpo_calculated_price'])) {
             $cart_item['hpo_calculated_price'] = $values['hpo_calculated_price'];
-            
-            // Apply the stored price to the product object
-            if ($cart_item['hpo_calculated_price'] > 0 && !empty($cart_item['data'])) {
-                $calculated_price = round(floatval($cart_item['hpo_calculated_price']));
-                // Directly set the price to ensure it persists
-                $cart_item['data']->set_price($calculated_price);
-            }
-        } else {
-            // If no calculated price exists, calculate it now
-            if (!empty($cart_item['data'])) {
-                $total_price = $this->calculate_item_price($cart_item);
-                $cart_item['hpo_calculated_price'] = $total_price;
-                $cart_item['data']->set_price($total_price);
-            }
         }
         
         if (isset($values['unique_key'])) {
@@ -442,19 +418,12 @@ class Hierarchical_Product_Options {
                 continue;
             }
             
-            // Force WooCommerce to recalculate prices from original data
-            $cart_item['data']->set_prices_include_tax('yes' === get_option('woocommerce_prices_include_tax'));
-            
             // If we have a calculated price from when the item was added to cart, use that
             if (isset($cart_item['hpo_calculated_price']) && $cart_item['hpo_calculated_price'] > 0) {
                 $calculated_price = (float)$cart_item['hpo_calculated_price'];
                 // Make sure we're using the correct decimal format for toman/rial
                 $calculated_price = round($calculated_price);
                 $cart_item['data']->set_price($calculated_price);
-                // Store directly in product data to persist through page loads
-                wc_update_product_lookup_tables_data($cart_item['data']->get_id(), array(
-                    'price' => $calculated_price,
-                ));
                 continue;
             }
             
@@ -465,11 +434,6 @@ class Hierarchical_Product_Options {
             $cart_item['data']->set_price($total_price);
             // Store in cart item data for future reference
             $cart_item['hpo_calculated_price'] = $total_price;
-            
-            // Store directly in product data to persist through page loads
-            wc_update_product_lookup_tables_data($cart_item['data']->get_id(), array(
-                'price' => $total_price,
-            ));
         }
     }
 
@@ -521,43 +485,6 @@ class Hierarchical_Product_Options {
     }
 
     /**
-     * Ensure the calculated price is always used
-     */
-    public function filter_product_price($price, $product) {
-        // Only apply in cart context
-        if (!is_cart() && !is_checkout() && !wp_doing_ajax()) {
-            return $price;
-        }
-        
-        // Get cart from WooCommerce session
-        $cart = WC()->cart;
-        if (!$cart) {
-            return $price;
-        }
-        
-        // Find this product in the cart
-        foreach ($cart->get_cart() as $cart_item) {
-            // Check if this is the same product
-            if (empty($cart_item['data']) || $cart_item['data']->get_id() != $product->get_id()) {
-                continue;
-            }
-            
-            // If we have a calculated price from when the item was added to cart, use that
-            if (isset($cart_item['hpo_calculated_price']) && $cart_item['hpo_calculated_price'] > 0) {
-                return round(floatval($cart_item['hpo_calculated_price']));
-            }
-            
-            // Otherwise try to calculate it
-            $calculated_price = $this->calculate_item_price($cart_item);
-            if ($calculated_price > 0) {
-                return $calculated_price;
-            }
-        }
-        
-        return $price;
-    }
-    
-    /**
      * Calculate the price for a cart item based on selected options
      * 
      * @param array $cart_item
@@ -604,53 +531,5 @@ class Hierarchical_Product_Options {
         
         // Round the price for toman/rial (no decimal places)
         return round($total_price);
-    }
-
-    /**
-     * Update cart item data after quantity changes
-     *
-     * @param string $cart_item_key
-     * @param int $quantity
-     * @param int $old_quantity
-     * @param WC_Cart $cart
-     */
-    public function after_cart_item_quantity_update($cart_item_key, $quantity, $old_quantity, $cart) {
-        // Get cart item
-        $cart_item = $cart->get_cart_item($cart_item_key);
-        
-        if (empty($cart_item) || empty($cart_item['data'])) {
-            return;
-        }
-        
-        // Make sure we're using the calculated price
-        if (isset($cart_item['hpo_calculated_price']) && $cart_item['hpo_calculated_price'] > 0) {
-            $calculated_price = (float)$cart_item['hpo_calculated_price'];
-            $calculated_price = round($calculated_price);
-            
-            // Set the price directly on the product
-            $cart_item['data']->set_price($calculated_price);
-            
-            // Store price in the product data to persist through page loads
-            wc_update_product_lookup_tables_data($cart_item['data']->get_id(), array(
-                'price' => $calculated_price,
-            ));
-        } else {
-            // Calculate price based on options
-            $total_price = $this->calculate_item_price($cart_item);
-            
-            // Set the price directly on the product
-            $cart_item['data']->set_price($total_price);
-            
-            // Store in cart item data for future reference
-            $cart_item['hpo_calculated_price'] = $total_price;
-            
-            // Store price in the product data
-            wc_update_product_lookup_tables_data($cart_item['data']->get_id(), array(
-                'price' => $total_price,
-            ));
-        }
-        
-        // Force cart reload
-        $cart->calculate_totals();
     }
 } 
