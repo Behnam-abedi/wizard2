@@ -115,11 +115,34 @@ jQuery(document).ready(function($) {
     // Run initialization on page load
     initializeBasePrice();
     
+    // Debug: Let's inspect how prices are stored in data attributes
+    console.log("Checking all product options for price data:");
+    $('input.hpo-product-option').each(function() {
+        var rawPrice = $(this).data('price');
+        var optionName = $(this).data('name');
+        console.log("Option:", optionName, "- Raw price data:", rawPrice, "- Type:", typeof rawPrice);
+    });
+    
     // Handle all product options selection (both radio buttons and checkboxes)
     $('input.hpo-product-option').on('change', function() {
         console.log("Option changed:", this);
         var optionId = $(this).val();
-        var optionPrice = parseFloat($(this).data('price'));
+        
+        // Get the raw price data and ensure proper parsing
+        var rawPrice = $(this).data('price');
+        console.log("Raw price data:", rawPrice, "- Type:", typeof rawPrice);
+        
+        // Ensure proper parsing of price data (handle both number and string formats)
+        var optionPrice;
+        if (typeof rawPrice === 'string') {
+            // For string prices, remove any non-numeric characters except digits and decimal point
+            optionPrice = parseFloat(rawPrice.replace(/[^\d.]/g, ''));
+        } else {
+            // For numeric prices, just use the value directly
+            optionPrice = parseFloat(rawPrice);
+        }
+        
+        console.log("Parsed option price:", optionPrice);
         var optionName = $(this).data('name');
         var isChecked = $(this).prop('checked');
         
@@ -217,7 +240,7 @@ function hpo_render_category_content($category, $settings) {
                 <label>
                     <input type="radio" name="hpo_product_option" class="hpo-product-option" 
                            value="<?php echo esc_attr($product->id); ?>"
-                           data-price="<?php echo esc_attr($product->price); ?>"
+                           data-price="<?php echo esc_attr(floatval($product->price)); ?>"
                            data-name="<?php echo esc_attr($product->name); ?>">
                     <span class="hpo-option-name"><?php echo esc_html($product->name); ?></span>
                     <?php if ($settings['price_display'] === 'next_to_option'): ?>
