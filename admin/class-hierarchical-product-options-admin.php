@@ -90,6 +90,9 @@ class Hierarchical_Product_Options_Admin {
                     'product_price' => __('Product Price', 'hierarchical-product-options'),
                     'save' => __('Save', 'hierarchical-product-options'),
                     'cancel' => __('Cancel', 'hierarchical-product-options'),
+                    'confirm_delete_category' => __('Are you sure you want to delete this category? All subcategories and products will also be deleted.', 'hierarchical-product-options'),
+                    'confirm_delete_product' => __('Are you sure you want to delete this product?', 'hierarchical-product-options'),
+                    'confirm_delete_weight' => __('Are you sure you want to delete this weight option?', 'hierarchical-product-options')
                 )
             )
         );
@@ -154,6 +157,11 @@ class Hierarchical_Product_Options_Admin {
         add_action('wp_ajax_hpo_delete_product', array($this, 'ajax_delete_product'));
         add_action('wp_ajax_hpo_update_order', array($this, 'ajax_update_order'));
         add_action('wp_ajax_hpo_assign_product_categories', array($this, 'ajax_assign_product_categories'));
+        add_action('wp_ajax_hpo_add_weight', array($this, 'ajax_add_weight'));
+        add_action('wp_ajax_hpo_update_weight', array($this, 'ajax_update_weight'));
+        add_action('wp_ajax_hpo_delete_weight', array($this, 'ajax_delete_weight'));
+        add_action('wp_ajax_hpo_reorder_weights', array($this, 'ajax_reorder_weights'));
+        add_action('wp_ajax_hpo_get_weights', array($this, 'ajax_get_weights'));
     }
     
     /**
@@ -405,6 +413,144 @@ class Hierarchical_Product_Options_Admin {
         } else {
             wp_send_json_error(__('Failed to assign categories', 'hierarchical-product-options'));
         }
+    }
+
+    /**
+     * AJAX: Add weight option
+     */
+    public function ajax_add_weight() {
+        check_ajax_referer('hpo_nonce', 'nonce');
+        
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(__('Permission denied', 'hierarchical-product-options'));
+        }
+        
+        $name = isset($_POST['name']) ? sanitize_text_field($_POST['name']) : '';
+        $coefficient = isset($_POST['coefficient']) ? floatval($_POST['coefficient']) : 1;
+        $wc_product_id = isset($_POST['wc_product_id']) ? intval($_POST['wc_product_id']) : 0;
+        
+        if (empty($name) || empty($wc_product_id)) {
+            wp_send_json_error(__('Invalid data', 'hierarchical-product-options'));
+        }
+        
+        $db = new Hierarchical_Product_Options_DB();
+        $id = $db->add_weight($name, $coefficient, $wc_product_id);
+        
+        if ($id) {
+            wp_send_json_success(array(
+                'id' => $id,
+                'name' => $name,
+                'coefficient' => $coefficient,
+                'wc_product_id' => $wc_product_id
+            ));
+        } else {
+            wp_send_json_error(__('Failed to add weight option', 'hierarchical-product-options'));
+        }
+    }
+    
+    /**
+     * AJAX: Update weight option
+     */
+    public function ajax_update_weight() {
+        check_ajax_referer('hpo_nonce', 'nonce');
+        
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(__('Permission denied', 'hierarchical-product-options'));
+        }
+        
+        $id = isset($_POST['id']) ? intval($_POST['id']) : 0;
+        $name = isset($_POST['name']) ? sanitize_text_field($_POST['name']) : '';
+        $coefficient = isset($_POST['coefficient']) ? floatval($_POST['coefficient']) : 1;
+        
+        if (empty($id) || empty($name)) {
+            wp_send_json_error(__('Invalid data', 'hierarchical-product-options'));
+        }
+        
+        $db = new Hierarchical_Product_Options_DB();
+        
+        $result = $db->update_weight($id, array(
+            'name' => $name,
+            'coefficient' => $coefficient
+        ));
+        
+        if ($result !== false) {
+            wp_send_json_success();
+        } else {
+            wp_send_json_error(__('Failed to update weight option', 'hierarchical-product-options'));
+        }
+    }
+    
+    /**
+     * AJAX: Delete weight option
+     */
+    public function ajax_delete_weight() {
+        check_ajax_referer('hpo_nonce', 'nonce');
+        
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(__('Permission denied', 'hierarchical-product-options'));
+        }
+        
+        $id = isset($_POST['id']) ? intval($_POST['id']) : 0;
+        
+        if (empty($id)) {
+            wp_send_json_error(__('Invalid data', 'hierarchical-product-options'));
+        }
+        
+        $db = new Hierarchical_Product_Options_DB();
+        $result = $db->delete_weight($id);
+        
+        if ($result) {
+            wp_send_json_success();
+        } else {
+            wp_send_json_error(__('Failed to delete weight option', 'hierarchical-product-options'));
+        }
+    }
+    
+    /**
+     * AJAX: Reorder weight options
+     */
+    public function ajax_reorder_weights() {
+        check_ajax_referer('hpo_nonce', 'nonce');
+        
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(__('Permission denied', 'hierarchical-product-options'));
+        }
+        
+        $items = isset($_POST['items']) ? $_POST['items'] : array();
+        
+        if (empty($items) || !is_array($items)) {
+            wp_send_json_error(__('Invalid data', 'hierarchical-product-options'));
+        }
+        
+        $db = new Hierarchical_Product_Options_DB();
+        
+        foreach ($items as $index => $id) {
+            $db->update_weight($id, array('sort_order' => $index));
+        }
+        
+        wp_send_json_success();
+    }
+    
+    /**
+     * AJAX: Get weights for a product
+     */
+    public function ajax_get_weights() {
+        check_ajax_referer('hpo_nonce', 'nonce');
+        
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(__('Permission denied', 'hierarchical-product-options'));
+        }
+        
+        $wc_product_id = isset($_POST['wc_product_id']) ? intval($_POST['wc_product_id']) : 0;
+        
+        if (empty($wc_product_id)) {
+            wp_send_json_error(__('Invalid data', 'hierarchical-product-options'));
+        }
+        
+        $db = new Hierarchical_Product_Options_DB();
+        $weights = $db->get_weights_for_product($wc_product_id);
+        
+        wp_send_json_success($weights);
     }
 
     /**

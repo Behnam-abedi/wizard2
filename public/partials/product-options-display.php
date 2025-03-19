@@ -61,8 +61,36 @@ $settings = get_option('hpo_settings', array(
     
     <?php endif; ?>
     
+    <?php
+    // Get weight options for this product
+    $db = new Hierarchical_Product_Options_DB();
+    $weights = $db->get_weights_for_product(get_the_ID());
+    
+    if (!empty($weights)): ?>
+    <div class="hpo-weight-options">
+        <h4><?php echo esc_html__('Weight Options', 'hierarchical-product-options'); ?></h4>
+        <div class="hpo-weight-checkboxes">
+            <?php foreach ($weights as $weight): ?>
+            <div class="hpo-weight-option-wrapper">
+                <label>
+                    <input type="checkbox" name="hpo_weight_option" class="hpo-weight-option" 
+                           value="<?php echo esc_attr($weight->id); ?>"
+                           data-coefficient="<?php echo esc_attr(floatval($weight->coefficient)); ?>"
+                           data-name="<?php echo esc_attr($weight->name); ?>">
+                    <span class="hpo-option-name"><?php echo esc_html($weight->name); ?></span>
+                    <?php if ($settings['price_display'] === 'next_to_option'): ?>
+                    <span class="hpo-option-price"><?php echo esc_html('x' . $weight->coefficient); ?></span>
+                    <?php endif; ?>
+                </label>
+            </div>
+            <?php endforeach; ?>
+        </div>
+    </div>
+    <?php endif; ?>
+    
     <div class="hpo-selected-options">
         <input type="hidden" name="hpo_selected_option" id="hpo-selected-option" value="">
+        <input type="hidden" name="hpo_selected_weight" id="hpo-selected-weight" value="">
     </div>
 </div>
 
@@ -91,6 +119,7 @@ jQuery(document).ready(function($) {
     
     // Initialize selected options array to keep track of all selections
     var selectedOptions = [];
+    var selectedWeights = [];
     
     // Initialize on page load - get base product price from a hidden field we'll add
     var baseProductPrice = <?php echo floatval(get_post_meta(get_the_ID(), '_price', true)); ?>;
@@ -104,7 +133,7 @@ jQuery(document).ready(function($) {
         console.log("Option:", optionName, "- Raw price data:", rawPrice, "- Type:", typeof rawPrice);
     });
     
-    // Handle all product options selection (both radio buttons and checkboxes)
+    // Handle product options selection (both radio buttons and checkboxes)
     $('input.hpo-product-option').on('change', function() {
         console.log("Option changed:", this);
         var optionId = $(this).val();
@@ -177,7 +206,44 @@ jQuery(document).ready(function($) {
         }
     });
     
-    // Function to update product price based on all selected options
+    // Handle weight options selection
+    $('input.hpo-weight-option').on('change', function() {
+        console.log("Weight option changed:", this);
+        var weightId = $(this).val();
+        var coefficient = parseFloat($(this).data('coefficient'));
+        var weightName = $(this).data('name');
+        var isChecked = $(this).prop('checked');
+        
+        // Store selected weight for form submission
+        var selectedWeightIds = selectedWeights.map(function(weight) {
+            return weight.id;
+        });
+        $('#hpo-selected-weight').val(selectedWeightIds.join(','));
+        
+        // Handle the selected weight in our tracking array
+        if (isChecked) {
+            // Add this weight if checked
+            selectedWeights.push({
+                id: weightId,
+                coefficient: coefficient,
+                name: weightName
+            });
+        } else {
+            // Remove this weight if unchecked
+            selectedWeights = selectedWeights.filter(function(weight) {
+                return weight.id !== weightId;
+            });
+        }
+        
+        console.log("Current selected weights:", selectedWeights);
+        
+        // Update product price if enabled
+        if ($('.hpo-options-container').data('update-price') === 'yes') {
+            updateProductPrice();
+        }
+    });
+    
+    // Function to update product price based on all selected options and weights
     function updateProductPrice() {
         // Calculate total price from all selected options
         var totalOptionsPrice = 0;
@@ -189,13 +255,24 @@ jQuery(document).ready(function($) {
         }
         console.log("Total options price:", totalOptionsPrice);
         
-        // Calculate final price (base + options)
-        var newPrice = baseProductPrice + totalOptionsPrice;
-        console.log("New calculated price:", newPrice);
+        // Calculate base price + options
+        var calculatedPrice = baseProductPrice + totalOptionsPrice;
+        console.log("Price before weight coefficient:", calculatedPrice);
         
-        // Ensure we have a properly formatted number with 0 decimal places for Tomans
+        // Apply weight coefficients if any are selected
+        if (selectedWeights.length > 0) {
+            // Apply each selected weight coefficient
+            for (var j = 0; j < selectedWeights.length; j++) {
+                var coefficient = parseFloat(selectedWeights[j].coefficient);
+                if (!isNaN(coefficient) && coefficient > 0) {
+                    calculatedPrice = calculatedPrice * coefficient;
+                    console.log("After applying coefficient " + coefficient + ":", calculatedPrice);
+                }
+            }
+        }
+        
         // Format price with WooCommerce currency format
-        var formattedPrice = '<?php echo get_woocommerce_currency_symbol(); ?>' + numberWithCommas(newPrice.toFixed(0));
+        var formattedPrice = '<?php echo get_woocommerce_currency_symbol(); ?>' + numberWithCommas(calculatedPrice.toFixed(0));
         
         // Update price on the page
         $('<?php echo apply_filters('hpo_price_selector', '.price .amount'); ?>').html(formattedPrice);

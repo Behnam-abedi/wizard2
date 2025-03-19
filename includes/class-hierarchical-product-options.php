@@ -147,7 +147,8 @@ class Hierarchical_Product_Options {
      * Add option data to cart item
      */
     public function add_option_data_to_cart($cart_item_data, $product_id, $variation_id) {
-        if (isset($_POST['hpo_selected_option'])) {
+        // Add product option
+        if (isset($_POST['hpo_selected_option']) && !empty($_POST['hpo_selected_option'])) {
             $option_id = absint($_POST['hpo_selected_option']);
             
             if ($option_id > 0) {
@@ -166,12 +167,48 @@ class Hierarchical_Product_Options {
                         'base_price' => $base_price,
                         'total_price' => $base_price + floatval($product->price)
                     );
-                    
-                    // Add a unique key to ensure WooCommerce treats this as a unique cart item
-                    $cart_item_data['unique_key'] = md5(microtime() . rand());
                 }
             }
         }
+        
+        // Add weight options
+        if (isset($_POST['hpo_selected_weight']) && !empty($_POST['hpo_selected_weight'])) {
+            $weight_ids = explode(',', $_POST['hpo_selected_weight']);
+            $weight_options = array();
+            $coefficient_total = 1; // Start with 1 (neutral)
+            
+            if (!empty($weight_ids)) {
+                $db = new Hierarchical_Product_Options_DB();
+                
+                foreach ($weight_ids as $weight_id) {
+                    $weight_id = absint($weight_id);
+                    if ($weight_id > 0) {
+                        $weight = $db->get_weight($weight_id);
+                        if ($weight) {
+                            // Add to weight options
+                            $weight_options[] = array(
+                                'id' => $weight->id,
+                                'name' => $weight->name,
+                                'coefficient' => floatval($weight->coefficient)
+                            );
+                            
+                            // Multiply coefficient
+                            $coefficient_total *= floatval($weight->coefficient);
+                        }
+                    }
+                }
+                
+                if (!empty($weight_options)) {
+                    $cart_item_data['hpo_weights'] = array(
+                        'options' => $weight_options,
+                        'coefficient_total' => $coefficient_total
+                    );
+                }
+            }
+        }
+        
+        // Add a unique key to ensure WooCommerce treats this as a unique cart item
+        $cart_item_data['unique_key'] = md5(microtime() . rand());
         
         return $cart_item_data;
     }
@@ -182,11 +219,15 @@ class Hierarchical_Product_Options {
     public function get_cart_item_from_session($cart_item, $values) {
         if (isset($values['hpo_option'])) {
             $cart_item['hpo_option'] = $values['hpo_option'];
-            
-            // If we have the unique key, copy it too
-            if (isset($values['unique_key'])) {
-                $cart_item['unique_key'] = $values['unique_key'];
-            }
+        }
+        
+        if (isset($values['hpo_weights'])) {
+            $cart_item['hpo_weights'] = $values['hpo_weights'];
+        }
+        
+        // If we have the unique key, copy it too
+        if (isset($values['unique_key'])) {
+            $cart_item['unique_key'] = $values['unique_key'];
         }
         
         return $cart_item;
@@ -196,22 +237,32 @@ class Hierarchical_Product_Options {
      * Change cart item price
      */
     public function change_cart_item_price($price, $cart_item, $cart_item_key) {
-        if (isset($cart_item['hpo_option'])) {
+        if (isset($cart_item['hpo_option']) || isset($cart_item['hpo_weights'])) {
             $settings = get_option('hpo_settings', array(
                 'update_price' => 'yes'
             ));
             
             if ($settings['update_price'] === 'yes') {
-                // Use the total price (base + option) that we calculated in add_option_data_to_cart
-                if (isset($cart_item['hpo_option']['total_price'])) {
-                    $price = wc_price($cart_item['hpo_option']['total_price']);
+                $product_price = 0;
+                
+                // Calculate base price + options
+                if (isset($cart_item['hpo_option']) && isset($cart_item['hpo_option']['total_price'])) {
+                    $product_price = floatval($cart_item['hpo_option']['total_price']);
                 } else {
-                    // Fallback to calculating it here if not already calculated
-                    $base_price = isset($cart_item['hpo_option']['base_price']) ? 
-                                 floatval($cart_item['hpo_option']['base_price']) : 0;
-                    $option_price = floatval($cart_item['hpo_option']['price']);
-                    $price = wc_price($base_price + $option_price);
+                    // Fallback to base price if no option
+                    $product_id = $cart_item['product_id'];
+                    $product_price = floatval(get_post_meta($product_id, '_price', true));
                 }
+                
+                // Apply weight coefficients if any
+                if (isset($cart_item['hpo_weights']) && isset($cart_item['hpo_weights']['coefficient_total'])) {
+                    $coefficient = floatval($cart_item['hpo_weights']['coefficient_total']);
+                    if ($coefficient > 0) {
+                        $product_price = $product_price * $coefficient;
+                    }
+                }
+                
+                $price = wc_price($product_price);
             }
         }
         
@@ -224,16 +275,33 @@ class Hierarchical_Product_Options {
     public function before_calculate_totals($cart) {
         // Loop through cart items
         foreach ($cart->get_cart() as $cart_item_key => $cart_item) {
-            if (isset($cart_item['hpo_option']) && isset($cart_item['hpo_option']['total_price'])) {
-                // Get the settings
-                $settings = get_option('hpo_settings', array(
-                    'update_price' => 'yes'
-                ));
+            // Get the settings
+            $settings = get_option('hpo_settings', array(
+                'update_price' => 'yes'
+            ));
+            
+            if ($settings['update_price'] === 'yes') {
+                $product_price = 0;
                 
-                if ($settings['update_price'] === 'yes') {
-                    // Set the product price to our calculated total price
-                    $cart_item['data']->set_price($cart_item['hpo_option']['total_price']);
+                // Calculate base price + options
+                if (isset($cart_item['hpo_option']) && isset($cart_item['hpo_option']['total_price'])) {
+                    $product_price = floatval($cart_item['hpo_option']['total_price']);
+                } else {
+                    // Fallback to base price if no option
+                    $product_id = $cart_item['product_id'];
+                    $product_price = floatval(get_post_meta($product_id, '_price', true));
                 }
+                
+                // Apply weight coefficients if any
+                if (isset($cart_item['hpo_weights']) && isset($cart_item['hpo_weights']['coefficient_total'])) {
+                    $coefficient = floatval($cart_item['hpo_weights']['coefficient_total']);
+                    if ($coefficient > 0) {
+                        $product_price = $product_price * $coefficient;
+                    }
+                }
+                
+                // Set the product price
+                $cart_item['data']->set_price($product_price);
             }
         }
     }

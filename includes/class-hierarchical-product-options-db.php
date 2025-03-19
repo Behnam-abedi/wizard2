@@ -12,6 +12,7 @@ class Hierarchical_Product_Options_DB {
     private $categories_table;
     private $products_table;
     private $assignments_table;
+    private $weights_table;
 
     /**
      * Initialize the class
@@ -22,6 +23,7 @@ class Hierarchical_Product_Options_DB {
         $this->categories_table = $wpdb->prefix . 'hpo_categories';
         $this->products_table = $wpdb->prefix . 'hpo_products';
         $this->assignments_table = $wpdb->prefix . 'hpo_product_assignments';
+        $this->weights_table = $wpdb->prefix . 'hpo_weights';
     }
 
     /**
@@ -57,6 +59,17 @@ class Hierarchical_Product_Options_DB {
             id mediumint(9) NOT NULL AUTO_INCREMENT,
             wc_product_id mediumint(9) NOT NULL,
             category_id mediumint(9) NOT NULL,
+            PRIMARY KEY  (id),
+            KEY wc_product_id (wc_product_id)
+        ) $charset_collate;";
+        
+        // Weights table
+        $sql .= "CREATE TABLE $this->weights_table (
+            id mediumint(9) NOT NULL AUTO_INCREMENT,
+            name varchar(255) NOT NULL,
+            coefficient decimal(10,4) NOT NULL DEFAULT 1,
+            wc_product_id mediumint(9) NOT NULL,
+            sort_order int(11) DEFAULT 0,
             PRIMARY KEY  (id),
             KEY wc_product_id (wc_product_id)
         ) $charset_collate;";
@@ -322,6 +335,91 @@ class Hierarchical_Product_Options_DB {
         global $wpdb;
         
         $sql = $wpdb->prepare("SELECT * FROM $this->products_table WHERE id = %d", $id);
+        
+        return $wpdb->get_row($sql);
+    }
+
+    /**
+     * Get weights for a WooCommerce product
+     *
+     * @param int $wc_product_id WooCommerce product ID
+     * @return array Weight options
+     */
+    public function get_weights_for_product($wc_product_id) {
+        global $wpdb;
+        
+        $sql = $wpdb->prepare("SELECT * FROM $this->weights_table WHERE wc_product_id = %d ORDER BY sort_order", $wc_product_id);
+        
+        return $wpdb->get_results($sql);
+    }
+    
+    /**
+     * Add a new weight option
+     *
+     * @param string $name Weight name/label
+     * @param float $coefficient Price coefficient
+     * @param int $wc_product_id WooCommerce product ID
+     * @param int $sort_order Sort order
+     * @return int New weight ID
+     */
+    public function add_weight($name, $coefficient, $wc_product_id, $sort_order = 0) {
+        global $wpdb;
+        
+        $wpdb->insert(
+            $this->weights_table,
+            array(
+                'name' => $name,
+                'coefficient' => $coefficient,
+                'wc_product_id' => $wc_product_id,
+                'sort_order' => $sort_order
+            )
+        );
+        
+        return $wpdb->insert_id;
+    }
+    
+    /**
+     * Update a weight option
+     *
+     * @param int $id Weight ID
+     * @param array $data Weight data
+     * @return bool Success
+     */
+    public function update_weight($id, $data) {
+        global $wpdb;
+        
+        return $wpdb->update(
+            $this->weights_table,
+            $data,
+            array('id' => $id)
+        );
+    }
+    
+    /**
+     * Delete a weight option
+     *
+     * @param int $id Weight ID
+     * @return bool Success
+     */
+    public function delete_weight($id) {
+        global $wpdb;
+        
+        return $wpdb->delete(
+            $this->weights_table,
+            array('id' => $id)
+        );
+    }
+    
+    /**
+     * Get a specific weight option
+     *
+     * @param int $id Weight ID
+     * @return object Weight option
+     */
+    public function get_weight($id) {
+        global $wpdb;
+        
+        $sql = $wpdb->prepare("SELECT * FROM $this->weights_table WHERE id = %d", $id);
         
         return $wpdb->get_row($sql);
     }

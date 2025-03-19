@@ -424,6 +424,235 @@
             
             $.post(hpo_data.ajax_url, data);
         }
+        
+        // Tab navigation
+        $('.nav-tab').on('click', function(e) {
+            e.preventDefault();
+            
+            // Hide all tab content
+            $('.tab-content').hide();
+            
+            // Show the selected tab content
+            var target = $(this).attr('href');
+            $(target).show();
+            
+            // Update active tab
+            $('.nav-tab').removeClass('nav-tab-active');
+            $(this).addClass('nav-tab-active');
+        });
+        
+        // Weight options functionality
+        $('#hpo-weight-product').on('change', function() {
+            var productId = $(this).val();
+            
+            if (productId) {
+                // Show the weights container
+                $('#hpo-weights-container').show();
+                
+                // Load weight options for this product
+                loadWeights(productId);
+            } else {
+                // Hide the weights container
+                $('#hpo-weights-container').hide();
+            }
+        });
+        
+        // Load weights for a product
+        function loadWeights(productId) {
+            var data = {
+                action: 'hpo_get_weights',
+                nonce: hpo_data.nonce,
+                wc_product_id: productId
+            };
+            
+            $.post(hpo_data.ajax_url, data, function(response) {
+                if (response.success) {
+                    renderWeights(response.data);
+                } else {
+                    alert(response.data);
+                }
+            });
+        }
+        
+        // Render weights
+        function renderWeights(weights) {
+            var $container = $('.hpo-weight-list');
+            $container.empty();
+            
+            if (weights && weights.length > 0) {
+                $.each(weights, function(index, weight) {
+                    var template = $('#hpo-weight-template').html();
+                    template = template.replace('{id}', weight.id)
+                                     .replace('{name}', weight.name)
+                                     .replace('{coefficient}', weight.coefficient);
+                    
+                    $container.append(template);
+                });
+                
+                // Make weight items sortable
+                $container.sortable({
+                    update: function(event, ui) {
+                        updateWeightOrder();
+                    }
+                });
+            } else {
+                $container.append('<p>' + hpo_data.strings.no_weights + '</p>');
+            }
+        }
+        
+        // Add new weight option
+        $('#hpo-add-weight').on('click', function(e) {
+            e.preventDefault();
+            
+            var productId = $('#hpo-weight-product').val();
+            
+            if (!productId) {
+                alert(hpo_data.strings.select_product);
+                return;
+            }
+            
+            // Clone the template
+            var template = $('#hpo-new-weight-template').html();
+            var $form = $('<div class="hpo-modal-overlay"></div>').html(template);
+            
+            // Set the product ID
+            $form.find('[name="wc_product_id"]').val(productId);
+            
+            // Add to the page
+            $('body').append($form);
+            
+            // Handle form submission
+            $form.find('form').on('submit', function(e) {
+                e.preventDefault();
+                
+                var data = {
+                    action: 'hpo_add_weight',
+                    nonce: hpo_data.nonce,
+                    name: $(this).find('[name="name"]').val(),
+                    coefficient: $(this).find('[name="coefficient"]').val(),
+                    wc_product_id: $(this).find('[name="wc_product_id"]').val()
+                };
+                
+                $.post(hpo_data.ajax_url, data, function(response) {
+                    if (response.success) {
+                        // Reload the weights
+                        loadWeights(productId);
+                        
+                        // Close the modal
+                        $form.remove();
+                    } else {
+                        alert(response.data);
+                    }
+                });
+            });
+            
+            // Handle cancel button
+            $form.find('.hpo-cancel').on('click', function() {
+                $form.remove();
+            });
+        });
+        
+        // Edit weight option
+        $(document).on('click', '.hpo-edit-weight', function(e) {
+            e.preventDefault();
+            
+            var weightId = $(this).closest('.hpo-weight-item').data('id');
+            var weightName = $(this).closest('.hpo-weight-header').find('.hpo-weight-name').text();
+            var weightCoefficient = $(this).closest('.hpo-weight-header').find('.hpo-weight-coefficient').text().replace(/[^0-9.]/g, '');
+            var productId = $('#hpo-weight-product').val();
+            
+            // Clone the template
+            var template = $('#hpo-new-weight-template').html();
+            var $form = $('<div class="hpo-modal-overlay"></div>').html(template);
+            
+            // Set the values
+            $form.find('[name="name"]').val(weightName);
+            $form.find('[name="coefficient"]').val(weightCoefficient);
+            $form.find('[name="wc_product_id"]').val(productId);
+            $form.find('h3').text(hpo_data.strings.edit_weight);
+            $form.find('button[type="submit"]').text(hpo_data.strings.save);
+            
+            // Add to the page
+            $('body').append($form);
+            
+            // Handle form submission
+            $form.find('form').on('submit', function(e) {
+                e.preventDefault();
+                
+                var data = {
+                    action: 'hpo_update_weight',
+                    nonce: hpo_data.nonce,
+                    id: weightId,
+                    name: $(this).find('[name="name"]').val(),
+                    coefficient: $(this).find('[name="coefficient"]').val()
+                };
+                
+                $.post(hpo_data.ajax_url, data, function(response) {
+                    if (response.success) {
+                        // Reload the weights
+                        loadWeights(productId);
+                        
+                        // Close the modal
+                        $form.remove();
+                    } else {
+                        alert(response.data);
+                    }
+                });
+            });
+            
+            // Handle cancel button
+            $form.find('.hpo-cancel').on('click', function() {
+                $form.remove();
+            });
+        });
+        
+        // Delete weight option
+        $(document).on('click', '.hpo-delete-weight', function(e) {
+            e.preventDefault();
+            
+            if (!confirm(hpo_data.strings.confirm_delete_weight)) {
+                return;
+            }
+            
+            var weightId = $(this).closest('.hpo-weight-item').data('id');
+            var productId = $('#hpo-weight-product').val();
+            
+            var data = {
+                action: 'hpo_delete_weight',
+                nonce: hpo_data.nonce,
+                id: weightId
+            };
+            
+            $.post(hpo_data.ajax_url, data, function(response) {
+                if (response.success) {
+                    // Reload the weights
+                    loadWeights(productId);
+                } else {
+                    alert(response.data);
+                }
+            });
+        });
+        
+        // Update weight order
+        function updateWeightOrder() {
+            var items = [];
+            
+            $('.hpo-weight-item').each(function() {
+                items.push($(this).data('id'));
+            });
+            
+            var data = {
+                action: 'hpo_reorder_weights',
+                nonce: hpo_data.nonce,
+                items: items
+            };
+            
+            $.post(hpo_data.ajax_url, data, function(response) {
+                if (!response.success) {
+                    alert(response.data);
+                }
+            });
+        }
     });
     
 })(jQuery); 
