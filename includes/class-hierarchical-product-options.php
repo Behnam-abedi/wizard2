@@ -205,11 +205,14 @@ class Hierarchical_Product_Options {
             $cart_item_data['hpo_grinding'] = 'whole';
         }
         
-        // Generate a unique key for this cart item to prevent merging in WooCommerce
-        if (!empty($cart_item_data['hpo_categories']) || !empty($cart_item_data['hpo_products']) || 
-            !empty($cart_item_data['hpo_weight']) || !empty($cart_item_data['hpo_grinding_machine'])) {
-            $cart_item_data['unique_key'] = md5(microtime() . rand());
+        // Capture the calculated price at the moment of adding to cart
+        if (isset($_POST['hpo_calculated_price']) && !empty($_POST['hpo_calculated_price'])) {
+            $cart_item_data['hpo_calculated_price'] = floatval($_POST['hpo_calculated_price']);
         }
+        
+        // Always generate a unique key for this cart item to prevent merging in WooCommerce
+        // This ensures each addition to cart is treated as a separate item
+        $cart_item_data['unique_key'] = md5(microtime() . rand());
         
         return $cart_item_data;
     }
@@ -242,6 +245,10 @@ class Hierarchical_Product_Options {
             }
         }
         
+        if (isset($values['hpo_calculated_price'])) {
+            $cart_item['hpo_calculated_price'] = $values['hpo_calculated_price'];
+        }
+        
         if (isset($values['unique_key'])) {
             $cart_item['unique_key'] = $values['unique_key'];
         }
@@ -257,6 +264,12 @@ class Hierarchical_Product_Options {
      */
     public function change_cart_item_price($cart_item) {
         if (empty($cart_item['data'])) {
+            return $cart_item;
+        }
+        
+        // If we have a calculated price from when the item was added to cart, use that
+        if (isset($cart_item['hpo_calculated_price']) && $cart_item['hpo_calculated_price'] > 0) {
+            $cart_item['data']->set_price($cart_item['hpo_calculated_price']);
             return $cart_item;
         }
         
@@ -391,6 +404,8 @@ class Hierarchical_Product_Options {
         
         // Loop through cart items
         foreach ($cart->get_cart() as $cart_item_key => $cart_item) {
+            // Use the change_cart_item_price function to calculate the correct price
+            // This function now uses the stored calculated price if available
             $this->change_cart_item_price($cart_item);
         }
     }

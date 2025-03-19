@@ -122,6 +122,7 @@ $base_price = $product ? $product->get_price() : 0;
         <input type="hidden" name="hpo_selected_option" id="hpo-selected-option" value="">
         <input type="hidden" name="hpo_selected_weight" id="hpo-selected-weight" value="">
         <input type="hidden" name="hpo_base_price" id="hpo-base-price" value="<?php echo esc_attr($base_price); ?>">
+        <input type="hidden" name="hpo_calculated_price" id="hpo-calculated-price" value="">
     </div>
 </div>
 
@@ -326,13 +327,16 @@ jQuery(document).ready(function($) {
         }
         
         // Apply quantity
-        calculatedPrice = calculatedPrice * quantity;
+        var totalPriceWithQuantity = calculatedPrice * quantity;
         
         // Format price with WooCommerce currency format
-        var formattedPrice = '<?php echo get_woocommerce_currency_symbol(); ?>' + numberWithCommas(calculatedPrice.toFixed(0));
+        var formattedPrice = '<?php echo get_woocommerce_currency_symbol(); ?>' + numberWithCommas(totalPriceWithQuantity.toFixed(0));
         
         // Update only the main product price, not option prices
         $('.single-product div.product p.price .woocommerce-Price-amount, .single-product div.product .woocommerce-variation-price .woocommerce-Price-amount').html(formattedPrice);
+        
+        // Store the calculated single unit price (without quantity) for the cart
+        $('#hpo-calculated-price').val(calculatedPrice.toFixed(2));
         
         console.log('Price calculation:', {
             basePrice: baseProductPrice,
@@ -340,7 +344,8 @@ jQuery(document).ready(function($) {
             weightMultiplier: selectedWeight ? selectedWeight.coefficient : 1,
             grindingPrice: selectedGrindingMachine ? selectedGrindingMachine.price : 0,
             quantity: quantity,
-            finalPrice: calculatedPrice
+            finalPricePerUnit: calculatedPrice,
+            finalPriceWithQuantity: totalPriceWithQuantity
         });
     }
     
@@ -357,6 +362,34 @@ jQuery(document).ready(function($) {
             alert('<?php echo esc_js(__('Please select a grinding machine', 'hierarchical-product-options')); ?>');
             return false;
         }
+        
+        // Prepare the selected options for submission
+        // Selected options
+        var selectedOptionsArray = [];
+        selectedOptions.forEach(function(option) {
+            selectedOptionsArray.push({
+                id: option.id,
+                name: option.name,
+                price: option.price
+            });
+        });
+        
+        // Convert the array to JSON and set in a hidden field
+        var selectedOptionsJson = JSON.stringify(selectedOptionsArray);
+        var hiddenField = $('<input type="hidden" name="hpo_selected_products" />').val(selectedOptionsJson);
+        $(this).append(hiddenField);
+        
+        // Create a hidden field for categories if needed
+        var selectedCategoriesArray = [];
+        var selectedCategoriesJson = JSON.stringify(selectedCategoriesArray);
+        var categoriesField = $('<input type="hidden" name="hpo_selected_categories" />').val(selectedCategoriesJson);
+        $(this).append(categoriesField);
+        
+        // Make sure we have the calculated price
+        if (!$('#hpo-calculated-price').val()) {
+            updateProductPrice();
+        }
+        
         return true;
     });
 });
