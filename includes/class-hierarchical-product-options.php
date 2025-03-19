@@ -269,7 +269,10 @@ class Hierarchical_Product_Options {
         
         // If we have a calculated price from when the item was added to cart, use that
         if (isset($cart_item['hpo_calculated_price']) && $cart_item['hpo_calculated_price'] > 0) {
-            $cart_item['data']->set_price($cart_item['hpo_calculated_price']);
+            $calculated_price = (float)$cart_item['hpo_calculated_price'];
+            // Make sure we're using the correct decimal format for toman/rial
+            $calculated_price = round($calculated_price);
+            $cart_item['data']->set_price($calculated_price);
             return $cart_item;
         }
         
@@ -306,6 +309,9 @@ class Hierarchical_Product_Options {
             !empty($cart_item['hpo_grinding_machine']) && isset($cart_item['hpo_grinding_machine']['price'])) {
             $total_price += floatval($cart_item['hpo_grinding_machine']['price']);
         }
+        
+        // Round the price for toman/rial (no decimal places)
+        $total_price = round($total_price);
         
         // Set the new price
         $product->set_price($total_price);

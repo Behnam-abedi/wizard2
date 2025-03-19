@@ -104,7 +104,7 @@ $base_price = $product ? $product->get_price() : 0;
         
         <div class="hpo-grinding-machines" style="display:none;">
             <label for="hpo-grinding-machine"><?php echo esc_html__('Select Grinding Machine', 'hierarchical-product-options'); ?></label>
-            <select name="hpo_grinding_machine" id="hpo-grinding-machine" required>
+            <select name="hpo_grinding_machine" id="hpo-grinding-machine">
                 <option value=""><?php echo esc_html__('-- Select a grinding machine --', 'hierarchical-product-options'); ?></option>
                 <?php 
                 $db = new Hierarchical_Product_Options_DB();
@@ -326,6 +326,9 @@ jQuery(document).ready(function($) {
             }
         }
         
+        // Round the price for toman format - no decimals
+        calculatedPrice = Math.round(calculatedPrice);
+        
         // Apply quantity
         var totalPriceWithQuantity = calculatedPrice * quantity;
         
@@ -336,7 +339,8 @@ jQuery(document).ready(function($) {
         $('.single-product div.product p.price .woocommerce-Price-amount, .single-product div.product .woocommerce-variation-price .woocommerce-Price-amount').html(formattedPrice);
         
         // Store the calculated single unit price (without quantity) for the cart
-        $('#hpo-calculated-price').val(calculatedPrice.toFixed(2));
+        // Store as an integer for toman
+        $('#hpo-calculated-price').val(calculatedPrice);
         
         console.log('Price calculation:', {
             basePrice: baseProductPrice,
@@ -370,7 +374,7 @@ jQuery(document).ready(function($) {
             selectedOptionsArray.push({
                 id: option.id,
                 name: option.name,
-                price: option.price
+                price: parseFloat(option.price)
             });
         });
         
@@ -389,6 +393,13 @@ jQuery(document).ready(function($) {
         if (!$('#hpo-calculated-price').val()) {
             updateProductPrice();
         }
+        
+        // Final check on pricing to ensure it's an integer for toman
+        var finalPrice = $('#hpo-calculated-price').val();
+        finalPrice = Math.round(parseFloat(finalPrice));
+        $('#hpo-calculated-price').val(finalPrice);
+        
+        console.log('Form submitted with calculated price:', finalPrice);
         
         return true;
     });
