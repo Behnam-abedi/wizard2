@@ -9,6 +9,33 @@
         // Initialize sortable for categories
         initSortable();
         
+        // Tab navigation - make sure this is properly active
+        $('.nav-tab').on('click', function(e) {
+            e.preventDefault();
+            
+            // Hide all tab content
+            $('.tab-content').hide();
+            
+            // Show the selected tab content
+            var target = $(this).attr('href');
+            $(target).show();
+            
+            // Update active tab
+            $('.nav-tab').removeClass('nav-tab-active');
+            $(this).addClass('nav-tab-active');
+            
+            console.log('Tab clicked:', target);
+        });
+        
+        // Make sure the correct tab is shown initially
+        var hash = window.location.hash;
+        if (hash) {
+            $('.nav-tab[href="' + hash + '"]').trigger('click');
+        } else {
+            // Default tab
+            $('.nav-tab:first').trigger('click');
+        }
+        
         // Add new category
         $('.hpo-add-category').on('click', function(e) {
             e.preventDefault();
@@ -425,22 +452,6 @@
             $.post(hpo_data.ajax_url, data);
         }
         
-        // Tab navigation
-        $('.nav-tab').on('click', function(e) {
-            e.preventDefault();
-            
-            // Hide all tab content
-            $('.tab-content').hide();
-            
-            // Show the selected tab content
-            var target = $(this).attr('href');
-            $(target).show();
-            
-            // Update active tab
-            $('.nav-tab').removeClass('nav-tab-active');
-            $(this).addClass('nav-tab-active');
-        });
-        
         // Weight options functionality
         $('#hpo-weight-product').on('change', function() {
             var productId = $(this).val();
@@ -508,6 +519,7 @@
             e.preventDefault();
             
             var productId = $('#hpo-weight-product').val();
+            console.log('Selected product ID:', productId);
             
             if (!productId) {
                 // Use a default message if the string is not available
@@ -523,6 +535,7 @@
             
             // Set the product ID
             $form.find('[name="wc_product_id"]').val(productId);
+            console.log('Setting product ID in form:', productId);
             
             // Add to the page
             $('body').append($form);
@@ -530,16 +543,30 @@
             // Handle form submission
             $form.find('form').on('submit', function(e) {
                 e.preventDefault();
+                console.log('Form submitted');
+                
+                var name = $(this).find('[name="name"]').val();
+                var coefficient = $(this).find('[name="coefficient"]').val();
+                var wc_product_id = $(this).find('[name="wc_product_id"]').val();
+                
+                console.log('Form data:', {
+                    name: name,
+                    coefficient: coefficient,
+                    wc_product_id: wc_product_id
+                });
                 
                 var data = {
                     action: 'hpo_add_weight',
                     nonce: hpo_data.nonce,
-                    name: $(this).find('[name="name"]').val(),
-                    coefficient: $(this).find('[name="coefficient"]').val(),
-                    wc_product_id: $(this).find('[name="wc_product_id"]').val()
+                    name: name,
+                    coefficient: coefficient,
+                    wc_product_id: wc_product_id
                 };
                 
+                console.log('Sending AJAX request:', data);
+                
                 $.post(hpo_data.ajax_url, data, function(response) {
+                    console.log('AJAX response:', response);
                     if (response.success) {
                         // Reload the weights
                         loadWeights(productId);
@@ -547,8 +574,13 @@
                         // Close the modal
                         $form.remove();
                     } else {
-                        alert(response.data);
+                        var errorMsg = response.data || 'Error adding weight option';
+                        console.error('Error:', errorMsg);
+                        alert(errorMsg);
                     }
+                }).fail(function(xhr, status, error) {
+                    console.error('AJAX request failed:', status, error);
+                    alert('Failed to add weight option: ' + (error || 'Unknown error'));
                 });
             });
             
@@ -659,6 +691,39 @@
                 }
             });
         }
+
+        // Rebuild database tables
+        $('#hpo-rebuild-tables').on('click', function(e) {
+            e.preventDefault();
+            
+            if (!confirm('Are you sure you want to rebuild the database tables? This will not delete your data, but it will ensure all required tables exist.')) {
+                return;
+            }
+            
+            var $button = $(this);
+            var $result = $('#hpo-rebuild-result');
+            
+            $button.prop('disabled', true).text('Working...');
+            $result.show().html('<p>Rebuilding tables...</p>');
+            
+            var data = {
+                action: 'hpo_rebuild_tables',
+                nonce: hpo_data.nonce
+            };
+            
+            $.post(hpo_data.ajax_url, data, function(response) {
+                $button.prop('disabled', false).text('Rebuild Database Tables');
+                
+                if (response.success) {
+                    $result.html('<p style="color: green;">Tables rebuilt successfully!</p>');
+                } else {
+                    $result.html('<p style="color: red;">Error: ' + (response.data || 'Unknown error') + '</p>');
+                }
+            }).fail(function() {
+                $button.prop('disabled', false).text('Rebuild Database Tables');
+                $result.html('<p style="color: red;">Error: Could not complete the request.</p>');
+            });
+        });
     });
     
 })(jQuery); 

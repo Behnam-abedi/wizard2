@@ -117,7 +117,16 @@
     
     <div id="tab-settings" class="tab-content" style="display: none;">
         <!-- Existing settings tab content -->
-        <!-- ... -->
+        <div class="hpo-admin-panel">
+            <h2><?php echo esc_html__('Settings', 'hierarchical-product-options'); ?></h2>
+            
+            <div class="hpo-form-row">
+                <h3><?php echo esc_html__('Troubleshooting', 'hierarchical-product-options'); ?></h3>
+                <p><?php echo esc_html__('If you are experiencing issues with database tables, you can rebuild them here.', 'hierarchical-product-options'); ?></p>
+                <button id="hpo-rebuild-tables" class="button button-secondary"><?php echo esc_html__('Rebuild Database Tables', 'hierarchical-product-options'); ?></button>
+                <div id="hpo-rebuild-result" style="margin-top: 10px; display: none;"></div>
+            </div>
+        </div>
     </div>
 </div>
 

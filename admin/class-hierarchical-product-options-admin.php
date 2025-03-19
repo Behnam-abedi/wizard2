@@ -165,6 +165,7 @@ class Hierarchical_Product_Options_Admin {
         add_action('wp_ajax_hpo_delete_weight', array($this, 'ajax_delete_weight'));
         add_action('wp_ajax_hpo_reorder_weights', array($this, 'ajax_reorder_weights'));
         add_action('wp_ajax_hpo_get_weights', array($this, 'ajax_get_weights'));
+        add_action('wp_ajax_hpo_rebuild_tables', array($this, 'ajax_rebuild_tables'));
     }
     
     /**
@@ -554,6 +555,28 @@ class Hierarchical_Product_Options_Admin {
         $weights = $db->get_weights_for_product($wc_product_id);
         
         wp_send_json_success($weights);
+    }
+
+    /**
+     * AJAX: Rebuild database tables
+     */
+    public function ajax_rebuild_tables() {
+        check_ajax_referer('hpo_nonce', 'nonce');
+        
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(__('Permission denied', 'hierarchical-product-options'));
+        }
+        
+        $db = new Hierarchical_Product_Options_DB();
+        
+        try {
+            // Create/recreate tables
+            $db->create_tables();
+            
+            wp_send_json_success(__('Database tables rebuilt successfully', 'hierarchical-product-options'));
+        } catch (Exception $e) {
+            wp_send_json_error($e->getMessage());
+        }
     }
 
     /**
