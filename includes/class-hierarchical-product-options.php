@@ -650,75 +650,75 @@ class Hierarchical_Product_Options {
      */
     public function display_order_meta_in_admin($order) {
         echo '<div class="hpo-order-options">';
-        echo '<h3>' . __('Product Options Details', 'hierarchical-product-options') . '</h3>';
+        echo '<h3>' . __('جزئیات سفارش محصول', 'hierarchical-product-options') . '</h3>';
         
         foreach ($order->get_items() as $item_id => $item) {
             echo '<div class="hpo-order-item-options">';
             echo '<h4>' . $item->get_name() . '</h4>';
             
-            // Display categories
-            $categories = $item->get_meta('_hpo_categories');
-            if (!empty($categories)) {
-                echo '<p><strong>' . __('Selected Categories:', 'hierarchical-product-options') . '</strong></p>';
-                echo '<ul>';
-                foreach ($categories as $category) {
-                    echo '<li>' . esc_html($category['name']);
-                    if (isset($category['price']) && $category['price'] > 0) {
-                        echo ' (' . wc_price($category['price']) . ')';
-                    }
-                    echo '</li>';
-                }
-                echo '</ul>';
-            }
+            echo '<div class="hpo-option-details">';
             
-            // Display products
+            // نمایش نوع قهوه (محصولات انتخاب شده)
             $products = $item->get_meta('_hpo_products');
             if (!empty($products)) {
-                echo '<p><strong>' . __('Selected Products:', 'hierarchical-product-options') . '</strong></p>';
-                echo '<ul>';
+                echo '<div class="hpo-detail-row">';
+                echo '<span class="hpo-detail-label">' . __('نوع قهوه:', 'hierarchical-product-options') . '</span>';
+                echo '<span class="hpo-detail-value">';
+                $product_names = array();
                 foreach ($products as $product) {
-                    echo '<li>' . esc_html($product['name']);
-                    if (isset($product['price']) && $product['price'] > 0) {
-                        echo ' (' . wc_price($product['price']) . ')';
-                    }
-                    echo '</li>';
+                    $product_names[] = $product['name'] . 
+                        (isset($product['price']) && $product['price'] > 0 ? ' (' . wc_price($product['price']) . ')' : '');
                 }
-                echo '</ul>';
+                echo implode(' + ', $product_names);
+                echo '</span>';
+                echo '</div>';
             }
             
-            // Display weight
+            // نمایش وزن انتخاب شده
             $weight = $item->get_meta('_hpo_weight');
             if (!empty($weight)) {
-                echo '<p><strong>' . __('Weight Option:', 'hierarchical-product-options') . '</strong> ';
-                echo esc_html($weight['name']) . ' (×' . $weight['coefficient'] . ')</p>';
+                echo '<div class="hpo-detail-row">';
+                echo '<span class="hpo-detail-label">' . __('مقدار:', 'hierarchical-product-options') . '</span>';
+                echo '<span class="hpo-detail-value">' . esc_html($weight['name']);
+                if (isset($weight['coefficient']) && $weight['coefficient'] != 1) {
+                    echo ' (ضریب: ×' . $weight['coefficient'] . ')';
+                }
+                echo '</span>';
+                echo '</div>';
             }
             
-            // Display grinding
+            // نمایش وضعیت آسیاب
             $grinding = $item->get_meta('_hpo_grinding');
             if (!empty($grinding)) {
-                echo '<p><strong>' . __('Grinding Option:', 'hierarchical-product-options') . '</strong> ';
+                echo '<div class="hpo-detail-row">';
+                echo '<span class="hpo-detail-label">' . __('وضعیت آسیاب:', 'hierarchical-product-options') . '</span>';
+                echo '<span class="hpo-detail-value">';
                 if ($grinding['type'] === 'ground') {
-                    echo __('Ground', 'hierarchical-product-options');
+                    echo 'آسیاب شده';
                     if (!empty($grinding['machine'])) {
-                        echo ' - ' . esc_html($grinding['machine']['name']);
+                        echo ' - دستگاه: ' . esc_html($grinding['machine']['name']);
                         if ($grinding['machine']['price'] > 0) {
                             echo ' (' . wc_price($grinding['machine']['price']) . ')';
                         }
                     }
                 } else {
-                    echo __('Whole (No Grinding)', 'hierarchical-product-options');
+                    echo 'آسیاب نشده';
                 }
-                echo '</p>';
+                echo '</span>';
+                echo '</div>';
             }
             
-            // Display calculated price
+            // نمایش قیمت نهایی
             $calculated_price = $item->get_meta('_hpo_calculated_price');
             if (!empty($calculated_price)) {
-                echo '<p><strong>' . __('Final Unit Price:', 'hierarchical-product-options') . '</strong> ';
-                echo wc_price($calculated_price) . '</p>';
+                echo '<div class="hpo-detail-row total-price">';
+                echo '<span class="hpo-detail-label">' . __('قیمت نهایی هر واحد:', 'hierarchical-product-options') . '</span>';
+                echo '<span class="hpo-detail-value">' . wc_price($calculated_price) . '</span>';
+                echo '</div>';
             }
             
-            echo '</div>';
+            echo '</div>'; // .hpo-option-details
+            echo '</div>'; // .hpo-order-item-options
             echo '<hr>';
         }
         echo '</div>';
@@ -728,32 +728,65 @@ class Hierarchical_Product_Options {
         <style>
             .hpo-order-options {
                 margin: 20px 0;
-                padding: 15px;
+                padding: 20px;
                 background: #fff;
                 border: 1px solid #ddd;
-                border-radius: 4px;
+                border-radius: 8px;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.05);
             }
             .hpo-order-options h3 {
-                margin-top: 0;
-                padding-bottom: 10px;
-                border-bottom: 1px solid #eee;
+                margin: 0 0 20px;
+                padding-bottom: 15px;
+                border-bottom: 2px solid #eee;
+                color: #2271b1;
+                font-size: 16px;
             }
             .hpo-order-item-options {
                 margin: 15px 0;
+                padding: 15px;
+                background: #f8f9fa;
+                border-radius: 6px;
             }
             .hpo-order-item-options h4 {
-                color: #23282d;
-                margin: 0 0 10px;
+                color: #1d2327;
+                margin: 0 0 15px;
+                font-size: 14px;
+                font-weight: 600;
             }
-            .hpo-order-item-options ul {
-                margin: 5px 0 15px 20px;
-                list-style: disc;
+            .hpo-option-details {
+                display: flex;
+                flex-direction: column;
+                gap: 12px;
             }
-            .hpo-order-item-options p {
-                margin: 5px 0;
+            .hpo-detail-row {
+                display: flex;
+                align-items: baseline;
+                padding: 8px 0;
+                border-bottom: 1px dashed #eee;
             }
-            .hpo-order-item-options strong {
-                color: #23282d;
+            .hpo-detail-label {
+                flex: 0 0 120px;
+                font-weight: 600;
+                color: #50575e;
+            }
+            .hpo-detail-value {
+                flex: 1;
+                color: #2c3338;
+            }
+            .total-price {
+                margin-top: 15px;
+                padding-top: 10px;
+                border-top: 2px solid #eee;
+                font-size: 14px;
+            }
+            .total-price .hpo-detail-value {
+                color: #2271b1;
+                font-weight: 600;
+            }
+            hr {
+                margin: 20px 0;
+                border: 0;
+                border-top: 1px solid #eee;
             }
         </style>
         <?php
