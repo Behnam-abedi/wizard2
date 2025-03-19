@@ -74,13 +74,7 @@ class Hierarchical_Product_Options {
         
         // Mini-cart specific hooks
         add_filter('woocommerce_widget_cart_item_quantity', array($this, 'update_mini_cart_price'), 10, 3);
-        
-        // Ensure correct price display in all parts of the cart
-        add_filter('woocommerce_cart_product_price', array($this, 'update_product_price'), 10, 3);
-        add_filter('woocommerce_cart_product_subtotal', array($this, 'update_product_price'), 10, 3);
-        
-        // Override the price in JavaScript
-        add_action('wp_footer', array($this, 'add_cart_price_script'));
+        add_filter('woocommerce_mini_cart_item_price', array($this, 'update_product_price'), 10, 3);
         
         // This critical filter ensures the correct price is used for order totals
         add_filter('woocommerce_before_calculate_totals', array($this, 'before_calculate_totals'), 10, 1);
@@ -415,15 +409,64 @@ class Hierarchical_Product_Options {
         }
         
         // Avoid infinite loops
-        if (did_action('woocommerce_before_calculate_totals') >= 2) {
-            return;
-        }
+        static $run = 0;
+        if ($run > 5) return;
+        $run++;
         
         // Loop through cart items
         foreach ($cart->get_cart() as $cart_item_key => $cart_item) {
-            // Use the change_cart_item_price function to calculate the correct price
-            // This function now uses the stored calculated price if available
-            $this->change_cart_item_price($cart_item);
+            if (empty($cart_item['data'])) {
+                continue;
+            }
+            
+            // If we have a calculated price from when the item was added to cart, use that
+            if (isset($cart_item['hpo_calculated_price']) && $cart_item['hpo_calculated_price'] > 0) {
+                $calculated_price = (float)$cart_item['hpo_calculated_price'];
+                // Make sure we're using the correct decimal format for toman/rial
+                $calculated_price = round($calculated_price);
+                $cart_item['data']->set_price($calculated_price);
+                continue;
+            }
+            
+            // Get product price
+            $product = $cart_item['data'];
+            $base_price = floatval($product->get_price());
+            $total_price = $base_price;
+            
+            // Add selected category prices
+            if (!empty($cart_item['hpo_categories'])) {
+                foreach ($cart_item['hpo_categories'] as $category) {
+                    if (isset($category['price'])) {
+                        $total_price += floatval($category['price']);
+                    }
+                }
+            }
+            
+            // Add selected product prices
+            if (!empty($cart_item['hpo_products'])) {
+                foreach ($cart_item['hpo_products'] as $option_product) {
+                    if (isset($option_product['price'])) {
+                        $total_price += floatval($option_product['price']);
+                    }
+                }
+            }
+            
+            // Apply weight coefficient if selected
+            if (!empty($cart_item['hpo_weight']) && isset($cart_item['hpo_weight']['coefficient'])) {
+                $total_price *= floatval($cart_item['hpo_weight']['coefficient']);
+            }
+            
+            // Add grinding machine price if selected
+            if (isset($cart_item['hpo_grinding']) && $cart_item['hpo_grinding'] === 'ground' && 
+                !empty($cart_item['hpo_grinding_machine']) && isset($cart_item['hpo_grinding_machine']['price'])) {
+                $total_price += floatval($cart_item['hpo_grinding_machine']['price']);
+            }
+            
+            // Round the price for toman/rial (no decimal places)
+            $total_price = round($total_price);
+            
+            // Set the new price
+            $product->set_price($total_price);
         }
     }
 
@@ -461,76 +504,16 @@ class Hierarchical_Product_Options {
             return $price_html;
         }
         
-        // Extract quantity and price information from the HTML
-        preg_match('/<span class="quantity">(\d+) × .*?<\/span>/', $price_html, $matches);
-        if (!empty($matches[1])) {
-            $quantity = $matches[1];
-            
-            // Get the actual price we've already calculated and set on the product
-            $current_price = $cart_item['data']->get_price();
-            
-            // Format the price with WooCommerce's currency formatter
-            $price = wc_price($current_price);
-            
-            // Return the quantity and the calculated price in the mini-cart format
-            $new_price_html = str_replace(
-                $matches[0], 
-                '<span class="quantity">' . $quantity . ' × ' . $price . '</span>', 
-                $price_html
-            );
-            
-            return $new_price_html;
-        }
+        // Get the actual price we've already calculated and set on the product
+        $current_price = $cart_item['data']->get_price();
         
         // Get the quantity
         $quantity = $cart_item['quantity'];
-        
-        // Get the actual price we've already calculated and set on the product
-        $current_price = $cart_item['data']->get_price();
         
         // Format the price with WooCommerce's currency formatter
         $price = wc_price($current_price);
         
         // Return the quantity and the calculated price in the mini-cart format
-        return sprintf('%s × %s', $quantity, $price);
-    }
-
-    /**
-     * Add cart price script to footer
-     */
-    public function add_cart_price_script() {
-        ?>
-        <script>
-        jQuery(document).ready(function($) {
-            // Add event listener for cart item quantity change
-            $('.woocommerce-cart-item').on('change', function() {
-                // Get the cart item key
-                var cart_item_key = $(this).data('cart_item_key');
-                
-                // Get the quantity
-                var quantity = $(this).find('.quantity').data('quantity');
-                
-                // Get the price
-                var price = $(this).find('.woocommerce-Price-amount').data('price');
-                
-                // Update the price in the cart
-                $.ajax({
-                    url: '<?php echo admin_url('admin-ajax.php'); ?>',
-                    type: 'POST',
-                    data: {
-                        action: 'hpo_update_cart_item_price',
-                        cart_item_key: cart_item_key,
-                        quantity: quantity,
-                        price: price
-                    },
-                    success: function(response) {
-                        // Update the cart item price
-                        $(this).find('.woocommerce-Price-amount').text(response);
-                    }
-                });
-            });
-        });
-        </script>
-        <?php
+        return $quantity . ' × ' . $price;
     }
 } 
