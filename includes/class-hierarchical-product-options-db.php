@@ -259,7 +259,7 @@ class Hierarchical_Product_Options_DB {
      * Assign categories to a WooCommerce product
      *
      * @param int $wc_product_id WooCommerce product ID
-     * @param array $category_ids Category IDs
+     * @param int $category_id Parent category ID
      * @return bool Success
      */
     public function assign_categories_to_product($wc_product_id, $category_id) {
@@ -277,7 +277,10 @@ class Hierarchical_Product_Options_DB {
             array('category_id' => $category_id)
         );
         
-        // Add new assignment
+        // Get all child categories of the selected category
+        $children = $this->get_child_categories($category_id);
+        
+        // Add assignment for parent category
         $result = $wpdb->insert(
             $this->assignments_table,
             array(
@@ -286,7 +289,49 @@ class Hierarchical_Product_Options_DB {
             )
         );
         
+        // Add assignments for all child categories
+        foreach ($children as $child) {
+            $wpdb->insert(
+                $this->assignments_table,
+                array(
+                    'wc_product_id' => $wc_product_id,
+                    'category_id' => $child->id
+                )
+            );
+        }
+        
         return $result !== false;
+    }
+    
+    /**
+     * Get all child categories recursively for a parent category
+     *
+     * @param int $parent_id Parent category ID
+     * @return array Child categories
+     */
+    public function get_child_categories($parent_id) {
+        global $wpdb;
+        
+        $children = array();
+        
+        // Get direct children
+        $sql = $wpdb->prepare(
+            "SELECT * FROM $this->categories_table WHERE parent_id = %d",
+            $parent_id
+        );
+        
+        $direct_children = $wpdb->get_results($sql);
+        
+        foreach ($direct_children as $child) {
+            $children[] = $child;
+            // Get grandchildren recursively
+            $grandchildren = $this->get_child_categories($child->id);
+            if (!empty($grandchildren)) {
+                $children = array_merge($children, $grandchildren);
+            }
+        }
+        
+        return $children;
     }
     
     /**
@@ -297,11 +342,22 @@ class Hierarchical_Product_Options_DB {
     public function get_category_product_assignments() {
         global $wpdb;
         
-        $sql = "SELECT a.*, c.name as category_name 
+        $sql = "SELECT a.*, c.name as category_name, c.parent_id 
                 FROM $this->assignments_table a
-                JOIN $this->categories_table c ON a.category_id = c.id";
+                JOIN $this->categories_table c ON a.category_id = c.id
+                ORDER BY c.parent_id, c.name";
                 
         $assignments = $wpdb->get_results($sql);
+        
+        // Add parent category names if available
+        foreach ($assignments as $assignment) {
+            if ($assignment->parent_id > 0) {
+                $parent = $this->get_category($assignment->parent_id);
+                if ($parent) {
+                    $assignment->parent_name = $parent->name;
+                }
+            }
+        }
         
         return $assignments;
     }

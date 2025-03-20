@@ -204,4 +204,20 @@
 
 .hpo-checkbox-item:last-child {
     margin-bottom: 0;
+}
+
+/* Child category assignments styling */
+.hpo-child-category {
+    background-color: #f9f9f9;
+    font-style: italic;
+}
+
+.hpo-child-category td {
+    color: #666;
+}
+
+.hpo-child-category em {
+    color: #888;
+    font-size: 90%;
+    margin-left: 5px;
 } 

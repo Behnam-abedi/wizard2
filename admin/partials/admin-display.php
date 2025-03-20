@@ -40,6 +40,7 @@
                 <h2><?php echo esc_html__('Product Assignment', 'hierarchical-product-options'); ?></h2>
                 
                 <p><?php echo esc_html__('Assign one WooCommerce product to a category.', 'hierarchical-product-options'); ?></p>
+                <p><strong><?php echo esc_html__('Note:', 'hierarchical-product-options'); ?></strong> <?php echo esc_html__('When you select a parent category, all its child categories will be automatically assigned to the product.', 'hierarchical-product-options'); ?></p>
                 
                 <form id="hpo-assign-form">
                     <div class="hpo-form-row">
@@ -92,14 +93,23 @@
                             <?php 
                             else: 
                                 foreach ($assignments as $assignment):
-                                    $wc_product = wc_get_product($assignment->product_id);
+                                    $wc_product = wc_get_product($assignment->wc_product_id);
                                     if (!$wc_product) continue;
+                                    $is_child = isset($assignment->parent_id) && $assignment->parent_id > 0;
                             ?>
-                            <tr>
-                                <td><?php echo esc_html($assignment->category_name); ?></td>
+                            <tr class="<?php echo $is_child ? 'hpo-child-category' : ''; ?>">
+                                <td><?php 
+                                    if (isset($assignment->parent_name)) {
+                                        echo esc_html($assignment->parent_name) . ' &raquo; ';
+                                    }
+                                    echo esc_html($assignment->category_name); 
+                                    if ($is_child) {
+                                        echo ' <em>(' . esc_html__('Auto-assigned', 'hierarchical-product-options') . ')</em>';
+                                    }
+                                ?></td>
                                 <td><?php echo esc_html($wc_product->get_name()); ?></td>
                                 <td>
-                                    <button class="button button-small hpo-delete-assignment" data-category-id="<?php echo esc_attr($assignment->category_id); ?>" data-product-id="<?php echo esc_attr($assignment->product_id); ?>">
+                                    <button class="button button-small hpo-delete-assignment" data-category-id="<?php echo esc_attr($assignment->category_id); ?>" data-product-id="<?php echo esc_attr($assignment->wc_product_id); ?>">
                                         <span class="dashicons dashicons-trash"></span>
                                     </button>
                                 </td>
