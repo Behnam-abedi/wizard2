@@ -16,8 +16,13 @@ class Hierarchical_Product_Options {
         $this->define_admin_hooks();
         $this->define_public_hooks();
         
-        // Display options on the order-received page
+        // Display options on the order-received page - multiple hooks for reliability
         add_action('woocommerce_order_item_meta_end', array($this, 'display_order_item_options'), 10, 4);
+        add_action('woocommerce_order_details_after_order_table_items', array($this, 'display_order_options_after_table'), 10, 1);
+        add_action('woocommerce_order_details_after_order_table', array($this, 'display_order_summary_after_table'), 10, 1);
+        
+        // Make sure our CSS is loaded on all WooCommerce pages, especially the thank you page
+        add_action('wp_enqueue_scripts', array($this, 'enqueue_thank_you_page_styles'));
     }
 
     /**
@@ -858,14 +863,30 @@ class Hierarchical_Product_Options {
      * @param bool $plain_text Whether to use plain text
      */
     public function display_order_item_options($item_id, $item, $order, $plain_text = false) {
+        // Debug output to see if function is called
+        echo '<!-- HPO Debug: Function called on item ID ' . $item_id . ' -->';
+        
         // Only on frontend, not emails
         if (is_admin() || $plain_text) {
+            echo '<!-- HPO Debug: Is admin or plain text, exiting -->';
             return;
         }
 
         // Check if this is the order-received page or my-account/view-order page
         if (!is_checkout() && !is_account_page()) {
-            return;
+            echo '<!-- HPO Debug: Not checkout or account page, exiting. is_checkout(): ' . (is_checkout() ? 'true' : 'false') . ', is_account_page(): ' . (is_account_page() ? 'true' : 'false') . ' -->';
+            
+            // Let's try to detect the order-received page more directly
+            global $wp;
+            $is_order_received = isset($wp->query_vars['order-received']) || 
+                                (isset($_GET['key']) && isset($_GET['order'])) || 
+                                is_wc_endpoint_url('order-received');
+                                
+            if ($is_order_received) {
+                echo '<!-- HPO Debug: Order received page detected via alternative method -->';
+            } else {
+                return;
+            }
         }
 
         $categories_data = $item->get_meta('_hpo_categories');
@@ -874,7 +895,14 @@ class Hierarchical_Product_Options {
         $grinder_data = $item->get_meta('_hpo_grinder');
         $customer_notes = $item->get_meta('_hpo_customer_notes');
 
+        echo '<!-- HPO Debug: Categories: ' . (empty($categories_data) ? 'Empty' : 'Found') . ' -->';
+        echo '<!-- HPO Debug: Products: ' . (empty($products_data) ? 'Empty' : 'Found') . ' -->';
+        echo '<!-- HPO Debug: Weight: ' . (empty($weight_data) ? 'Empty' : 'Found') . ' -->';
+        echo '<!-- HPO Debug: Grinder: ' . (empty($grinder_data) ? 'Empty' : 'Found') . ' -->';
+        echo '<!-- HPO Debug: Notes: ' . (empty($customer_notes) ? 'Empty' : 'Found') . ' -->';
+
         if (empty($categories_data) && empty($products_data) && empty($weight_data) && empty($grinder_data) && empty($customer_notes)) {
+            echo '<!-- HPO Debug: All data empty, exiting -->';
             return;
         }
 
@@ -965,5 +993,314 @@ class Hierarchical_Product_Options {
         }
         
         echo '</div>';
+    }
+
+    /**
+     * Display order options after the order details table
+     *
+     * @param WC_Order $order
+     */
+    public function display_order_options_after_table($order) {
+        echo '<div class="hpo-debug-info" style="background:#f0f0f0; padding:10px; margin:10px 0; border-radius:5px; font-size:12px;">
+            <p><strong>HPO Debug:</strong> Alternative display method called on order #' . $order->get_id() . '</p>
+        </div>';
+        
+        // Display options for each item
+        foreach ($order->get_items() as $item_id => $item) {
+            $categories_data = $item->get_meta('_hpo_categories');
+            $products_data = $item->get_meta('_hpo_products');
+            $weight_data = $item->get_meta('_hpo_weight');
+            $grinder_data = $item->get_meta('_hpo_grinder');
+            $customer_notes = $item->get_meta('_hpo_customer_notes');
+            
+            // Skip if no option data
+            if (empty($categories_data) && empty($products_data) && empty($weight_data) && empty($grinder_data) && empty($customer_notes)) {
+                continue;
+            }
+            
+            echo '<div class="hpo-item-options-wrapper" style="margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 4px;">';
+            echo '<h3 style="margin-top:0;">' . esc_html($item->get_name()) . ' - ' . esc_html__('Selected Options', 'hierarchical-product-options') . '</h3>';
+            
+            echo '<div class="hpo-order-item-options">';
+            
+            // Display product options (categories)
+            if (!empty($categories_data)) {
+                echo '<h4>' . esc_html__('Product Options', 'hierarchical-product-options') . '</h4>';
+                echo '<ul class="hpo-order-options-list">';
+                
+                foreach ($categories_data as $category) {
+                    echo '<li>';
+                    echo '<span class="hpo-option-name">' . esc_html($category['name']) . '</span>';
+                    
+                    if (!empty($category['price']) && $category['price'] > 0) {
+                        echo ' <span class="hpo-option-price">(+' . wc_price($category['price']) . ')</span>';
+                    }
+                    
+                    echo '</li>';
+                }
+                
+                echo '</ul>';
+            }
+            
+            // Display product options selected
+            if (!empty($products_data)) {
+                echo '<h4>' . esc_html__('Selected Products', 'hierarchical-product-options') . '</h4>';
+                echo '<ul class="hpo-order-options-list">';
+                
+                foreach ($products_data as $product) {
+                    echo '<li>';
+                    echo '<span class="hpo-option-name">' . esc_html($product['name']) . '</span>';
+                    
+                    if (!empty($product['price']) && $product['price'] > 0) {
+                        echo ' <span class="hpo-option-price">(+' . wc_price($product['price']) . ')</span>';
+                    }
+                    
+                    echo '</li>';
+                }
+                
+                echo '</ul>';
+            }
+            
+            // Display weight option
+            if (!empty($weight_data)) {
+                echo '<h4>' . esc_html__('Weight Option', 'hierarchical-product-options') . '</h4>';
+                echo '<ul class="hpo-order-options-list">';
+                echo '<li><span class="hpo-option-name">' . esc_html($weight_data['name']) . '</span>';
+                
+                if (isset($weight_data['coefficient']) && $weight_data['coefficient'] != 1) {
+                    echo ' <span class="hpo-option-coefficient">(' . esc_html__('Coefficient:', 'hierarchical-product-options') . ' ' . esc_html($weight_data['coefficient']) . ')</span>';
+                }
+                
+                echo '</li>';
+                echo '</ul>';
+            }
+            
+            // Display grinder option
+            if (!empty($grinder_data)) {
+                echo '<h4>' . esc_html__('Grinding Option', 'hierarchical-product-options') . '</h4>';
+                echo '<ul class="hpo-order-options-list">';
+                
+                if ($grinder_data['type'] === 'ground') {
+                    echo '<li><span class="hpo-option-name">' . esc_html__('Ground Coffee', 'hierarchical-product-options') . '</span>';
+                    
+                    if (!empty($grinder_data['machine'])) {
+                        echo '<li><span class="hpo-option-name">' . esc_html__('Grinding Machine:', 'hierarchical-product-options') . ' ' . esc_html($grinder_data['machine']['name']) . '</span>';
+                        
+                        if (!empty($grinder_data['machine']['price']) && $grinder_data['machine']['price'] > 0) {
+                            echo ' <span class="hpo-option-price">(+' . wc_price($grinder_data['machine']['price']) . ')</span>';
+                        }
+                        
+                        echo '</li>';
+                    }
+                } else {
+                    echo '<li><span class="hpo-option-name">' . esc_html__('Whole Bean (Not Ground)', 'hierarchical-product-options') . '</span></li>';
+                }
+                
+                echo '</ul>';
+            }
+            
+            // Display customer notes
+            if (!empty($customer_notes)) {
+                echo '<h4>' . esc_html__('Customer Notes', 'hierarchical-product-options') . '</h4>';
+                echo '<div class="hpo-customer-notes">';
+                echo '<p>' . esc_html($customer_notes) . '</p>';
+                echo '</div>';
+            }
+            
+            echo '</div>';
+            echo '</div>';
+        }
+    }
+
+    /**
+     * Display order options summary after the full order details table
+     *
+     * @param WC_Order $order
+     */
+    public function display_order_summary_after_table($order) {
+        // Add a debug section to output raw meta data
+        echo '<div class="hpo-debug-section" style="margin-top: 20px; margin-bottom: 20px; padding: 10px; background-color: #f5f5f5; border: 1px solid #ddd; border-radius: 4px;">';
+        echo '<h3>HPO Debug: Meta Data</h3>';
+        
+        foreach ($order->get_items() as $item_id => $item) {
+            echo '<div style="margin-bottom: 10px; padding: 10px; border: 1px solid #eee;">';
+            echo '<h4>Item: ' . esc_html($item->get_name()) . ' (ID: ' . $item_id . ')</h4>';
+            
+            // Get all meta data
+            $meta_data = $item->get_meta_data();
+            if (!empty($meta_data)) {
+                echo '<ul>';
+                foreach ($meta_data as $meta) {
+                    $key = $meta->key;
+                    $value = $meta->value;
+                    if (is_array($value) || is_object($value)) {
+                        $value = '<pre>' . print_r($value, true) . '</pre>';
+                    }
+                    echo '<li><strong>' . esc_html($key) . '</strong>: ' . wp_kses_post($value) . '</li>';
+                }
+                echo '</ul>';
+            } else {
+                echo '<p>No meta data found.</p>';
+            }
+            
+            echo '</div>';
+        }
+        
+        echo '</div>';
+        
+        // Regular display section
+        echo '<div class="hpo-order-summary-section" style="margin-top: 30px;">';
+        echo '<h2>' . esc_html__('Order Options Summary', 'hierarchical-product-options') . '</h2>';
+        
+        $has_options = false;
+        
+        foreach ($order->get_items() as $item_id => $item) {
+            $categories_data = $item->get_meta('_hpo_categories');
+            $products_data = $item->get_meta('_hpo_products');
+            $weight_data = $item->get_meta('_hpo_weight');
+            $grinder_data = $item->get_meta('_hpo_grinder');
+            $customer_notes = $item->get_meta('_hpo_customer_notes');
+            
+            if (empty($categories_data) && empty($products_data) && empty($weight_data) && empty($grinder_data) && empty($customer_notes)) {
+                continue;
+            }
+            
+            $has_options = true;
+            
+            echo '<div class="hpo-summary-item" style="margin-bottom: 25px; padding: 15px; background: #f9f9f9; border-radius: 5px; border: 1px solid #eee;">';
+            echo '<h3>' . esc_html($item->get_name()) . '</h3>';
+            
+            echo '<table class="hpo-options-table" style="width: 100%; border-collapse: collapse;">';
+            echo '<tr>';
+            echo '<th style="text-align: left; padding: 8px; border-bottom: 1px solid #eee;">' . esc_html__('Option Type', 'hierarchical-product-options') . '</th>';
+            echo '<th style="text-align: left; padding: 8px; border-bottom: 1px solid #eee;">' . esc_html__('Selection', 'hierarchical-product-options') . '</th>';
+            echo '</tr>';
+            
+            // Categories
+            if (!empty($categories_data)) {
+                echo '<tr>';
+                echo '<td style="padding: 8px; border-bottom: 1px solid #eee;"><strong>' . esc_html__('Product Options', 'hierarchical-product-options') . '</strong></td>';
+                echo '<td style="padding: 8px; border-bottom: 1px solid #eee;">';
+                
+                $category_labels = array();
+                foreach ($categories_data as $category) {
+                    $label = esc_html($category['name']);
+                    if (!empty($category['price']) && $category['price'] > 0) {
+                        $label .= ' <span style="color:#777; font-size:90%;">(+' . wc_price($category['price']) . ')</span>';
+                    }
+                    $category_labels[] = $label;
+                }
+                echo implode(', ', $category_labels);
+                
+                echo '</td>';
+                echo '</tr>';
+            }
+            
+            // Products
+            if (!empty($products_data)) {
+                echo '<tr>';
+                echo '<td style="padding: 8px; border-bottom: 1px solid #eee;"><strong>' . esc_html__('Selected Products', 'hierarchical-product-options') . '</strong></td>';
+                echo '<td style="padding: 8px; border-bottom: 1px solid #eee;">';
+                
+                $product_labels = array();
+                foreach ($products_data as $product) {
+                    $label = esc_html($product['name']);
+                    if (!empty($product['price']) && $product['price'] > 0) {
+                        $label .= ' <span style="color:#777; font-size:90%;">(+' . wc_price($product['price']) . ')</span>';
+                    }
+                    $product_labels[] = $label;
+                }
+                echo implode(', ', $product_labels);
+                
+                echo '</td>';
+                echo '</tr>';
+            }
+            
+            // Weight
+            if (!empty($weight_data)) {
+                echo '<tr>';
+                echo '<td style="padding: 8px; border-bottom: 1px solid #eee;"><strong>' . esc_html__('Weight Option', 'hierarchical-product-options') . '</strong></td>';
+                echo '<td style="padding: 8px; border-bottom: 1px solid #eee;">';
+                
+                echo esc_html($weight_data['name']);
+                if (isset($weight_data['coefficient']) && $weight_data['coefficient'] != 1) {
+                    echo ' <span style="color:#777; font-size:90%;">(' . esc_html__('Coefficient:', 'hierarchical-product-options') . ' ' . esc_html($weight_data['coefficient']) . ')</span>';
+                }
+                
+                echo '</td>';
+                echo '</tr>';
+            }
+            
+            // Grinding
+            if (!empty($grinder_data)) {
+                echo '<tr>';
+                echo '<td style="padding: 8px; border-bottom: 1px solid #eee;"><strong>' . esc_html__('Grinding Option', 'hierarchical-product-options') . '</strong></td>';
+                echo '<td style="padding: 8px; border-bottom: 1px solid #eee;">';
+                
+                if ($grinder_data['type'] === 'ground') {
+                    echo esc_html__('Ground Coffee', 'hierarchical-product-options');
+                    
+                    if (!empty($grinder_data['machine'])) {
+                        echo ' - ' . esc_html__('Machine:', 'hierarchical-product-options') . ' ' . esc_html($grinder_data['machine']['name']);
+                        if (!empty($grinder_data['machine']['price']) && $grinder_data['machine']['price'] > 0) {
+                            echo ' <span style="color:#777; font-size:90%;">(+' . wc_price($grinder_data['machine']['price']) . ')</span>';
+                        }
+                    }
+                } else {
+                    echo esc_html__('Whole Bean (Not Ground)', 'hierarchical-product-options');
+                }
+                
+                echo '</td>';
+                echo '</tr>';
+            }
+            
+            // Notes
+            if (!empty($customer_notes)) {
+                echo '<tr>';
+                echo '<td style="padding: 8px;"><strong>' . esc_html__('Customer Notes', 'hierarchical-product-options') . '</strong></td>';
+                echo '<td style="padding: 8px;">';
+                echo '<div style="background-color: rgba(255, 255, 255, 0.7); padding: 10px; border-radius: 3px; border-left: 3px solid #7fb85c; font-style: italic; color: #555;">';
+                echo esc_html($customer_notes);
+                echo '</div>';
+                echo '</td>';
+                echo '</tr>';
+            }
+            
+            echo '</table>';
+            echo '</div>';
+        }
+        
+        if (!$has_options) {
+            echo '<p>' . esc_html__('No custom options were selected for this order.', 'hierarchical-product-options') . '</p>';
+        }
+        
+        echo '</div>';
+    }
+
+    /**
+     * Enqueue CSS styles for the thank you page
+     */
+    public function enqueue_thank_you_page_styles() {
+        // Load on all WooCommerce pages, including the Thank You page
+        if (is_woocommerce() || is_checkout() || is_account_page() || is_wc_endpoint_url()) {
+            wp_enqueue_style(
+                'hierarchical-product-options-public',
+                HPO_PLUGIN_URL . 'public/css/public.css',
+                array(),
+                HPO_VERSION
+            );
+            
+            // Add some inline CSS to ensure our styles are applied
+            $additional_css = '
+                .hpo-order-item-options {
+                    display: block !important;
+                    visibility: visible !important;
+                }
+                .woocommerce-order-details {
+                    position: relative;
+                }
+            ';
+            wp_add_inline_style('hierarchical-product-options-public', $additional_css);
+        }
     }
 } 
