@@ -16,10 +16,8 @@ class Hierarchical_Product_Options {
         $this->define_admin_hooks();
         $this->define_public_hooks();
         
-        // Display options on the order-received page - multiple hooks for reliability
+        // Display options on the order-received page - use only one hook for reliability
         add_action('woocommerce_order_item_meta_end', array($this, 'display_order_item_options'), 10, 4);
-        add_action('woocommerce_order_details_after_order_table_items', array($this, 'display_order_options_after_table'), 10, 1);
-        add_action('woocommerce_order_details_after_order_table', array($this, 'display_order_summary_after_table'), 10, 1);
         
         // Make sure our CSS is loaded on all WooCommerce pages, especially the thank you page
         add_action('wp_enqueue_scripts', array($this, 'enqueue_thank_you_page_styles'));
@@ -863,28 +861,19 @@ class Hierarchical_Product_Options {
      * @param bool $plain_text Whether to use plain text
      */
     public function display_order_item_options($item_id, $item, $order, $plain_text = false) {
-        // Debug output to see if function is called
-        echo '<!-- HPO Debug: Function called on item ID ' . $item_id . ' -->';
-        
         // Only on frontend, not emails
         if (is_admin() || $plain_text) {
-            echo '<!-- HPO Debug: Is admin or plain text, exiting -->';
             return;
         }
 
         // Check if this is the order-received page or my-account/view-order page
         if (!is_checkout() && !is_account_page()) {
-            echo '<!-- HPO Debug: Not checkout or account page, exiting. is_checkout(): ' . (is_checkout() ? 'true' : 'false') . ', is_account_page(): ' . (is_account_page() ? 'true' : 'false') . ' -->';
-            
-            // Let's try to detect the order-received page more directly
             global $wp;
             $is_order_received = isset($wp->query_vars['order-received']) || 
                                 (isset($_GET['key']) && isset($_GET['order'])) || 
                                 is_wc_endpoint_url('order-received');
                                 
-            if ($is_order_received) {
-                echo '<!-- HPO Debug: Order received page detected via alternative method -->';
-            } else {
+            if (!$is_order_received) {
                 return;
             }
         }
@@ -895,14 +884,7 @@ class Hierarchical_Product_Options {
         $grinder_data = $item->get_meta('_hpo_grinder');
         $customer_notes = $item->get_meta('_hpo_customer_notes');
 
-        echo '<!-- HPO Debug: Categories: ' . (empty($categories_data) ? 'Empty' : 'Found') . ' -->';
-        echo '<!-- HPO Debug: Products: ' . (empty($products_data) ? 'Empty' : 'Found') . ' -->';
-        echo '<!-- HPO Debug: Weight: ' . (empty($weight_data) ? 'Empty' : 'Found') . ' -->';
-        echo '<!-- HPO Debug: Grinder: ' . (empty($grinder_data) ? 'Empty' : 'Found') . ' -->';
-        echo '<!-- HPO Debug: Notes: ' . (empty($customer_notes) ? 'Empty' : 'Found') . ' -->';
-
         if (empty($categories_data) && empty($products_data) && empty($weight_data) && empty($grinder_data) && empty($customer_notes)) {
-            echo '<!-- HPO Debug: All data empty, exiting -->';
             return;
         }
 
@@ -1001,10 +983,6 @@ class Hierarchical_Product_Options {
      * @param WC_Order $order
      */
     public function display_order_options_after_table($order) {
-        echo '<div class="hpo-debug-info" style="background:#f0f0f0; padding:10px; margin:10px 0; border-radius:5px; font-size:12px;">
-            <p><strong>HPO Debug:</strong> Alternative display method called on order #' . $order->get_id() . '</p>
-        </div>';
-        
         // Display options for each item
         foreach ($order->get_items() as $item_id => $item) {
             $categories_data = $item->get_meta('_hpo_categories');
@@ -1118,36 +1096,6 @@ class Hierarchical_Product_Options {
      * @param WC_Order $order
      */
     public function display_order_summary_after_table($order) {
-        // Add a debug section to output raw meta data
-        echo '<div class="hpo-debug-section" style="margin-top: 20px; margin-bottom: 20px; padding: 10px; background-color: #f5f5f5; border: 1px solid #ddd; border-radius: 4px;">';
-        echo '<h3>HPO Debug: Meta Data</h3>';
-        
-        foreach ($order->get_items() as $item_id => $item) {
-            echo '<div style="margin-bottom: 10px; padding: 10px; border: 1px solid #eee;">';
-            echo '<h4>Item: ' . esc_html($item->get_name()) . ' (ID: ' . $item_id . ')</h4>';
-            
-            // Get all meta data
-            $meta_data = $item->get_meta_data();
-            if (!empty($meta_data)) {
-                echo '<ul>';
-                foreach ($meta_data as $meta) {
-                    $key = $meta->key;
-                    $value = $meta->value;
-                    if (is_array($value) || is_object($value)) {
-                        $value = '<pre>' . print_r($value, true) . '</pre>';
-                    }
-                    echo '<li><strong>' . esc_html($key) . '</strong>: ' . wp_kses_post($value) . '</li>';
-                }
-                echo '</ul>';
-            } else {
-                echo '<p>No meta data found.</p>';
-            }
-            
-            echo '</div>';
-        }
-        
-        echo '</div>';
-        
         // Regular display section
         echo '<div class="hpo-order-summary-section" style="margin-top: 30px;">';
         echo '<h2>' . esc_html__('Order Options Summary', 'hierarchical-product-options') . '</h2>';

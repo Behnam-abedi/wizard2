@@ -28,13 +28,4 @@ function run_hierarchical_product_options() {
     $plugin = new Hierarchical_Product_Options();
     $plugin->run();
 }
-run_hierarchical_product_options();
-
-// Debug code to verify the hook is registered
-add_action('wp_footer', function() {
-    if (is_checkout() || is_wc_endpoint_url('order-received') || is_account_page()) {
-        echo '<!-- HPO Debug: wp_footer triggered on checkout/order page -->';
-        echo '<!-- HPO Debug: Hook woocommerce_order_item_meta_end has ' . 
-             (has_action('woocommerce_order_item_meta_end') ? 'actions' : 'no actions') . ' -->';
-    }
-}); 
+run_hierarchical_product_options(); 
