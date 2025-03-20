@@ -349,19 +349,15 @@
             });
         });
         
-        // Handle product assignment form
+        // Save category-product assignments
         $('#hpo-assign-form').on('submit', function(e) {
             e.preventDefault();
             
             var wc_product_id = $(this).find('[name="wc_product_id"]').val();
-            var category_ids = [];
+            var category_id = $(this).find('[name="category_id"]').val();
             
-            $(this).find('[name="category_ids[]"]:checked').each(function() {
-                category_ids.push($(this).val());
-            });
-            
-            if (!wc_product_id) {
-                alert('Please select a product');
+            if (!wc_product_id || !category_id) {
+                alert(hpo_data.strings.select_required);
                 return;
             }
             
@@ -369,12 +365,39 @@
                 action: 'hpo_assign_product_categories',
                 nonce: hpo_data.nonce,
                 wc_product_id: wc_product_id,
-                category_ids: category_ids
+                category_id: category_id
             };
             
             $.post(hpo_data.ajax_url, data, function(response) {
                 if (response.success) {
-                    alert('Categories assigned successfully!');
+                    location.reload();
+                } else {
+                    alert(response.data);
+                }
+            });
+        });
+        
+        // Delete assignment
+        $(document).on('click', '.hpo-delete-assignment', function(e) {
+            e.preventDefault();
+            
+            if (!confirm(hpo_data.strings.confirm_delete_assignment)) {
+                return;
+            }
+            
+            var categoryId = $(this).data('category-id');
+            var productId = $(this).data('product-id');
+            
+            var data = {
+                action: 'hpo_delete_assignment',
+                nonce: hpo_data.nonce,
+                category_id: categoryId,
+                wc_product_id: productId
+            };
+            
+            $.post(hpo_data.ajax_url, data, function(response) {
+                if (response.success) {
+                    location.reload();
                 } else {
                     alert(response.data);
                 }

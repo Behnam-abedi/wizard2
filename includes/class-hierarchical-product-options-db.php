@@ -262,27 +262,48 @@ class Hierarchical_Product_Options_DB {
      * @param array $category_ids Category IDs
      * @return bool Success
      */
-    public function assign_categories_to_product($wc_product_id, $category_ids) {
+    public function assign_categories_to_product($wc_product_id, $category_id) {
         global $wpdb;
         
-        // First delete existing assignments
+        // First delete existing assignments for this product
         $wpdb->delete(
             $this->assignments_table,
             array('wc_product_id' => $wc_product_id)
         );
         
-        // Add new assignments
-        foreach ($category_ids as $category_id) {
-            $wpdb->insert(
-                $this->assignments_table,
-                array(
-                    'wc_product_id' => $wc_product_id,
-                    'category_id' => $category_id
-                )
-            );
-        }
+        // Also delete any existing assignment for this category
+        $wpdb->delete(
+            $this->assignments_table,
+            array('category_id' => $category_id)
+        );
         
-        return true;
+        // Add new assignment
+        $result = $wpdb->insert(
+            $this->assignments_table,
+            array(
+                'wc_product_id' => $wc_product_id,
+                'category_id' => $category_id
+            )
+        );
+        
+        return $result !== false;
+    }
+    
+    /**
+     * Get all category-product assignments with category and product names
+     * 
+     * @return array List of assignments with category and product info
+     */
+    public function get_category_product_assignments() {
+        global $wpdb;
+        
+        $sql = "SELECT a.*, c.name as category_name 
+                FROM $this->assignments_table a
+                JOIN $this->categories_table c ON a.category_id = c.id";
+                
+        $assignments = $wpdb->get_results($sql);
+        
+        return $assignments;
     }
     
     /**

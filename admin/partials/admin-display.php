@@ -19,11 +19,10 @@
     <div id="tab-categories" class="tab-content">
         <div class="hpo-admin-container">
             <div class="hpo-admin-panel">
-                <h2><?php echo esc_html__('Categories and Products', 'hierarchical-product-options'); ?></h2>
+                <h2><?php echo esc_html__('Categories', 'hierarchical-product-options'); ?></h2>
                 
                 <div class="hpo-actions">
                     <button class="button button-primary hpo-add-category"><?php echo esc_html__('Add Category', 'hierarchical-product-options'); ?></button>
-                    <button class="button hpo-add-product"><?php echo esc_html__('Add Product', 'hierarchical-product-options'); ?></button>
                 </div>
                 
                 <div class="hpo-items-container">
@@ -38,14 +37,14 @@
             </div>
             
             <div class="hpo-admin-panel">
-                <h2><?php echo esc_html__('Assignments', 'hierarchical-product-options'); ?></h2>
+                <h2><?php echo esc_html__('Product Assignment', 'hierarchical-product-options'); ?></h2>
                 
-                <p><?php echo esc_html__('Assign option categories to WooCommerce products.', 'hierarchical-product-options'); ?></p>
+                <p><?php echo esc_html__('Assign one WooCommerce product to a category.', 'hierarchical-product-options'); ?></p>
                 
                 <form id="hpo-assign-form">
                     <div class="hpo-form-row">
                         <label for="hpo-wc-product"><?php echo esc_html__('WooCommerce Product', 'hierarchical-product-options'); ?></label>
-                        <select id="hpo-wc-product" name="wc_product_id">
+                        <select id="hpo-wc-product" name="wc_product_id" required>
                             <option value=""><?php echo esc_html__('Select a product...', 'hierarchical-product-options'); ?></option>
                             <?php
                             $products = wc_get_products(array('limit' => -1));
@@ -56,23 +55,62 @@
                     </div>
                     
                     <div class="hpo-form-row">
-                        <label><?php echo esc_html__('Assigned Categories', 'hierarchical-product-options'); ?></label>
-                        <div class="hpo-checkbox-list">
+                        <label for="hpo-category-select"><?php echo esc_html__('Select a Category', 'hierarchical-product-options'); ?></label>
+                        <select id="hpo-category-select" name="category_id" required>
+                            <option value=""><?php echo esc_html__('Select a category...', 'hierarchical-product-options'); ?></option>
                             <?php foreach ($categories as $category): ?>
-                            <div class="hpo-checkbox-item">
-                                <label>
-                                    <input type="checkbox" name="category_ids[]" value="<?php echo esc_attr($category->id); ?>">
-                                    <?php echo esc_html($category->name); ?>
-                                </label>
-                            </div>
+                            <option value="<?php echo esc_attr($category->id); ?>"><?php echo esc_html($category->name); ?></option>
                             <?php endforeach; ?>
-                        </div>
+                        </select>
                     </div>
                     
                     <div class="hpo-form-row">
-                        <button type="submit" class="button button-primary"><?php echo esc_html__('Save Assignments', 'hierarchical-product-options'); ?></button>
+                        <button type="submit" class="button button-primary"><?php echo esc_html__('Assign to Product', 'hierarchical-product-options'); ?></button>
                     </div>
                 </form>
+            </div>
+
+            <div class="hpo-admin-panel">
+                <h2><?php echo esc_html__('Category Assignments', 'hierarchical-product-options'); ?></h2>
+                <div class="hpo-assignments-container">
+                    <table class="wp-list-table widefat fixed striped">
+                        <thead>
+                            <tr>
+                                <th><?php echo esc_html__('Category', 'hierarchical-product-options'); ?></th>
+                                <th><?php echo esc_html__('Assigned Product', 'hierarchical-product-options'); ?></th>
+                                <th class="hpo-actions-column"><?php echo esc_html__('Actions', 'hierarchical-product-options'); ?></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php 
+                            $assignments = $db->get_category_product_assignments();
+                            if (empty($assignments)): 
+                            ?>
+                            <tr>
+                                <td colspan="3"><?php echo esc_html__('No category assignments found.', 'hierarchical-product-options'); ?></td>
+                            </tr>
+                            <?php 
+                            else: 
+                                foreach ($assignments as $assignment):
+                                    $wc_product = wc_get_product($assignment->product_id);
+                                    if (!$wc_product) continue;
+                            ?>
+                            <tr>
+                                <td><?php echo esc_html($assignment->category_name); ?></td>
+                                <td><?php echo esc_html($wc_product->get_name()); ?></td>
+                                <td>
+                                    <button class="button button-small hpo-delete-assignment" data-category-id="<?php echo esc_attr($assignment->category_id); ?>" data-product-id="<?php echo esc_attr($assignment->product_id); ?>">
+                                        <span class="dashicons dashicons-trash"></span>
+                                    </button>
+                                </td>
+                            </tr>
+                            <?php 
+                                endforeach;
+                            endif; 
+                            ?>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </div>

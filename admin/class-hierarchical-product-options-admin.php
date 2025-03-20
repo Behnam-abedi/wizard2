@@ -76,7 +76,7 @@ class Hierarchical_Product_Options_Admin {
             true
         );
         
-        // Localize script with data
+        // Localize the script with data
         wp_localize_script(
             'hierarchical-product-options-admin',
             'hpo_data',
@@ -84,18 +84,23 @@ class Hierarchical_Product_Options_Admin {
                 'ajax_url' => admin_url('admin-ajax.php'),
                 'nonce' => wp_create_nonce('hpo_nonce'),
                 'strings' => array(
-                    'confirm_delete' => __('Are you sure you want to delete this item?', 'hierarchical-product-options'),
-                    'category_name' => __('Category Name', 'hierarchical-product-options'),
-                    'product_name' => __('Product Name', 'hierarchical-product-options'),
-                    'product_price' => __('Product Price', 'hierarchical-product-options'),
-                    'save' => __('Save', 'hierarchical-product-options'),
-                    'cancel' => __('Cancel', 'hierarchical-product-options'),
                     'confirm_delete_category' => __('Are you sure you want to delete this category? All subcategories and products will also be deleted.', 'hierarchical-product-options'),
                     'confirm_delete_product' => __('Are you sure you want to delete this product?', 'hierarchical-product-options'),
-                    'confirm_delete_weight' => __('Are you sure you want to delete this weight option?', 'hierarchical-product-options'),
+                    'product_name' => __('Product Name', 'hierarchical-product-options'),
+                    'product_price' => __('Product Price', 'hierarchical-product-options'),
+                    'save' => __('Save Changes', 'hierarchical-product-options'),
+                    'cancel' => __('Cancel', 'hierarchical-product-options'),
+                    'update_order' => __('Order updated successfully!', 'hierarchical-product-options'),
+                    'rebuild_success' => __('Database tables rebuilt successfully!', 'hierarchical-product-options'),
+                    'rebuild_error' => __('An error occurred during table rebuild.', 'hierarchical-product-options'),
+                    'weight_name' => __('Weight Name', 'hierarchical-product-options'),
+                    'weight_coefficient' => __('Weight Coefficient', 'hierarchical-product-options'),
+                    'add_weight' => __('Add Weight Option', 'hierarchical-product-options'),
                     'no_weights' => __('No weight options found for this product.', 'hierarchical-product-options'),
                     'select_product' => __('Please select a product first.', 'hierarchical-product-options'),
-                    'edit_weight' => __('Edit Weight Option', 'hierarchical-product-options')
+                    'edit_weight' => __('Edit Weight Option', 'hierarchical-product-options'),
+                    'select_required' => __('Please select both a product and a category', 'hierarchical-product-options'),
+                    'confirm_delete_assignment' => __('Are you sure you want to delete this assignment?', 'hierarchical-product-options')
                 )
             )
         );
@@ -160,6 +165,7 @@ class Hierarchical_Product_Options_Admin {
         add_action('wp_ajax_hpo_delete_product', array($this, 'ajax_delete_product'));
         add_action('wp_ajax_hpo_update_order', array($this, 'ajax_update_order'));
         add_action('wp_ajax_hpo_assign_product_categories', array($this, 'ajax_assign_product_categories'));
+        add_action('wp_ajax_hpo_delete_assignment', array($this, 'ajax_delete_assignment'));
         add_action('wp_ajax_hpo_add_weight', array($this, 'ajax_add_weight'));
         add_action('wp_ajax_hpo_update_weight', array($this, 'ajax_update_weight'));
         add_action('wp_ajax_hpo_delete_weight', array($this, 'ajax_delete_weight'));
@@ -408,19 +414,54 @@ class Hierarchical_Product_Options_Admin {
         }
         
         $wc_product_id = isset($_POST['wc_product_id']) ? intval($_POST['wc_product_id']) : 0;
-        $category_ids = isset($_POST['category_ids']) ? array_map('intval', (array) $_POST['category_ids']) : array();
+        $category_id = isset($_POST['category_id']) ? intval($_POST['category_id']) : 0;
         
-        if (empty($wc_product_id)) {
-            wp_send_json_error(__('Invalid product', 'hierarchical-product-options'));
+        if (empty($wc_product_id) || empty($category_id)) {
+            wp_send_json_error(__('Please select both a product and a category', 'hierarchical-product-options'));
         }
         
         $db = new Hierarchical_Product_Options_DB();
-        $result = $db->assign_categories_to_product($wc_product_id, $category_ids);
+        $result = $db->assign_categories_to_product($wc_product_id, $category_id);
         
         if ($result) {
             wp_send_json_success();
         } else {
-            wp_send_json_error(__('Failed to assign categories', 'hierarchical-product-options'));
+            wp_send_json_error(__('Failed to assign category', 'hierarchical-product-options'));
+        }
+    }
+    
+    /**
+     * AJAX: Delete category-product assignment
+     */
+    public function ajax_delete_assignment() {
+        check_ajax_referer('hpo_nonce', 'nonce');
+        
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(__('Permission denied', 'hierarchical-product-options'));
+        }
+        
+        $wc_product_id = isset($_POST['wc_product_id']) ? intval($_POST['wc_product_id']) : 0;
+        $category_id = isset($_POST['category_id']) ? intval($_POST['category_id']) : 0;
+        
+        if (empty($wc_product_id) || empty($category_id)) {
+            wp_send_json_error(__('Invalid assignment data', 'hierarchical-product-options'));
+        }
+        
+        global $wpdb;
+        $table = $wpdb->prefix . 'hpo_product_assignments';
+        
+        $result = $wpdb->delete(
+            $table,
+            array(
+                'wc_product_id' => $wc_product_id,
+                'category_id' => $category_id
+            )
+        );
+        
+        if ($result !== false) {
+            wp_send_json_success();
+        } else {
+            wp_send_json_error(__('Failed to delete assignment', 'hierarchical-product-options'));
         }
     }
 
