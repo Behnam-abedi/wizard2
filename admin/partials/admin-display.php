@@ -39,8 +39,12 @@
             <div class="hpo-admin-panel">
                 <h2><?php echo esc_html__('Product Assignment', 'hierarchical-product-options'); ?></h2>
                 
-                <p><?php echo esc_html__('Assign one WooCommerce product to a category.', 'hierarchical-product-options'); ?></p>
-                <p><strong><?php echo esc_html__('Note:', 'hierarchical-product-options'); ?></strong> <?php echo esc_html__('When you select a parent category, all its child categories will be automatically assigned to the product.', 'hierarchical-product-options'); ?></p>
+                <p><?php echo esc_html__('Assign categories to WooCommerce products.', 'hierarchical-product-options'); ?></p>
+                <p><strong><?php echo esc_html__('Notes:', 'hierarchical-product-options'); ?></strong></p>
+                <ul>
+                    <li><?php echo esc_html__('When you select a parent category, all its child categories will be automatically assigned to the product.', 'hierarchical-product-options'); ?></li>
+                    <li><?php echo esc_html__('You can assign multiple categories to the same product as long as they are not in the same hierarchy.', 'hierarchical-product-options'); ?></li>
+                </ul>
                 
                 <form id="hpo-assign-form">
                     <div class="hpo-form-row">
@@ -77,37 +81,71 @@
                     <table class="wp-list-table widefat fixed striped">
                         <thead>
                             <tr>
-                                <th><?php echo esc_html__('Category', 'hierarchical-product-options'); ?></th>
-                                <th><?php echo esc_html__('Assigned Product', 'hierarchical-product-options'); ?></th>
+                                <th><?php echo esc_html__('WooCommerce Product', 'hierarchical-product-options'); ?></th>
+                                <th><?php echo esc_html__('Assigned Categories', 'hierarchical-product-options'); ?></th>
                                 <th class="hpo-actions-column"><?php echo esc_html__('Actions', 'hierarchical-product-options'); ?></th>
                             </tr>
                         </thead>
                         <tbody>
                             <?php 
                             $assignments = $db->get_category_product_assignments();
+                            
                             if (empty($assignments)): 
                             ?>
                             <tr>
                                 <td colspan="3"><?php echo esc_html__('No category assignments found.', 'hierarchical-product-options'); ?></td>
                             </tr>
                             <?php 
-                            else: 
-                                foreach ($assignments as $assignment):
-                                    $wc_product = wc_get_product($assignment->wc_product_id);
-                                    if (!$wc_product) continue;
+                            else:
+                                // Group assignments by product
+                                $products = array();
+                                foreach ($assignments as $assignment) {
+                                    if (!isset($products[$assignment->wc_product_id])) {
+                                        $products[$assignment->wc_product_id] = array(
+                                            'product' => wc_get_product($assignment->wc_product_id),
+                                            'categories' => array()
+                                        );
+                                    }
+                                    
                                     $is_child = isset($assignment->parent_id) && $assignment->parent_id > 0;
+                                    
+                                    // Only add parent categories or categories without parent to the main list
+                                    if (!$is_child) {
+                                        $products[$assignment->wc_product_id]['categories'][] = $assignment;
+                                    }
+                                }
+                                
+                                foreach ($products as $product_id => $data):
+                                    if (!$data['product']) continue;
+                                    
+                                    foreach ($data['categories'] as $index => $assignment):
                             ?>
-                            <tr class="<?php echo $is_child ? 'hpo-child-category' : ''; ?>">
-                                <td><?php 
-                                    if (isset($assignment->parent_name)) {
-                                        echo esc_html($assignment->parent_name) . ' &raquo; ';
-                                    }
-                                    echo esc_html($assignment->category_name); 
-                                    if ($is_child) {
-                                        echo ' <em>(' . esc_html__('Auto-assigned', 'hierarchical-product-options') . ')</em>';
-                                    }
-                                ?></td>
-                                <td><?php echo esc_html($wc_product->get_name()); ?></td>
+                            <tr>
+                                <?php if ($index === 0): // Show product name only in the first row ?>
+                                <td rowspan="<?php echo count($data['categories']); ?>"><?php echo esc_html($data['product']->get_name()); ?></td>
+                                <?php endif; ?>
+                                
+                                <td>
+                                    <?php 
+                                        echo esc_html($assignment->category_name);
+                                        
+                                        // Get child categories for this parent
+                                        $child_categories = array();
+                                        foreach ($assignments as $child) {
+                                            if ($child->parent_id == $assignment->category_id) {
+                                                $child_categories[] = $child->category_name;
+                                            }
+                                        }
+                                        
+                                        if (!empty($child_categories)) {
+                                            echo '<div class="hpo-child-categories-list">';
+                                            echo '<small>' . esc_html__('Includes:', 'hierarchical-product-options') . ' ';
+                                            echo esc_html(implode(', ', $child_categories));
+                                            echo '</small>';
+                                            echo '</div>';
+                                        }
+                                    ?>
+                                </td>
                                 <td>
                                     <button class="button button-small hpo-delete-assignment" data-category-id="<?php echo esc_attr($assignment->category_id); ?>" data-product-id="<?php echo esc_attr($assignment->wc_product_id); ?>">
                                         <span class="dashicons dashicons-trash"></span>
@@ -115,6 +153,7 @@
                                 </td>
                             </tr>
                             <?php 
+                                    endforeach;
                                 endforeach;
                             endif; 
                             ?>

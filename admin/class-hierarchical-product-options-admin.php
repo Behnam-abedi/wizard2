@@ -447,16 +447,24 @@ class Hierarchical_Product_Options_Admin {
             wp_send_json_error(__('Invalid assignment data', 'hierarchical-product-options'));
         }
         
+        $db = new Hierarchical_Product_Options_DB();
+        
+        // Get all child categories
+        $children = $db->get_child_categories($category_id);
+        $child_ids = array($category_id); // Include the parent ID
+        
+        foreach ($children as $child) {
+            $child_ids[] = $child->id;
+        }
+        
         global $wpdb;
         $table = $wpdb->prefix . 'hpo_product_assignments';
         
-        $result = $wpdb->delete(
-            $table,
-            array(
-                'wc_product_id' => $wc_product_id,
-                'category_id' => $category_id
-            )
-        );
+        // Use IN operator to delete all child categories too
+        $child_ids_str = implode(',', array_map('intval', $child_ids));
+        $sql = "DELETE FROM $table WHERE wc_product_id = %d AND category_id IN ($child_ids_str)";
+        
+        $result = $wpdb->query($wpdb->prepare($sql, $wc_product_id));
         
         if ($result !== false) {
             wp_send_json_success();

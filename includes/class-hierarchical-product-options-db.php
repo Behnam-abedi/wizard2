@@ -265,20 +265,34 @@ class Hierarchical_Product_Options_DB {
     public function assign_categories_to_product($wc_product_id, $category_id) {
         global $wpdb;
         
-        // First delete existing assignments for this product
-        $wpdb->delete(
-            $this->assignments_table,
-            array('wc_product_id' => $wc_product_id)
-        );
-        
-        // Also delete any existing assignment for this category
-        $wpdb->delete(
-            $this->assignments_table,
-            array('category_id' => $category_id)
-        );
+        // Instead of deleting all assignments for this product, we'll only delete 
+        // the assignments that conflict with the new category and its children/parents
         
         // Get all child categories of the selected category
         $children = $this->get_child_categories($category_id);
+        
+        // Get all parent categories of the selected category
+        $parents = $this->get_parent_categories($category_id);
+        
+        // Create a list of all category IDs in this hierarchy (parents, selected category, children)
+        $related_category_ids = array($category_id);
+        
+        foreach ($children as $child) {
+            $related_category_ids[] = $child->id;
+        }
+        
+        foreach ($parents as $parent) {
+            $related_category_ids[] = $parent->id;
+        }
+        
+        // Delete any existing assignments for related categories
+        if (!empty($related_category_ids)) {
+            $related_ids_string = implode(',', array_map('intval', $related_category_ids));
+            $sql = "DELETE FROM $this->assignments_table 
+                    WHERE (wc_product_id = %d AND category_id IN ($related_ids_string))
+                    OR (category_id = %d)";
+            $wpdb->query($wpdb->prepare($sql, $wc_product_id, $category_id));
+        }
         
         // Add assignment for parent category
         $result = $wpdb->insert(
@@ -332,6 +346,29 @@ class Hierarchical_Product_Options_DB {
         }
         
         return $children;
+    }
+    
+    /**
+     * Get all parent categories for a given category
+     *
+     * @param int $category_id Category ID
+     * @return array Parent categories
+     */
+    public function get_parent_categories($category_id) {
+        global $wpdb;
+        
+        $parents = array();
+        $current_category = $this->get_category($category_id);
+        
+        // Traverse up the hierarchy
+        while ($current_category && $current_category->parent_id > 0) {
+            $current_category = $this->get_category($current_category->parent_id);
+            if ($current_category) {
+                $parents[] = $current_category;
+            }
+        }
+        
+        return $parents;
     }
     
     /**

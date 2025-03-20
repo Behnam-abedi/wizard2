@@ -220,4 +220,16 @@
     color: #888;
     font-size: 90%;
     margin-left: 5px;
+}
+
+/* Child categories list in assignments table */
+.hpo-child-categories-list {
+    margin-top: 5px;
+    padding-top: 5px;
+    border-top: 1px dotted #eee;
+}
+
+.hpo-child-categories-list small {
+    color: #666;
+    font-style: italic;
 } 
