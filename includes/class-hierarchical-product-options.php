@@ -15,6 +15,9 @@ class Hierarchical_Product_Options {
         $this->load_dependencies();
         $this->define_admin_hooks();
         $this->define_public_hooks();
+        
+        // Display options on the order-received page
+        add_action('woocommerce_order_item_meta_end', array($this, 'display_order_item_options'), 10, 4);
     }
 
     /**
@@ -77,7 +80,7 @@ class Hierarchical_Product_Options {
         
         // This critical filter ensures the correct price is used for order totals
         add_filter('woocommerce_before_calculate_totals', array($this, 'before_calculate_totals'), 10, 1);
-
+        
         // Save order item meta data
         add_action('woocommerce_checkout_create_order_line_item', array($this, 'save_order_item_meta'), 10, 4);
 
@@ -639,7 +642,7 @@ class Hierarchical_Product_Options {
                 );
             }
             
-            $item->add_meta_data('_hpo_grinding', $grinding_data);
+            $item->add_meta_data('_hpo_grinder', $grinding_data);
         }
 
         // Save customer notes
@@ -726,14 +729,14 @@ class Hierarchical_Product_Options {
                         </td>
                         <td>
                             <?php
-                            $grinding = $item->get_meta('_hpo_grinding');
-                            if (!empty($grinding)) {
-                                if ($grinding['type'] === 'ground') {
+                            $grinder = $item->get_meta('_hpo_grinder');
+                            if (!empty($grinder)) {
+                                if ($grinder['type'] === 'ground') {
                                     echo '<span class="grinding-status ground">آسیاب شده</span>';
-                                    if (!empty($grinding['machine'])) {
-                                        echo '<br><span class="machine-name">دستگاه: ' . esc_html($grinding['machine']['name']) . '</span>';
-                                        if ($grinding['machine']['price'] > 0) {
-                                            echo ' <span class="price-tag">(' . wc_price($grinding['machine']['price']) . ')</span>';
+                                    if (!empty($grinder['machine'])) {
+                                        echo '<br><span class="machine-name">دستگاه: ' . esc_html($grinder['machine']['name']) . '</span>';
+                                        if ($grinder['machine']['price'] > 0) {
+                                            echo ' <span class="price-tag">(' . wc_price($grinder['machine']['price']) . ')</span>';
                                         }
                                     }
                                 } else {
@@ -844,5 +847,123 @@ class Hierarchical_Product_Options {
             }
         </style>
         <?php
+    }
+
+    /**
+     * Display product options, grinding options, and weight options in order-received page
+     * 
+     * @param int $item_id Order item ID
+     * @param WC_Order_Item $item Order item object
+     * @param WC_Order $order Order object
+     * @param bool $plain_text Whether to use plain text
+     */
+    public function display_order_item_options($item_id, $item, $order, $plain_text = false) {
+        // Only on frontend, not emails
+        if (is_admin() || $plain_text) {
+            return;
+        }
+
+        // Check if this is the order-received page or my-account/view-order page
+        if (!is_checkout() && !is_account_page()) {
+            return;
+        }
+
+        $categories_data = $item->get_meta('_hpo_categories');
+        $products_data = $item->get_meta('_hpo_products');
+        $weight_data = $item->get_meta('_hpo_weight');
+        $grinder_data = $item->get_meta('_hpo_grinder');
+        $customer_notes = $item->get_meta('_hpo_customer_notes');
+
+        if (empty($categories_data) && empty($products_data) && empty($weight_data) && empty($grinder_data) && empty($customer_notes)) {
+            return;
+        }
+
+        echo '<div class="hpo-order-item-options">';
+        
+        // Display product options (categories)
+        if (!empty($categories_data)) {
+            echo '<h4>' . esc_html__('Product Options', 'hierarchical-product-options') . '</h4>';
+            echo '<ul class="hpo-order-options-list">';
+            
+            foreach ($categories_data as $category) {
+                echo '<li>';
+                echo '<span class="hpo-option-name">' . esc_html($category['name']) . '</span>';
+                
+                if (!empty($category['price']) && $category['price'] > 0) {
+                    echo ' <span class="hpo-option-price">(+' . wc_price($category['price']) . ')</span>';
+                }
+                
+                echo '</li>';
+            }
+            
+            echo '</ul>';
+        }
+        
+        // Display product options selected
+        if (!empty($products_data)) {
+            echo '<h4>' . esc_html__('Selected Products', 'hierarchical-product-options') . '</h4>';
+            echo '<ul class="hpo-order-options-list">';
+            
+            foreach ($products_data as $product) {
+                echo '<li>';
+                echo '<span class="hpo-option-name">' . esc_html($product['name']) . '</span>';
+                
+                if (!empty($product['price']) && $product['price'] > 0) {
+                    echo ' <span class="hpo-option-price">(+' . wc_price($product['price']) . ')</span>';
+                }
+                
+                echo '</li>';
+            }
+            
+            echo '</ul>';
+        }
+        
+        // Display weight option
+        if (!empty($weight_data)) {
+            echo '<h4>' . esc_html__('Weight Option', 'hierarchical-product-options') . '</h4>';
+            echo '<ul class="hpo-order-options-list">';
+            echo '<li><span class="hpo-option-name">' . esc_html($weight_data['name']) . '</span>';
+            
+            if (isset($weight_data['coefficient']) && $weight_data['coefficient'] != 1) {
+                echo ' <span class="hpo-option-coefficient">(' . esc_html__('Coefficient:', 'hierarchical-product-options') . ' ' . esc_html($weight_data['coefficient']) . ')</span>';
+            }
+            
+            echo '</li>';
+            echo '</ul>';
+        }
+        
+        // Display grinder option
+        if (!empty($grinder_data)) {
+            echo '<h4>' . esc_html__('Grinding Option', 'hierarchical-product-options') . '</h4>';
+            echo '<ul class="hpo-order-options-list">';
+            
+            if ($grinder_data['type'] === 'ground') {
+                echo '<li><span class="hpo-option-name">' . esc_html__('Ground Coffee', 'hierarchical-product-options') . '</span>';
+                
+                if (!empty($grinder_data['machine'])) {
+                    echo '<li><span class="hpo-option-name">' . esc_html__('Grinding Machine:', 'hierarchical-product-options') . ' ' . esc_html($grinder_data['machine']['name']) . '</span>';
+                    
+                    if (!empty($grinder_data['machine']['price']) && $grinder_data['machine']['price'] > 0) {
+                        echo ' <span class="hpo-option-price">(+' . wc_price($grinder_data['machine']['price']) . ')</span>';
+                    }
+                    
+                    echo '</li>';
+                }
+            } else {
+                echo '<li><span class="hpo-option-name">' . esc_html__('Whole Bean (Not Ground)', 'hierarchical-product-options') . '</span></li>';
+            }
+            
+            echo '</ul>';
+        }
+        
+        // Display customer notes
+        if (!empty($customer_notes)) {
+            echo '<h4>' . esc_html__('Customer Notes', 'hierarchical-product-options') . '</h4>';
+            echo '<div class="hpo-customer-notes">';
+            echo '<p>' . esc_html($customer_notes) . '</p>';
+            echo '</div>';
+        }
+        
+        echo '</div>';
     }
 } 

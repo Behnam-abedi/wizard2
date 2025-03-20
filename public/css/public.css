@@ -295,4 +295,71 @@
 .hpo-quantity-decrease:hover,
 .hpo-quantity-increase:hover {
     background-color: #e0e0e0;
+}
+
+/* Order Received Page Options Styling */
+.hpo-order-item-options {
+    margin-top: 15px;
+    padding: 15px;
+    background: #f9f9f9;
+    border-radius: 4px;
+    border: 1px solid #eee;
+}
+
+.hpo-order-item-options h4 {
+    margin: 0 0 10px 0;
+    font-size: 14px;
+    color: #333;
+    font-weight: 600;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 5px;
+}
+
+.hpo-order-options-list {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 15px 0;
+}
+
+.hpo-order-options-list li {
+    margin-bottom: 5px;
+    padding-left: 20px;
+    position: relative;
+}
+
+.hpo-order-options-list li:before {
+    content: '✓';
+    position: absolute;
+    left: 0;
+    color: #7fb85c;
+    font-weight: bold;
+}
+
+.hpo-option-name {
+    font-weight: 500;
+}
+
+.hpo-option-price, .hpo-option-coefficient {
+    color: #777;
+    font-size: 90%;
+}
+
+/* Last option group shouldn't have margin */
+.hpo-order-item-options h4:last-of-type + .hpo-order-options-list {
+    margin-bottom: 0;
+}
+
+/* Add these styles to the existing Order Received Page Options Styling section */
+
+.hpo-customer-notes {
+    background-color: rgba(255, 255, 255, 0.7);
+    padding: 10px;
+    border-radius: 3px;
+    border-left: 3px solid #7fb85c;
+    font-style: italic;
+    color: #555;
+}
+
+.hpo-customer-notes p {
+    margin: 0;
 } 
