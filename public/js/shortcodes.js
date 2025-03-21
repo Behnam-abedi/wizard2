@@ -116,17 +116,6 @@ jQuery(document).ready(function($) {
             
             // Handle visual selection for product options
             if ($(this).attr('name').startsWith('hpo_option')) {
-                // Show a brief message that only one option can be selected
-                var optionSection = $(this).closest('.hpo-option-section');
-                if (!optionSection.find('.hpo-option-notice').length) {
-                    optionSection.find('h3').after('<div class="hpo-option-notice">فقط یک گزینه می‌توانید انتخاب کنید</div>');
-                    setTimeout(function() {
-                        $('.hpo-option-notice').fadeOut(500, function() {
-                            $(this).remove();
-                        });
-                    }, 2000);
-                }
-                
                 // Uncheck all other product options in the entire option section
                 $('.hpo-option-section input[name^="hpo_option"]').not(this).prop('checked', false);
                 

@@ -451,16 +451,4 @@
 
 .hpo-child-category .hpo-products {
     padding-right: 10px;
-}
-
-/* Option notice message */
-.hpo-option-notice {
-    background-color: #fff8e5;
-    border: 1px solid #ffd977;
-    border-radius: 4px;
-    color: #856404;
-    font-size: 14px;
-    margin: 5px 0 15px;
-    padding: 8px 12px;
-    text-align: center;
 } 
