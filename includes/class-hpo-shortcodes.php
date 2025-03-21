@@ -52,6 +52,10 @@ class HPO_Shortcodes {
         add_filter('woocommerce_cart_item_quantity', array($this, 'modify_cart_item_quantity'), 10, 3);
         add_filter('woocommerce_cart_item_quantity_display', array($this, 'modify_cart_item_quantity_display'), 10, 3);
         
+        // Directly filter the price HTML
+        add_filter('woocommerce_product_get_price', array($this, 'filter_product_price'), 99, 2);
+        add_filter('woocommerce_product_variation_get_price', array($this, 'filter_product_price'), 99, 2);
+        
         // Add custom CSS for cart display
         add_action('wp_head', array($this, 'add_custom_cart_css'));
     }
@@ -675,12 +679,12 @@ class HPO_Shortcodes {
      */
     public function update_cart_item_price($price, $cart_item, $cart_item_key) {
         // Format the price in Toman instead of the WooCommerce default format
-        if (isset($cart_item['hpo_custom_data']) && isset($cart_item['hpo_custom_data']['calculated_price']) && $cart_item['hpo_custom_data']['calculated_price'] > 0) {
-            $price_value = $cart_item['hpo_custom_data']['calculated_price'];
-            return number_format($price_value) . ' تومان';
+        if (isset($cart_item['hpo_custom_data']) && isset($cart_item['hpo_custom_data']['price_per_unit']) && $cart_item['hpo_custom_data']['price_per_unit'] > 0) {
+            $price_value = $cart_item['hpo_custom_data']['price_per_unit'];
+            return '<span class="woocommerce-Price-amount amount"><bdi>' . number_format($price_value) . ' تومان</bdi></span>';
         } else if (isset($cart_item['data']) && $cart_item['data']->get_price() > 0) {
             $price_value = $cart_item['data']->get_price();
-            return number_format($price_value) . ' تومان';
+            return '<span class="woocommerce-Price-amount amount"><bdi>' . number_format($price_value) . ' تومان</bdi></span>';
         }
         return $price;
     }
@@ -857,13 +861,106 @@ class HPO_Shortcodes {
                 margin-top: 5px;
             }
             
-            /* Hide the zero price in some WooCommerce templates */
-            .woocommerce-cart-form .product-price:contains("0 تومان"),
-            .woocommerce-mini-cart-item .quantity:contains("0 تومان") {
-                display: none !important;
+            /* Fix the product price in cart by ensuring the woocommerce-Price-amount shows our custom price */
+            .woocommerce-cart .woocommerce-Price-amount.amount {
+                display: none;
+            }
+            
+            /* Show our custom price format instead */
+            span.hpo-custom-quantity {
+                display: block !important;
+            }
+            
+            /* Style the span so it looks like the WooCommerce price */
+            .hpo-custom-quantity {
+                font-weight: bold;
+                color: #333;
+            }
+
+            /* Hide the add to cart button in loop products */
+            .add_to_cart_button {
+                display: none;
             }
         </style>
+        <script type="text/javascript">
+            jQuery(document).ready(function($) {
+                // Function to update price display
+                function updateCartPriceDisplay() {
+                    // Check if we're on a cart page
+                    if ($('.woocommerce-cart-form').length > 0) {
+                        // Find all custom quantity elements and extract their price
+                        $('.hpo-custom-quantity').each(function() {
+                            var priceText = $(this).text();
+                            var priceMatch = priceText.match(/(\d+) × ([\d,]+) تومان/);
+                            
+                            if (priceMatch && priceMatch.length >= 3) {
+                                var quantity = parseInt(priceMatch[1]);
+                                var unitPrice = priceMatch[2].replace(/,/g, '');
+                                var totalPrice = quantity * parseInt(unitPrice);
+                                
+                                // Find the nearby price amount and update it
+                                var $row = $(this).closest('tr');
+                                $row.find('.product-price .woocommerce-Price-amount').html('<span class="woocommerce-Price-currencySymbol"></span>' + numberWithCommas(unitPrice) + ' تومان');
+                                $row.find('.product-subtotal .woocommerce-Price-amount').html('<span class="woocommerce-Price-currencySymbol"></span>' + numberWithCommas(totalPrice) + ' تومان');
+                            }
+                        });
+                    }
+                }
+                
+                // Helper function to format numbers with commas
+                function numberWithCommas(x) {
+                    return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+                }
+                
+                // Run on page load
+                updateCartPriceDisplay();
+                
+                // Run whenever cart is updated
+                $(document.body).on('updated_cart_totals', updateCartPriceDisplay);
+                $(document.body).on('wc_fragments_refreshed', updateCartPriceDisplay);
+            });
+        </script>
         <?php
+    }
+
+    /**
+     * Filter product price to ensure it's correct in cart
+     *
+     * @param float $price The product price
+     * @param object $product The product object
+     * @return float Modified price
+     */
+    public function filter_product_price($price, $product) {
+        // Only apply on cart/checkout pages
+        if (is_cart() || is_checkout()) {
+            // Get the cart
+            $cart = WC()->cart;
+            if (!$cart) {
+                return $price;
+            }
+            
+            // Get the product ID
+            $product_id = $product->get_id();
+            
+            // Check each cart item
+            foreach ($cart->get_cart() as $cart_item_key => $cart_item) {
+                // Find matching product
+                if ($cart_item['product_id'] == $product_id || 
+                    (isset($cart_item['variation_id']) && $cart_item['variation_id'] == $product_id)) {
+                    
+                    // If we have custom data with a calculated price, use it
+                    if (isset($cart_item['hpo_custom_data']) && 
+                        isset($cart_item['hpo_custom_data']['price_per_unit']) && 
+                        $cart_item['hpo_custom_data']['price_per_unit'] > 0) {
+                        
+                        // Return our custom calculated price
+                        return $cart_item['hpo_custom_data']['price_per_unit'];
+                    }
+                }
+            }
+        }
+        
+        return $price;
     }
 }
 
