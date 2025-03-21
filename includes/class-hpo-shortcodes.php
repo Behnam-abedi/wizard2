@@ -501,6 +501,10 @@ class HPO_Shortcodes {
             }
         }
         
+        // Important: Set the product price to our calculated price before adding to cart
+        // This ensures that WooCommerce will use this price for the item
+        $product->set_price($total_price);
+        
         // Add the product to the cart
         $cart_item_key = WC()->cart->add_to_cart($product_id, $quantity, 0, array(), $cart_item_data);
         
@@ -535,19 +539,9 @@ class HPO_Shortcodes {
         if (isset($cart_item['hpo_custom_data'])) {
             $custom_data = $cart_item['hpo_custom_data'];
             
-            // 1. Product options displayed with each option
-            if (!empty($custom_data['options'])) {
-                foreach ($custom_data['options'] as $option) {
-                    $formatted_price = number_format($option['price']) . ' تومان';
-                    $item_data[] = array(
-                        'key' => 'گزینه',
-                        'value' => $option['name'],
-                        'display' => $option['name'] . ' (' . $formatted_price . ')'
-                    );
-                }
-            }
+            // We don't add the product options here anymore since they're shown in the product name
             
-            // 2. Weight options
+            // 1. Weight options
             if (!empty($custom_data['weight'])) {
                 $item_data[] = array(
                     'key' => 'وزن',
@@ -556,7 +550,7 @@ class HPO_Shortcodes {
                 );
             }
             
-            // 3. Grinding status
+            // 2. Grinding status
             if (!empty($custom_data['grinding'])) {
                 if ($custom_data['grinding'] === 'whole') {
                     $item_data[] = array(
@@ -574,7 +568,7 @@ class HPO_Shortcodes {
                 }
             }
             
-            // 4. Customer notes (if any)
+            // 3. Customer notes (if any)
             if (!empty($custom_data['customer_notes'])) {
                 $item_data[] = array(
                     'key' => 'توضیحات',
@@ -582,8 +576,6 @@ class HPO_Shortcodes {
                     'display' => $custom_data['customer_notes']
                 );
             }
-            
-            // We no longer show the calculated price here as it will be shown as the main product price
         }
         
         // Clean up the array by reindexing
@@ -600,12 +592,17 @@ class HPO_Shortcodes {
             return;
         }
         
+        // Ensure this runs only once
+        remove_filter('woocommerce_before_calculate_totals', array($this, 'calculate_cart_item_prices'), 10);
+        
         foreach ($cart->get_cart() as $cart_item_key => $cart_item) {
             if (isset($cart_item['hpo_custom_data'])) {
                 $custom_data = $cart_item['hpo_custom_data'];
                 
                 // If we have a pre-calculated price, use it
                 if (isset($custom_data['calculated_price']) && $custom_data['calculated_price'] > 0) {
+                    // Force update the product price using direct property access
+                    // This ensures the price is always set correctly
                     $cart_item['data']->set_price($custom_data['calculated_price']);
                     continue;
                 }
@@ -645,6 +642,9 @@ class HPO_Shortcodes {
                 $cart->cart_contents[$cart_item_key]['hpo_custom_data']['calculated_price'] = $total_price;
             }
         }
+        
+        // Re-add the filter for next time
+        add_filter('woocommerce_before_calculate_totals', array($this, 'calculate_cart_item_prices'), 10, 1);
     }
     
     /**

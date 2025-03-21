@@ -243,14 +243,14 @@ jQuery(document).ready(function($) {
         // Multiply by quantity
         totalPrice *= quantity;
         
-        // Format the price (basic formatting, you may need to adjust based on your needs)
+        // Format the price
         var formattedPrice = new Intl.NumberFormat('fa-IR', {
             style: 'decimal',
             minimumFractionDigits: 0,
             maximumFractionDigits: 0
-        }).format(totalPrice) + ' تومان';
+        }).format(totalPrice);
         
-        // Update the display
-        $('#hpo-total-price').text(formattedPrice);
+        // Update the displayed price
+        $('#hpo-total-price').text(formattedPrice + ' تومان');
     }
 }); 
