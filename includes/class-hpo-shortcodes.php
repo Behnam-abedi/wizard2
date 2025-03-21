@@ -434,8 +434,44 @@ class HPO_Shortcodes {
             return;
         }
         
-        $base_price = $product->get_price();
-        $total_price = $base_price;
+        // Use the pre-calculated price if provided
+        if (!empty($data['hpo_calculated_price'])) {
+            $total_price = floatval($data['hpo_calculated_price']);
+            if ($total_price <= 0) {
+                // Fallback to base price if calculated price is invalid
+                $total_price = floatval($product->get_price());
+            }
+        } else {
+            // Manually calculate the total price
+            $base_price = floatval($product->get_price());
+            $total_price = $base_price;
+            
+            // Add options prices
+            if (!empty($data['hpo_options']) && is_array($data['hpo_options'])) {
+                foreach ($data['hpo_options'] as $option) {
+                    if (isset($option['price'])) {
+                        $total_price += floatval($option['price']);
+                    }
+                }
+            }
+            
+            // Apply weight coefficient
+            if (!empty($data['hpo_weight']) && isset($data['hpo_weight']['coefficient'])) {
+                $coefficient = floatval($data['hpo_weight']['coefficient']);
+                if ($coefficient > 0) {
+                    $total_price *= $coefficient;
+                }
+            }
+            
+            // Add grinding machine price
+            if (!empty($data['hpo_grinding']) && $data['hpo_grinding'] === 'ground' 
+                && !empty($data['hpo_grinding_machine']) && isset($data['hpo_grinding_machine']['price'])) {
+                $total_price += floatval($data['hpo_grinding_machine']['price']);
+            }
+        }
+        
+        // Ensure price is valid
+        $total_price = max(1, $total_price); // Minimum price of 1 to avoid zero price
         
         // Prepare the cart item data
         $cart_item_data = array(
@@ -445,9 +481,9 @@ class HPO_Shortcodes {
                 'grinding' => '',
                 'grinding_machine' => array(),
                 'customer_notes' => '',
-                'base_price' => $base_price,
-                'calculated_price' => 0,
-                'price_per_unit' => 0
+                'base_price' => floatval($product->get_price()),
+                'calculated_price' => $total_price,
+                'price_per_unit' => $total_price // Set both price fields to the same value
             ),
             // Generate a unique key to prevent merging
             'unique_key' => md5(microtime() . rand())
@@ -460,10 +496,8 @@ class HPO_Shortcodes {
                     'category_id' => $category_id,
                     'option_id' => $option['id'],
                     'name' => $option['name'],
-                    'price' => $option['price']
+                    'price' => floatval($option['price'])
                 );
-                // Add option price to total
-                $total_price += floatval($option['price']);
             }
         }
         
@@ -472,14 +506,8 @@ class HPO_Shortcodes {
             $cart_item_data['hpo_custom_data']['weight'] = array(
                 'id' => $data['hpo_weight']['id'],
                 'name' => $data['hpo_weight']['name'],
-                'coefficient' => $data['hpo_weight']['coefficient']
+                'coefficient' => floatval($data['hpo_weight']['coefficient'])
             );
-            
-            // Apply weight coefficient
-            $coefficient = floatval($data['hpo_weight']['coefficient']);
-            if ($coefficient > 0) {
-                $total_price *= $coefficient;
-            }
         }
         
         // Add grinding data if available
@@ -490,11 +518,8 @@ class HPO_Shortcodes {
                 $cart_item_data['hpo_custom_data']['grinding_machine'] = array(
                     'id' => $data['hpo_grinding_machine']['id'],
                     'name' => $data['hpo_grinding_machine']['name'],
-                    'price' => $data['hpo_grinding_machine']['price']
+                    'price' => floatval($data['hpo_grinding_machine']['price'])
                 );
-                
-                // Add grinding machine price
-                $total_price += floatval($data['hpo_grinding_machine']['price']);
             }
         }
         
@@ -502,10 +527,6 @@ class HPO_Shortcodes {
         if (!empty($data['hpo_customer_notes'])) {
             $cart_item_data['hpo_custom_data']['customer_notes'] = sanitize_textarea_field($data['hpo_customer_notes']);
         }
-        
-        // Store the price per unit and calculated price
-        $cart_item_data['hpo_custom_data']['price_per_unit'] = $total_price;
-        $cart_item_data['hpo_custom_data']['calculated_price'] = $total_price;
         
         // Remove any existing items with the same product ID and options before adding
         $cart = WC()->cart->get_cart();
@@ -523,9 +544,13 @@ class HPO_Shortcodes {
         $cart_item_key = WC()->cart->add_to_cart($product_id, $quantity, 0, array(), $cart_item_data);
         
         if ($cart_item_key) {
+            // Force WooCommerce to recalculate totals
+            WC()->cart->calculate_totals();
+            
             wp_send_json_success(array(
                 'message' => 'محصول با موفقیت به سبد خرید اضافه شد.',
-                'cart_item_key' => $cart_item_key
+                'cart_item_key' => $cart_item_key,
+                'price' => $total_price
             ));
         } else {
             wp_send_json_error(array('message' => 'خطا در افزودن محصول به سبد خرید.'));
@@ -918,34 +943,63 @@ class HPO_Shortcodes {
             jQuery(document).ready(function($) {
                 // Function to update all price displays
                 function updateAllPriceDisplays(totalPrice) {
+                    if (!totalPrice || isNaN(totalPrice)) totalPrice = 0;
+                    
                     // Update the total price in the order popup
                     $('#hpo-total-price').text(numberWithCommas(totalPrice) + ' تومان');
                     
-                    // Update WooCommerce price amount in the popup
-                    $('.woocommerce-Price-amount.amount').each(function() {
+                    // Get the product ID to find all related price elements
+                    var productId = $('input[name="product_id"]').val();
+                    
+                    // Update all instances of the product price on the page
+                    $('.hpo-product-details .woocommerce-Price-amount.amount').each(function() {
                         $(this).html('<bdi>' + numberWithCommas(totalPrice) + '&nbsp;<span class="woocommerce-Price-currencySymbol">تومان</span></bdi>');
                     });
+                    
+                    // Update the price in the product form
+                    $('.hpo-product-price').html('<span class="woocommerce-Price-amount amount"><bdi>' + 
+                        numberWithCommas(totalPrice) + 
+                        '&nbsp;<span class="woocommerce-Price-currencySymbol">تومان</span></bdi></span>');
+                    
+                    // Make sure the updated price is saved to the product
+                    var priceField = $('.hpo-product-options-form input[name="hpo_calculated_price"]');
+                    if (priceField.length === 0) {
+                        $('.hpo-product-options-form').append('<input type="hidden" name="hpo_calculated_price" value="' + totalPrice + '">');
+                    } else {
+                        priceField.val(totalPrice);
+                    }
+                    
+                    console.log("Price updated to: " + totalPrice);
                 }
 
                 // Function to calculate total price based on selections
                 function calculateTotalPrice() {
+                    // Only calculate if we're on the product form
+                    if ($('.hpo-product-options-form').length === 0) return 0;
+                    
                     let basePrice = parseFloat($('input[name="hpo_base_price"]').val()) || 0;
                     let totalPrice = basePrice;
 
                     // Add option prices
-                    $('input[type="radio"]:checked').each(function() {
+                    $('input[name^="hpo_option["]:checked').each(function() {
                         let price = parseFloat($(this).data('price')) || 0;
                         totalPrice += price;
                     });
 
                     // Apply weight coefficient
-                    let weightCoefficient = parseFloat($('input[name="hpo_weight"]:checked').data('coefficient')) || 1;
-                    totalPrice *= weightCoefficient;
+                    let weightRadio = $('input[name="hpo_weight"]:checked');
+                    if (weightRadio.length > 0) {
+                        let weightCoefficient = parseFloat(weightRadio.data('coefficient')) || 1;
+                        totalPrice *= weightCoefficient;
+                    }
 
                     // Add grinding machine price if applicable
                     if ($('input[name="hpo_grinding"]:checked').val() === 'ground') {
-                        let grindingPrice = parseFloat($('#hpo-grinding-machine option:selected').data('price')) || 0;
-                        totalPrice += grindingPrice;
+                        let grindingMachine = $('#hpo-grinding-machine option:selected');
+                        if (grindingMachine.val()) {
+                            let grindingPrice = parseFloat(grindingMachine.data('price')) || 0;
+                            totalPrice += grindingPrice;
+                        }
                     }
 
                     return totalPrice;
@@ -967,39 +1021,117 @@ class HPO_Shortcodes {
                 }
 
                 // Update prices when any option changes
-                $('.hpo-product-options-form').on('change', 'input[type="radio"], select', function() {
+                $(document).on('change', '.hpo-product-options-form input[type="radio"], .hpo-product-options-form select', function() {
                     let totalPrice = calculateTotalPrice();
                     updateAllPriceDisplays(totalPrice);
                 });
-
-                // Update cart display when cart is updated
-                $(document.body).on('updated_cart_totals wc_fragments_refreshed added_to_cart', function() {
-                    $('.cart-widget-side .woocommerce-Price-amount.amount').each(function() {
-                        let priceText = $(this).text();
-                        let price = parsePrice(priceText);
+                
+                // Also update on page load to ensure initial price is set
+                var initialPrice = calculateTotalPrice();
+                if (initialPrice > 0) {
+                    updateAllPriceDisplays(initialPrice);
+                }
+                
+                // Also handle the grinding option toggle
+                $(document).on('change', 'input[name="hpo_grinding"]', function() {
+                    if ($(this).val() === 'ground') {
+                        $('.hpo-grinding-machines').show();
+                    } else {
+                        $('.hpo-grinding-machines').hide();
+                    }
+                    let totalPrice = calculateTotalPrice();
+                    updateAllPriceDisplays(totalPrice);
+                });
+                
+                // Direct approach to fix cart prices
+                function fixAllCartPrices() {
+                    // Fix mini cart
+                    $('.widget_shopping_cart_content .mini_cart_item').each(function() {
+                        var $item = $(this);
+                        var $priceElement = $item.find('.woocommerce-Price-amount.amount');
+                        var $quantityElement = $item.find('.quantity');
                         
-                        if (price === 0) {
-                            // Try to find the correct price from cart total
-                            let cartTotalElement = $('.cart-subtotal .amount').first();
-                            if (cartTotalElement.length > 0) {
-                                let cartTotal = cartTotalElement.text();
-                                let correctPrice = parsePrice(cartTotal);
+                        if ($quantityElement.length > 0 && $priceElement.length > 0) {
+                            var quantityText = $quantityElement.text();
+                            var priceMatch = quantityText.match(/(\d+)\s*×\s*([\d,]+)\s*تومان/);
+                            
+                            if (priceMatch && priceMatch[2]) {
+                                var quantity = parseInt(priceMatch[1]) || 1;
+                                var unitPrice = parsePrice(priceMatch[2]);
                                 
-                                if (correctPrice > 0) {
-                                    $(this).html('<bdi>' + numberWithCommas(correctPrice) + '&nbsp;<span class="woocommerce-Price-currencySymbol">تومان</span></bdi>');
+                                if (unitPrice > 0) {
+                                    $priceElement.html('<bdi>' + numberWithCommas(unitPrice) + '&nbsp;<span class="woocommerce-Price-currencySymbol">تومان</span></bdi>');
                                 }
                             }
                         }
                     });
-                });
+                    
+                    // Fix main cart
+                    $('.woocommerce-cart-form__cart-item').each(function() {
+                        var $row = $(this);
+                        var $customQuantity = $row.find('.hpo-custom-quantity');
+                        
+                        if ($customQuantity.length > 0) {
+                            var quantityText = $customQuantity.text();
+                            var priceMatch = quantityText.match(/(\d+)\s*×\s*([\d,]+)\s*تومان/);
+                            
+                            if (priceMatch && priceMatch[2]) {
+                                var quantity = parseInt(priceMatch[1]) || 1;
+                                var unitPrice = parsePrice(priceMatch[2]);
+                                var total = unitPrice * quantity;
+                                
+                                // Update unit price
+                                $row.find('.product-price .woocommerce-Price-amount.amount').html('<bdi>' + 
+                                    numberWithCommas(unitPrice) + '&nbsp;<span class="woocommerce-Price-currencySymbol">تومان</span></bdi>');
+                                
+                                // Update subtotal
+                                $row.find('.product-subtotal .woocommerce-Price-amount.amount').html('<bdi>' + 
+                                    numberWithCommas(total) + '&nbsp;<span class="woocommerce-Price-currencySymbol">تومان</span></bdi>');
+                            }
+                        }
+                    });
+                    
+                    // Fix cart widget side (Woodmart theme specific)
+                    $('body > div.cart-widget-side .widget_shopping_cart_content li').each(function() {
+                        var $item = $(this);
+                        var $priceElement = $item.find('.woocommerce-Price-amount.amount');
+                        var $quantityElement = $item.find('.quantity');
+                        
+                        if ($quantityElement.length > 0 && $priceElement.length > 0) {
+                            var quantityText = $quantityElement.text();
+                            var priceMatch = quantityText.match(/(\d+)\s*×\s*([\d,]+)\s*تومان/);
+                            
+                            if (priceMatch && priceMatch[2]) {
+                                var unitPrice = parsePrice(priceMatch[2]);
+                                
+                                if (unitPrice > 0) {
+                                    $priceElement.html('<bdi>' + numberWithCommas(unitPrice) + '&nbsp;<span class="woocommerce-Price-currencySymbol">تومان</span></bdi>');
+                                    console.log("Cart widget item price updated to: " + unitPrice);
+                                }
+                            }
+                        }
+                    });
+                }
 
-                // Initial calculation on page load
-                setTimeout(function() {
-                    let initialPrice = calculateTotalPrice();
-                    if (initialPrice > 0) {
-                        updateAllPriceDisplays(initialPrice);
-                    }
-                }, 500); // Small delay to ensure form elements are loaded
+                // Run the fixes when cart/fragments are updated
+                $(document.body).on('updated_cart_totals wc_fragments_refreshed added_to_cart wc_fragments_loaded', function() {
+                    setTimeout(fixAllCartPrices, 100);
+                });
+                
+                // Wait for DOM and run immediately as well
+                setTimeout(fixAllCartPrices, 500);
+                
+                // Also when the mini cart is opened
+                $(document).on('click', '.woodmart-cart-icon', function() {
+                    setTimeout(fixAllCartPrices, 500);
+                });
+                
+                // Also when adding to cart
+                $(document).on('click', '.hpo-add-to-cart-button', function() {
+                    setTimeout(function() {
+                        fixAllCartPrices();
+                    }, 1500);
+                });
             });
         </script>
         <?php
