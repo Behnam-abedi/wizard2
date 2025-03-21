@@ -46,6 +46,14 @@ class HPO_Shortcodes {
         
         // Remove default WooCommerce grinding metadata from cart items
         add_filter('woocommerce_display_item_meta', array($this, 'remove_grinding_metadata'), 10, 3);
+        
+        // Override product price in cart display
+        add_filter('woocommerce_widget_cart_item_quantity', array($this, 'modify_mini_cart_quantity'), 10, 3);
+        add_filter('woocommerce_cart_item_quantity', array($this, 'modify_cart_item_quantity'), 10, 3);
+        add_filter('woocommerce_cart_item_quantity_display', array($this, 'modify_cart_item_quantity_display'), 10, 3);
+        
+        // Add custom CSS for cart display
+        add_action('wp_head', array($this, 'add_custom_cart_css'));
     }
     
     /**
@@ -434,7 +442,8 @@ class HPO_Shortcodes {
                 'grinding_machine' => array(),
                 'customer_notes' => '',
                 'base_price' => $base_price,
-                'calculated_price' => 0
+                'calculated_price' => 0,
+                'price_per_unit' => 0
             ),
             // Generate a unique key to prevent merging
             'unique_key' => md5(microtime() . rand())
@@ -490,7 +499,8 @@ class HPO_Shortcodes {
             $cart_item_data['hpo_custom_data']['customer_notes'] = sanitize_textarea_field($data['hpo_customer_notes']);
         }
         
-        // Store the calculated price
+        // Store the price per unit and calculated price
+        $cart_item_data['hpo_custom_data']['price_per_unit'] = $total_price;
         $cart_item_data['hpo_custom_data']['calculated_price'] = $total_price;
         
         // Remove any existing items with the same product ID and options before adding
@@ -599,6 +609,13 @@ class HPO_Shortcodes {
             if (isset($cart_item['hpo_custom_data'])) {
                 $custom_data = $cart_item['hpo_custom_data'];
                 
+                // If we have a price_per_unit, use it
+                if (isset($custom_data['price_per_unit']) && $custom_data['price_per_unit'] > 0) {
+                    // Set the price to the per-unit price so WooCommerce can calculate properly
+                    $cart_item['data']->set_price($custom_data['price_per_unit']);
+                    continue;
+                }
+                
                 // If we have a pre-calculated price, use it
                 if (isset($custom_data['calculated_price']) && $custom_data['calculated_price'] > 0) {
                     // Force update the product price using direct property access
@@ -638,8 +655,9 @@ class HPO_Shortcodes {
                 // Set the new price
                 $cart_item['data']->set_price($total_price);
                 
-                // Store the calculated price for next time
+                // Store the calculated price and per-unit price for next time
                 $cart->cart_contents[$cart_item_key]['hpo_custom_data']['calculated_price'] = $total_price;
+                $cart->cart_contents[$cart_item_key]['hpo_custom_data']['price_per_unit'] = $total_price;
             }
         }
         
@@ -758,6 +776,94 @@ class HPO_Shortcodes {
         // We search for Grinding: Whole (No Grinding) or similar patterns
         $html = preg_replace('/<[^>]+>Grinding:.*?<\/[^>]+>/', '', $html);
         return $html;
+    }
+    
+    /**
+     * Modify mini cart quantity
+     *
+     * @param string $quantity Cart item quantity
+     * @param array $cart_item Cart item data
+     * @param string $cart_item_key Cart item key
+     * @return string Modified cart item quantity
+     */
+    public function modify_mini_cart_quantity($quantity, $cart_item, $cart_item_key) {
+        if (isset($cart_item['hpo_custom_data']) && isset($cart_item['hpo_custom_data']['price_per_unit']) && $cart_item['hpo_custom_data']['price_per_unit'] > 0) {
+            $price = $cart_item['hpo_custom_data']['price_per_unit'];
+            $actual_quantity = $cart_item['quantity'];
+            
+            // Format: quantity × price تومان
+            return $actual_quantity . ' × ' . number_format($price) . ' تومان';
+        }
+        return $quantity;
+    }
+    
+    /**
+     * Modify cart item quantity
+     *
+     * @param string $quantity Cart item quantity
+     * @param array $cart_item Cart item data
+     * @param string $cart_item_key Cart item key
+     * @return string Modified cart item quantity
+     */
+    public function modify_cart_item_quantity($quantity_html, $cart_item, $cart_item_key) {
+        // Only modify our custom products
+        if (isset($cart_item['hpo_custom_data']) && isset($cart_item['hpo_custom_data']['price_per_unit']) && $cart_item['hpo_custom_data']['price_per_unit'] > 0) {
+            $price = $cart_item['hpo_custom_data']['price_per_unit'];
+            $actual_quantity = $cart_item['quantity'];
+            
+            // Completely replace the default quantity HTML with our custom format
+            return '<span class="hpo-custom-quantity">' . $actual_quantity . ' × ' . number_format($price) . ' تومان</span>';
+        }
+        
+        return $quantity_html;
+    }
+    
+    /**
+     * Modify cart item quantity display
+     *
+     * @param string $quantity_html Quantity HTML
+     * @param object $product Product object
+     * @param array $cart_item_data Cart item data
+     * @return string Modified quantity HTML
+     */
+    public function modify_cart_item_quantity_display($quantity_html, $product, $cart_item_data) {
+        // Check if this is one of our custom products
+        if (isset($cart_item_data['hpo_custom_data']) && isset($cart_item_data['hpo_custom_data']['price_per_unit']) && $cart_item_data['hpo_custom_data']['price_per_unit'] > 0) {
+            $price = $cart_item_data['hpo_custom_data']['price_per_unit'];
+            $actual_quantity = $cart_item_data['quantity'];
+            
+            // Create a custom display format
+            return '<span class="hpo-custom-quantity">' . $actual_quantity . ' × ' . number_format($price) . ' تومان</span>';
+        }
+        
+        return $quantity_html;
+    }
+    
+    /**
+     * Add custom CSS for cart display
+     */
+    public function add_custom_cart_css() {
+        ?>
+        <style type="text/css">
+            /* Hide the default price display and replace with our custom one */
+            .woocommerce-mini-cart span.quantity {
+                display: block !important;
+            }
+            
+            /* Custom styling for our quantity display */
+            span.hpo-custom-quantity {
+                display: block;
+                font-weight: bold;
+                margin-top: 5px;
+            }
+            
+            /* Hide the zero price in some WooCommerce templates */
+            .woocommerce-cart-form .product-price:contains("0 تومان"),
+            .woocommerce-mini-cart-item .quantity:contains("0 تومان") {
+                display: none !important;
+            }
+        </style>
+        <?php
     }
 }
 
