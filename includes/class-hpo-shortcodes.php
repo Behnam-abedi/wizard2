@@ -644,6 +644,9 @@ class HPO_Shortcodes {
                     if ($price_per_unit > 0) {
                         // Set the price to the per-unit price so WooCommerce can calculate properly
                         $cart_item['data']->set_price($price_per_unit);
+                        
+                        // Also store the price in WooCommerce's price meta
+                        $cart_item['data']->update_meta_data('_price', $price_per_unit);
                         continue;
                     }
                 }
@@ -654,6 +657,9 @@ class HPO_Shortcodes {
                     if ($calculated_price > 0) {
                         // Force update the product price
                         $cart_item['data']->set_price($calculated_price);
+                        
+                        // Also store the price in WooCommerce's price meta
+                        $cart_item['data']->update_meta_data('_price', $calculated_price);
                         continue;
                     }
                 }
@@ -662,8 +668,9 @@ class HPO_Shortcodes {
                 $base_price = 0;
                 if (isset($custom_data['base_price']) && floatval($custom_data['base_price']) > 0) {
                     $base_price = floatval($custom_data['base_price']);
-                } elseif (isset($cart_item['data'])) {
-                    $base_price = floatval($cart_item['data']->get_price());
+                } else {
+                    // Fallback to the product's regular price if base_price is not set
+                    $base_price = floatval($cart_item['data']->get_regular_price());
                 }
                 
                 // Ensure we have a valid base price
@@ -724,13 +731,33 @@ class HPO_Shortcodes {
      * @return string Modified cart item price
      */
     public function update_cart_item_price($price, $cart_item, $cart_item_key) {
-        // Get the price from custom data or product data
+        // Priority for price sources:
+        // 1. Custom data price_per_unit
+        // 2. Custom data calculated_price
+        // 3. Product object price
         $price_value = 0;
         
-        if (isset($cart_item['hpo_custom_data']) && isset($cart_item['hpo_custom_data']['price_per_unit'])) {
-            $price_value = floatval($cart_item['hpo_custom_data']['price_per_unit']);
-        } elseif (isset($cart_item['data'])) {
+        if (isset($cart_item['hpo_custom_data'])) {
+            if (isset($cart_item['hpo_custom_data']['price_per_unit']) && 
+                $cart_item['hpo_custom_data']['price_per_unit'] > 0) {
+                $price_value = floatval($cart_item['hpo_custom_data']['price_per_unit']);
+            } elseif (isset($cart_item['hpo_custom_data']['calculated_price']) && 
+                     $cart_item['hpo_custom_data']['calculated_price'] > 0) {
+                $price_value = floatval($cart_item['hpo_custom_data']['calculated_price']);
+            }
+        }
+        
+        // If no custom price found, use the product price
+        if ($price_value <= 0 && isset($cart_item['data'])) {
             $price_value = floatval($cart_item['data']->get_price());
+            
+            // If product price is still zero, try to get it from meta
+            if ($price_value <= 0) {
+                $price_meta = $cart_item['data']->get_meta('_price');
+                if ($price_meta) {
+                    $price_value = floatval($price_meta);
+                }
+            }
         }
         
         // Only update if we have a valid price
@@ -789,6 +816,14 @@ class HPO_Shortcodes {
     public function get_cart_item_from_session($cart_item, $values) {
         if (isset($values['hpo_custom_data'])) {
             $cart_item['hpo_custom_data'] = $values['hpo_custom_data'];
+            
+            // Apply the custom price to the product object
+            if (isset($cart_item['data']) && isset($values['hpo_custom_data']['price_per_unit']) 
+                && $values['hpo_custom_data']['price_per_unit'] > 0) {
+                
+                $price = floatval($values['hpo_custom_data']['price_per_unit']);
+                $cart_item['data']->set_price($price);
+            }
         }
         return $cart_item;
     }
@@ -800,8 +835,18 @@ class HPO_Shortcodes {
      * @return array Modified cart item data
      */
     public function setup_cart_item($cart_item) {
-        // We don't map to sanitize_text_field anymore as it flattens arrays
-        // Just ensure we have the correct data structure
+        // Apply the custom price to the product object if we have custom data
+        if (isset($cart_item['hpo_custom_data']) && !empty($cart_item['data'])) {
+            // Check if we have a calculated price
+            if (isset($cart_item['hpo_custom_data']['price_per_unit']) && 
+                $cart_item['hpo_custom_data']['price_per_unit'] > 0) {
+                
+                $calculated_price = floatval($cart_item['hpo_custom_data']['price_per_unit']);
+                // Set the price directly on the product object
+                $cart_item['data']->set_price($calculated_price);
+            }
+        }
+        
         return $cart_item;
     }
     
@@ -848,13 +893,39 @@ class HPO_Shortcodes {
      * @return string Modified cart item quantity
      */
     public function modify_mini_cart_quantity($quantity, $cart_item, $cart_item_key) {
-        if (isset($cart_item['hpo_custom_data']) && isset($cart_item['hpo_custom_data']['price_per_unit']) && $cart_item['hpo_custom_data']['price_per_unit'] > 0) {
-            $price = $cart_item['hpo_custom_data']['price_per_unit'];
+        // Get the price using the same priority as update_cart_item_price
+        $price_value = 0;
+        
+        if (isset($cart_item['hpo_custom_data'])) {
+            if (isset($cart_item['hpo_custom_data']['price_per_unit']) && 
+                $cart_item['hpo_custom_data']['price_per_unit'] > 0) {
+                $price_value = floatval($cart_item['hpo_custom_data']['price_per_unit']);
+            } elseif (isset($cart_item['hpo_custom_data']['calculated_price']) && 
+                     $cart_item['hpo_custom_data']['calculated_price'] > 0) {
+                $price_value = floatval($cart_item['hpo_custom_data']['calculated_price']);
+            }
+        }
+        
+        // If no custom price found, use the product price
+        if ($price_value <= 0 && isset($cart_item['data'])) {
+            $price_value = floatval($cart_item['data']->get_price());
+            
+            // If product price is still zero, try to get it from meta
+            if ($price_value <= 0) {
+                $price_meta = $cart_item['data']->get_meta('_price');
+                if ($price_meta) {
+                    $price_value = floatval($price_meta);
+                }
+            }
+        }
+        
+        if ($price_value > 0) {
             $actual_quantity = $cart_item['quantity'];
             
             // Format: quantity × price تومان
-            return $actual_quantity . ' × ' . number_format($price) . ' تومان';
+            return $actual_quantity . ' × ' . number_format($price_value) . ' تومان';
         }
+        
         return $quantity;
     }
     
@@ -867,13 +938,37 @@ class HPO_Shortcodes {
      * @return string Modified cart item quantity
      */
     public function modify_cart_item_quantity($quantity_html, $cart_item, $cart_item_key) {
-        // Only modify our custom products
-        if (isset($cart_item['hpo_custom_data']) && isset($cart_item['hpo_custom_data']['price_per_unit']) && $cart_item['hpo_custom_data']['price_per_unit'] > 0) {
-            $price = $cart_item['hpo_custom_data']['price_per_unit'];
+        // Get the price using the same priority as other methods
+        $price_value = 0;
+        
+        if (isset($cart_item['hpo_custom_data'])) {
+            if (isset($cart_item['hpo_custom_data']['price_per_unit']) && 
+                $cart_item['hpo_custom_data']['price_per_unit'] > 0) {
+                $price_value = floatval($cart_item['hpo_custom_data']['price_per_unit']);
+            } elseif (isset($cart_item['hpo_custom_data']['calculated_price']) && 
+                     $cart_item['hpo_custom_data']['calculated_price'] > 0) {
+                $price_value = floatval($cart_item['hpo_custom_data']['calculated_price']);
+            }
+        }
+        
+        // If no custom price found, use the product price
+        if ($price_value <= 0 && isset($cart_item['data'])) {
+            $price_value = floatval($cart_item['data']->get_price());
+            
+            // If product price is still zero, try to get it from meta
+            if ($price_value <= 0) {
+                $price_meta = $cart_item['data']->get_meta('_price');
+                if ($price_meta) {
+                    $price_value = floatval($price_meta);
+                }
+            }
+        }
+        
+        if ($price_value > 0) {
             $actual_quantity = $cart_item['quantity'];
             
             // Completely replace the default quantity HTML with our custom format
-            return '<span class="hpo-custom-quantity">' . $actual_quantity . ' × ' . number_format($price) . ' تومان</span>';
+            return '<span class="hpo-custom-quantity">' . $actual_quantity . ' × ' . number_format($price_value) . ' تومان</span>';
         }
         
         return $quantity_html;
@@ -888,13 +983,37 @@ class HPO_Shortcodes {
      * @return string Modified quantity HTML
      */
     public function modify_cart_item_quantity_display($quantity_html, $product, $cart_item_data) {
-        // Check if this is one of our custom products
-        if (isset($cart_item_data['hpo_custom_data']) && isset($cart_item_data['hpo_custom_data']['price_per_unit']) && $cart_item_data['hpo_custom_data']['price_per_unit'] > 0) {
-            $price = $cart_item_data['hpo_custom_data']['price_per_unit'];
-            $actual_quantity = $cart_item_data['quantity'];
+        // Get the price using the same priority as other methods
+        $price_value = 0;
+        
+        if (isset($cart_item_data['hpo_custom_data'])) {
+            if (isset($cart_item_data['hpo_custom_data']['price_per_unit']) && 
+                $cart_item_data['hpo_custom_data']['price_per_unit'] > 0) {
+                $price_value = floatval($cart_item_data['hpo_custom_data']['price_per_unit']);
+            } elseif (isset($cart_item_data['hpo_custom_data']['calculated_price']) && 
+                     $cart_item_data['hpo_custom_data']['calculated_price'] > 0) {
+                $price_value = floatval($cart_item_data['hpo_custom_data']['calculated_price']);
+            }
+        }
+        
+        // If no custom price is found, try to get it from the product
+        if ($price_value <= 0 && $product) {
+            $price_value = floatval($product->get_price());
+            
+            // If product price is still zero, try to get it from meta
+            if ($price_value <= 0) {
+                $price_meta = $product->get_meta('_price');
+                if ($price_meta) {
+                    $price_value = floatval($price_meta);
+                }
+            }
+        }
+        
+        if ($price_value > 0) {
+            $actual_quantity = isset($cart_item_data['quantity']) ? $cart_item_data['quantity'] : 1;
             
             // Create a custom display format
-            return '<span class="hpo-custom-quantity">' . $actual_quantity . ' × ' . number_format($price) . ' تومان</span>';
+            return '<span class="hpo-custom-quantity">' . $actual_quantity . ' × ' . number_format($price_value) . ' تومان</span>';
         }
         
         return $quantity_html;
