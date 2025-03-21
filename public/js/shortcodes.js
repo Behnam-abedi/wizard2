@@ -119,31 +119,90 @@ jQuery(document).ready(function($) {
         $('.hpo-product-options-form').on('submit', function(e) {
             e.preventDefault();
             
-            var formData = $(this).serialize();
-            var productId = $('input[name="product_id"]').val();
+            var form = $(this);
+            var productId = form.find('input[name="product_id"]').val();
+            
+            // Create data object to collect all selections
+            var formData = {
+                'product_id': productId,
+                'quantity': form.find('input[name="quantity"]').val(),
+                'add-to-cart': productId,
+                'hpo_options': {},
+                'hpo_weight': '',
+                'hpo_grinding': form.find('input[name="hpo_grinding"]:checked').val(),
+                'hpo_grinding_machine': '',
+                'hpo_customer_notes': form.find('textarea[name="hpo_customer_notes"]').val()
+            };
+            
+            // Get selected options
+            form.find('input[name^="hpo_option"]:checked').each(function() {
+                var categoryId = $(this).attr('name').match(/\[(\d+)\]/)[1];
+                var optionId = $(this).val();
+                var optionName = $(this).closest('label').text().trim();
+                var optionPrice = $(this).data('price');
+                
+                formData.hpo_options[categoryId] = {
+                    id: optionId,
+                    name: optionName,
+                    price: optionPrice
+                };
+            });
+            
+            // Get selected weight
+            var selectedWeight = form.find('input[name="hpo_weight"]:checked');
+            if (selectedWeight.length) {
+                formData.hpo_weight = {
+                    id: selectedWeight.val(),
+                    name: selectedWeight.closest('label').text().trim(),
+                    coefficient: selectedWeight.data('coefficient')
+                };
+            }
+            
+            // Get grinding machine if grinding is selected
+            if (formData.hpo_grinding === 'ground') {
+                var grindingMachine = form.find('select[name="hpo_grinding_machine"]');
+                if (grindingMachine.val()) {
+                    formData.hpo_grinding_machine = {
+                        id: grindingMachine.val(),
+                        name: grindingMachine.find('option:selected').text().trim(),
+                        price: grindingMachine.find('option:selected').data('price')
+                    };
+                }
+            }
+            
+            // Convert the data object to a string for AJAX
+            var serializedData = $.param({
+                'action': 'hpo_add_to_cart',
+                'nonce': hpoAjax.nonce,
+                'hpo_data': JSON.stringify(formData)
+            });
             
             // Add to cart via AJAX
             $.ajax({
-                url: wc_add_to_cart_params.wc_ajax_url.toString().replace('%%endpoint%%', 'add_to_cart'),
+                url: hpoAjax.ajaxUrl,
                 type: 'POST',
-                data: formData + '&add-to-cart=' + productId,
+                data: serializedData,
                 success: function(response) {
-                    // Close popups
-                    $('#hpo-product-details-popup').fadeOut(300);
-                    $('#hpo-popup-overlay').fadeOut(300);
-                    
-                    // Show success message
-                    $('body').append('<div class="hpo-success-message">محصول با موفقیت به سبد خرید اضافه شد.</div>');
-                    
-                    // Update mini cart
-                    $(document.body).trigger('wc_fragment_refresh');
-                    
-                    // Remove message after 3 seconds
-                    setTimeout(function() {
-                        $('.hpo-success-message').fadeOut(300, function() {
-                            $(this).remove();
-                        });
-                    }, 3000);
+                    if (response.success) {
+                        // Close popups
+                        $('#hpo-product-details-popup').fadeOut(300);
+                        $('#hpo-popup-overlay').fadeOut(300);
+                        
+                        // Show success message
+                        $('body').append('<div class="hpo-success-message">محصول با موفقیت به سبد خرید اضافه شد.</div>');
+                        
+                        // Update mini cart
+                        $(document.body).trigger('wc_fragment_refresh');
+                        
+                        // Remove message after 3 seconds
+                        setTimeout(function() {
+                            $('.hpo-success-message').fadeOut(300, function() {
+                                $(this).remove();
+                            });
+                        }, 3000);
+                    } else {
+                        alert(response.data.message || 'خطا در افزودن محصول به سبد خرید.');
+                    }
                 },
                 error: function() {
                     alert('خطا در افزودن محصول به سبد خرید.');
@@ -186,10 +245,10 @@ jQuery(document).ready(function($) {
         
         // Format the price (basic formatting, you may need to adjust based on your needs)
         var formattedPrice = new Intl.NumberFormat('fa-IR', {
-            style: 'currency',
-            currency: 'IRR',
-            minimumFractionDigits: 0
-        }).format(totalPrice);
+            style: 'decimal',
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0
+        }).format(totalPrice) + ' تومان';
         
         // Update the display
         $('#hpo-total-price').text(formattedPrice);

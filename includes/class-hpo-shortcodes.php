@@ -22,6 +22,15 @@ class HPO_Shortcodes {
         
         add_action('wp_ajax_hpo_load_product_details', array($this, 'ajax_load_product_details'));
         add_action('wp_ajax_nopriv_hpo_load_product_details', array($this, 'ajax_load_product_details'));
+        
+        // Register AJAX handler for adding to cart
+        add_action('wp_ajax_hpo_add_to_cart', array($this, 'ajax_add_to_cart'));
+        add_action('wp_ajax_nopriv_hpo_add_to_cart', array($this, 'ajax_add_to_cart'));
+        
+        // Cart item display and price filters
+        add_filter('woocommerce_get_item_data', array($this, 'add_cart_item_custom_data'), 10, 2);
+        add_filter('woocommerce_cart_item_price', array($this, 'update_cart_item_price'), 10, 3);
+        add_filter('woocommerce_before_calculate_totals', array($this, 'calculate_cart_item_prices'), 10, 1);
     }
     
     /**
@@ -367,6 +376,211 @@ class HPO_Shortcodes {
             'html' => $html,
             'product_title' => $product->get_name()
         ));
+    }
+    
+    /**
+     * AJAX handler for adding products to cart with custom options
+     */
+    public function ajax_add_to_cart() {
+        check_ajax_referer('hpo_ajax_nonce', 'nonce');
+        
+        if (empty($_POST['hpo_data'])) {
+            wp_send_json_error(array('message' => 'داده‌های نامعتبر.'));
+            return;
+        }
+        
+        // Parse the JSON data
+        $data = json_decode(stripslashes($_POST['hpo_data']), true);
+        
+        if (!is_array($data) || empty($data['product_id'])) {
+            wp_send_json_error(array('message' => 'داده‌های نامعتبر.'));
+            return;
+        }
+        
+        $product_id = absint($data['product_id']);
+        $quantity = isset($data['quantity']) ? absint($data['quantity']) : 1;
+        
+        // Prepare the cart item data
+        $cart_item_data = array(
+            'hpo_custom_data' => array(
+                'options' => array(),
+                'weight' => array(),
+                'grinding' => '',
+                'grinding_machine' => array(),
+                'customer_notes' => ''
+            )
+        );
+        
+        // Add options data if available
+        if (!empty($data['hpo_options']) && is_array($data['hpo_options'])) {
+            foreach ($data['hpo_options'] as $category_id => $option) {
+                $cart_item_data['hpo_custom_data']['options'][] = array(
+                    'category_id' => $category_id,
+                    'option_id' => $option['id'],
+                    'name' => $option['name'],
+                    'price' => $option['price']
+                );
+            }
+        }
+        
+        // Add weight data if available
+        if (!empty($data['hpo_weight'])) {
+            $cart_item_data['hpo_custom_data']['weight'] = array(
+                'id' => $data['hpo_weight']['id'],
+                'name' => $data['hpo_weight']['name'],
+                'coefficient' => $data['hpo_weight']['coefficient']
+            );
+        }
+        
+        // Add grinding data if available
+        if (!empty($data['hpo_grinding'])) {
+            $cart_item_data['hpo_custom_data']['grinding'] = $data['hpo_grinding'];
+            
+            if ($data['hpo_grinding'] === 'ground' && !empty($data['hpo_grinding_machine'])) {
+                $cart_item_data['hpo_custom_data']['grinding_machine'] = array(
+                    'id' => $data['hpo_grinding_machine']['id'],
+                    'name' => $data['hpo_grinding_machine']['name'],
+                    'price' => $data['hpo_grinding_machine']['price']
+                );
+            }
+        }
+        
+        // Add customer notes if available
+        if (!empty($data['hpo_customer_notes'])) {
+            $cart_item_data['hpo_custom_data']['customer_notes'] = sanitize_textarea_field($data['hpo_customer_notes']);
+        }
+        
+        // Generate a unique key for this cart item to prevent merging with others
+        $cart_item_data['unique_key'] = md5(json_encode($cart_item_data) . microtime());
+        
+        // Add the product to the cart
+        $cart_item_key = WC()->cart->add_to_cart($product_id, $quantity, 0, array(), $cart_item_data);
+        
+        if ($cart_item_key) {
+            wp_send_json_success(array(
+                'message' => 'محصول با موفقیت به سبد خرید اضافه شد.',
+                'cart_item_key' => $cart_item_key
+            ));
+        } else {
+            wp_send_json_error(array('message' => 'خطا در افزودن محصول به سبد خرید.'));
+        }
+    }
+    
+    /**
+     * Add custom data to cart item
+     *
+     * @param array $item_data Array of item data
+     * @param array $cart_item Cart item data
+     * @return array Modified item data
+     */
+    public function add_cart_item_custom_data($item_data, $cart_item) {
+        if (isset($cart_item['hpo_custom_data'])) {
+            $custom_data = $cart_item['hpo_custom_data'];
+            
+            if (!empty($custom_data['options'])) {
+                foreach ($custom_data['options'] as $option) {
+                    $formatted_price = number_format($option['price']) . ' تومان';
+                    $item_data[] = array(
+                        'key' => 'گزینه',
+                        'value' => $option['name'],
+                        'display' => $option['name'] . ' (' . $formatted_price . ')'
+                    );
+                }
+            }
+            
+            if (!empty($custom_data['weight'])) {
+                $coefficient = floatval($custom_data['weight']['coefficient']);
+                $coefficient_text = $coefficient > 1 ? ' ×' . $coefficient : '';
+                $item_data[] = array(
+                    'key' => 'وزن',
+                    'value' => $custom_data['weight']['name'],
+                    'display' => $custom_data['weight']['name'] . $coefficient_text
+                );
+            }
+            
+            if (!empty($custom_data['grinding'])) {
+                $grinding_text = $custom_data['grinding'] === 'ground' ? 'آسیاب شده' : 'دانه کامل';
+                $item_data[] = array(
+                    'key' => 'آسیاب',
+                    'value' => $grinding_text,
+                    'display' => $grinding_text
+                );
+            }
+            
+            if (!empty($custom_data['grinding_machine'])) {
+                $formatted_price = number_format($custom_data['grinding_machine']['price']) . ' تومان';
+                $item_data[] = array(
+                    'key' => 'دستگاه آسیاب',
+                    'value' => $custom_data['grinding_machine']['name'],
+                    'display' => $custom_data['grinding_machine']['name'] . ' (' . $formatted_price . ')'
+                );
+            }
+            
+            if (!empty($custom_data['customer_notes'])) {
+                $item_data[] = array(
+                    'key' => 'توضیحات',
+                    'value' => $custom_data['customer_notes'],
+                    'display' => $custom_data['customer_notes']
+                );
+            }
+        }
+        
+        return $item_data;
+    }
+    
+    /**
+     * Calculate cart item prices
+     *
+     * @param WC_Cart $cart Cart object
+     */
+    public function calculate_cart_item_prices($cart) {
+        if (is_admin() && !defined('DOING_AJAX')) {
+            return;
+        }
+        
+        foreach ($cart->get_cart() as $cart_item_key => $cart_item) {
+            if (isset($cart_item['hpo_custom_data'])) {
+                $base_price = $cart_item['data']->get_price();
+                $custom_data = $cart_item['hpo_custom_data'];
+                $total_price = $base_price;
+                
+                // Add option prices
+                if (!empty($custom_data['options'])) {
+                    foreach ($custom_data['options'] as $option) {
+                        $total_price += floatval($option['price']);
+                    }
+                }
+                
+                // Apply weight coefficient
+                if (!empty($custom_data['weight'])) {
+                    $coefficient = floatval($custom_data['weight']['coefficient']);
+                    if ($coefficient > 0) {
+                        $total_price *= $coefficient;
+                    }
+                }
+                
+                // Add grinding machine price
+                if (!empty($custom_data['grinding']) && $custom_data['grinding'] === 'ground' && !empty($custom_data['grinding_machine'])) {
+                    $total_price += floatval($custom_data['grinding_machine']['price']);
+                }
+                
+                // Set the new price
+                $cart_item['data']->set_price($total_price);
+            }
+        }
+    }
+    
+    /**
+     * Update cart item price
+     *
+     * @param string $price Cart item price
+     * @param array $cart_item Cart item data
+     * @param string $cart_item_key Cart item key
+     * @return string Modified cart item price
+     */
+    public function update_cart_item_price($price, $cart_item, $cart_item_key) {
+        // Just return the price as calculated by WooCommerce, since we modified it in calculate_cart_item_prices
+        return $price;
     }
 }
 
