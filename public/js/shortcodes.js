@@ -18,6 +18,10 @@ jQuery(document).ready(function($) {
                 if (response.success) {
                     $('#hpo-product-list').html(response.data.html);
                     initProductSelection();
+                    // Add next step button
+                    if (!$('.hpo-next-step').length) {
+                        $('#hpo-product-list').append('<button class="hpo-next-step">مرحله بعد</button>');
+                    }
                 } else {
                     $('#hpo-product-list').html('<p>خطا در بارگذاری محصولات.</p>');
                 }
@@ -40,9 +44,25 @@ jQuery(document).ready(function($) {
     
     // Initialize product selection functionality
     function initProductSelection() {
-        $('.hpo-select-product').on('click', function() {
-            var productId = $(this).data('product-id');
-            loadProductDetails(productId);
+        let selectedProductId = null;
+
+        // Handle product item click
+        $('.hpo-product-item').on('click', function() {
+            // Remove selection from other products
+            $('.hpo-product-item').removeClass('selected');
+            // Add selection to clicked product
+            $(this).addClass('selected');
+            // Store the selected product ID
+            selectedProductId = $(this).data('product-id');
+        });
+
+        // Handle next step button click
+        $(document).on('click', '.hpo-next-step', function() {
+            if (selectedProductId) {
+                loadProductDetails(selectedProductId);
+            } else {
+                alert('لطفا یک محصول را انتخاب کنید.');
+            }
         });
     }
     

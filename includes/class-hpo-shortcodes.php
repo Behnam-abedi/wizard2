@@ -178,17 +178,14 @@ class HPO_Shortcodes {
                 if ($product) {
                     ?>
                     <div class="hpo-product-item" data-product-id="<?php echo esc_attr($product_id); ?>">
-                        <div class="hpo-product-image">
-                            <?php echo $product->get_image('thumbnail'); ?>
-                        </div>
                         <div class="hpo-product-info">
                             <h4><?php echo esc_html($product->get_name()); ?></h4>
-                            <div class="hpo-product-price">
-                                <?php echo $product->get_price_html(); ?>
-                            </div>
-                            <button class="hpo-select-product" data-product-id="<?php echo esc_attr($product_id); ?>">
-                                انتخاب
-                            </button>
+                            <?php
+                            $description = $product->get_short_description();
+                            if (!empty($description)) {
+                                echo '<div class="hpo-product-description">' . wp_kses_post($description) . '</div>';
+                            }
+                            ?>
                         </div>
                     </div>
                     <?php
