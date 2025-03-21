@@ -264,7 +264,7 @@ class HPO_Shortcodes {
                                                value="<?php echo esc_attr($opt_product->id); ?>" 
                                                data-price="<?php echo esc_attr($opt_product->price); ?>">
                                         <?php echo esc_html($opt_product->name); ?>
-                                        <span class="hpo-option-price">(<?php echo number_format($opt_product->price); ?> تومان کیلویی)</span>
+                                        <span class="hpo-option-price">(<?php echo number_format($opt_product->price); ?> تومان)</span>
                                     </label>
                                 </div>
                                 <?php endforeach; ?>
@@ -290,7 +290,7 @@ class HPO_Shortcodes {
                                                        value="<?php echo esc_attr($child_product->id); ?>" 
                                                        data-price="<?php echo esc_attr($child_product->price); ?>">
                                                 <?php echo esc_html($child_product->name); ?>
-                                                <span class="hpo-option-price">(<?php echo number_format($child_product->price); ?> تومان کیلویی)</span>
+                                                <span class="hpo-option-price">(<?php echo number_format($child_product->price); ?> تومان)</span>
                                             </label>
                                         </div>
                                         <?php endforeach; ?>
@@ -516,62 +516,72 @@ class HPO_Shortcodes {
      * @return array Modified item data
      */
     public function add_cart_item_custom_data($item_data, $cart_item) {
-        // First, remove any default WooCommerce grinding metadata
+        // First, remove any default WooCommerce metadata that we handle ourselves
         foreach ($item_data as $key => $data) {
-            if (isset($data['key']) && $data['key'] === 'Grinding') {
+            if (isset($data['key']) && ($data['key'] === 'Grinding' || $data['key'] === 'Weight' || $data['key'] === 'گزینه' || $data['key'] === 'وزن' || $data['key'] === 'آسیاب' || $data['key'] === 'قیمت محاسبه شده')) {
                 unset($item_data[$key]);
             }
         }
         
-        // Then add our custom data
+        // Then add our custom data in the exact format requested
         if (isset($cart_item['hpo_custom_data'])) {
             $custom_data = $cart_item['hpo_custom_data'];
             
+            // 1. Product options
             if (!empty($custom_data['options'])) {
                 foreach ($custom_data['options'] as $option) {
                     $formatted_price = number_format($option['price']) . ' تومان';
                     $item_data[] = array(
                         'key' => 'گزینه',
                         'value' => $option['name'],
-                        'display' => $option['name'] . ' (' . $formatted_price . ' کیلویی)'
+                        'display' => $option['name'] . ' (' . $formatted_price . ')'
                     );
                 }
             }
             
+            // 2. Weight options
             if (!empty($custom_data['weight'])) {
-                $coefficient = floatval($custom_data['weight']['coefficient']);
-                $coefficient_text = $coefficient > 1 ? ' ×' . $coefficient : '';
                 $item_data[] = array(
                     'key' => 'وزن',
                     'value' => $custom_data['weight']['name'],
-                    'display' => $custom_data['weight']['name'] . $coefficient_text
+                    'display' => $custom_data['weight']['name']
                 );
             }
             
+            // 3. Grinding status
             if (!empty($custom_data['grinding'])) {
-                $grinding_text = $custom_data['grinding'] === 'ground' ? 'آسیاب شده' : 'دانه کامل';
-                $item_data[] = array(
-                    'key' => 'آسیاب',
-                    'value' => $grinding_text,
-                    'display' => $grinding_text
-                );
-                
-                // Only add grinding machine if grinding is 'ground'
-                if ($custom_data['grinding'] === 'ground' && !empty($custom_data['grinding_machine'])) {
-                    $formatted_price = number_format($custom_data['grinding_machine']['price']) . ' تومان';
+                if ($custom_data['grinding'] === 'whole') {
                     $item_data[] = array(
-                        'key' => 'دستگاه آسیاب',
-                        'value' => $custom_data['grinding_machine']['name'],
-                        'display' => $custom_data['grinding_machine']['name'] . ' (' . $formatted_price . ')'
+                        'key' => 'وضعیت آسیاب',
+                        'value' => 'بدون آسیاب',
+                        'display' => 'بدون آسیاب'
+                    );
+                } else if ($custom_data['grinding'] === 'ground' && !empty($custom_data['grinding_machine'])) {
+                    $grinding_text = 'آسیاب شود برای: ' . $custom_data['grinding_machine']['name'];
+                    $item_data[] = array(
+                        'key' => 'وضعیت آسیاب',
+                        'value' => $grinding_text,
+                        'display' => $grinding_text
                     );
                 }
             }
             
+            // 4. Customer notes (if any)
             if (!empty($custom_data['customer_notes'])) {
                 $item_data[] = array(
                     'key' => 'توضیحات',
                     'value' => $custom_data['customer_notes'],
                     'display' => $custom_data['customer_notes']
+                );
+            }
+            
+            // 5. Display calculated price
+            if (isset($custom_data['calculated_price']) && $custom_data['calculated_price'] > 0) {
+                $calculated_price = number_format($custom_data['calculated_price']) . ' تومان';
+                $item_data[] = array(
+                    'key' => 'قیمت محاسبه شده',
+                    'value' => $calculated_price,
+                    'display' => $calculated_price
                 );
             }
         }
