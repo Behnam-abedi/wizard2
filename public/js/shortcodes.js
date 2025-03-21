@@ -116,9 +116,22 @@ jQuery(document).ready(function($) {
             
             // Handle visual selection for product options
             if ($(this).attr('name').startsWith('hpo_option')) {
-                // Remove selected class from all options in this category
-                var name = $(this).attr('name');
-                $('input[name="' + name + '"]').closest('.hpo-product-option').removeClass('selected');
+                // Show a brief message that only one option can be selected
+                var optionSection = $(this).closest('.hpo-option-section');
+                if (!optionSection.find('.hpo-option-notice').length) {
+                    optionSection.find('h3').after('<div class="hpo-option-notice">فقط یک گزینه می‌توانید انتخاب کنید</div>');
+                    setTimeout(function() {
+                        $('.hpo-option-notice').fadeOut(500, function() {
+                            $(this).remove();
+                        });
+                    }, 2000);
+                }
+                
+                // Uncheck all other product options in the entire option section
+                $('.hpo-option-section input[name^="hpo_option"]').not(this).prop('checked', false);
+                
+                // Remove selected class from all product options
+                $('.hpo-product-option').removeClass('selected');
                 
                 // Add selected class to the current option
                 $(this).closest('.hpo-product-option').addClass('selected');
@@ -154,18 +167,19 @@ jQuery(document).ready(function($) {
             };
             
             // Get selected options
-            form.find('input[name^="hpo_option"]:checked').each(function() {
-                var categoryId = $(this).attr('name').match(/\[(\d+)\]/)[1];
-                var optionId = $(this).val();
-                var optionName = $(this).closest('label').text().trim();
-                var optionPrice = $(this).data('price');
+            var selectedOption = form.find('input[name^="hpo_option"]:checked');
+            if (selectedOption.length) {
+                var categoryId = selectedOption.attr('name').match(/\[(\d+)\]/)[1];
+                var optionId = selectedOption.val();
+                var optionName = selectedOption.closest('label').text().trim();
+                var optionPrice = selectedOption.data('price');
                 
                 formData.hpo_options[categoryId] = {
                     id: optionId,
                     name: optionName,
                     price: optionPrice
                 };
-            });
+            }
             
             // Get selected weight
             var selectedWeight = form.find('input[name="hpo_weight"]:checked');
@@ -237,10 +251,11 @@ jQuery(document).ready(function($) {
         var quantity = parseInt(form.find('input[name="quantity"]').val());
         var totalPrice = basePrice;
         
-        // Add product option prices from both parent and child categories
-        form.find('input[name^="hpo_option"]:checked').each(function() {
-            totalPrice += parseFloat($(this).data('price'));
-        });
+        // Add product option price (now just one selected option)
+        var selectedOption = form.find('input[name^="hpo_option"]:checked');
+        if (selectedOption.length) {
+            totalPrice += parseFloat(selectedOption.data('price'));
+        }
         
         // Apply weight coefficient
         var weightOption = form.find('input[name="hpo_weight"]:checked');
