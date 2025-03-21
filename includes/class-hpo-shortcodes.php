@@ -127,21 +127,6 @@ class HPO_Shortcodes {
                 </div>
             </div>
         </div>
-        
-        <div class="hpo-product-details-popup" id="hpo-product-details-popup" style="display: none;">
-            <div class="hpo-popup-container">
-                <div class="hpo-popup-header">
-                    <h3 id="hpo-product-title">جزئیات محصول</h3>
-                    <span class="hpo-popup-close" id="hpo-product-details-close">&times;</span>
-                </div>
-                <div class="hpo-popup-content">
-                    <div id="hpo-product-details-content">
-                        <!-- Product details will be loaded here via AJAX -->
-                        <div class="hpo-loading">در حال بارگذاری...</div>
-                    </div>
-                </div>
-            </div>
-        </div>
         <?php
         return ob_get_clean();
     }

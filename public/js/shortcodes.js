@@ -37,11 +37,6 @@ jQuery(document).ready(function($) {
         $('#hpo-popup-overlay').fadeOut(300);
     });
     
-    // Close product details popup
-    $('#hpo-product-details-close').on('click', function() {
-        $('#hpo-product-details-popup').fadeOut(300);
-    });
-    
     // Initialize product selection functionality
     function initProductSelection() {
         let selectedProductId = null;
@@ -77,26 +72,66 @@ jQuery(document).ready(function($) {
                 product_id: productId
             },
             beforeSend: function() {
-                $('#hpo-product-details-content').html('<div class="hpo-loading">در حال بارگذاری...</div>');
-                $('#hpo-product-title').text('جزئیات محصول');
-                $('#hpo-product-details-popup').fadeIn(300);
+                // Show loading in the same popup
+                $('#hpo-product-list').html('<div class="hpo-loading">در حال بارگذاری...</div>');
+                $('.hpo-popup-header h3').text('جزئیات محصول');
             },
             success: function(response) {
                 if (response.success) {
-                    $('#hpo-product-details-content').html(response.data.html);
-                    $('#hpo-product-title').text(response.data.product_title);
+                    // Update the content in the same popup
+                    $('#hpo-product-list').html(response.data.html);
+                    $('.hpo-popup-header h3').text(response.data.product_title);
+                    
+                    // Add back button
+                    if (!$('.hpo-back-button').length) {
+                        $('.hpo-popup-header').prepend('<button class="hpo-back-button">بازگشت</button>');
+                    }
                     
                     // Initialize product options form
                     initProductOptionsForm();
                 } else {
-                    $('#hpo-product-details-content').html('<p>' + response.data.message + '</p>');
+                    $('#hpo-product-list').html('<p>' + response.data.message + '</p>');
                 }
             },
             error: function() {
-                $('#hpo-product-details-content').html('<p>خطا در ارتباط با سرور.</p>');
+                $('#hpo-product-list').html('<p>خطا در ارتباط با سرور.</p>');
             }
         });
     }
+
+    // Handle back button click
+    $(document).on('click', '.hpo-back-button', function() {
+        // Reload the products list
+        $.ajax({
+            url: hpoAjax.ajaxUrl,
+            type: 'POST',
+            data: {
+                action: 'hpo_load_products',
+                nonce: hpoAjax.nonce
+            },
+            beforeSend: function() {
+                $('#hpo-product-list').html('<div class="hpo-loading">در حال بارگذاری...</div>');
+            },
+            success: function(response) {
+                if (response.success) {
+                    $('#hpo-product-list').html(response.data.html);
+                    initProductSelection();
+                    // Add next step button
+                    if (!$('.hpo-next-step').length) {
+                        $('#hpo-product-list').append('<button class="hpo-next-step">مرحله بعد</button>');
+                    }
+                    // Update header and remove back button
+                    $('.hpo-popup-header h3').text('انتخاب محصول');
+                    $('.hpo-back-button').remove();
+                } else {
+                    $('#hpo-product-list').html('<p>خطا در بارگذاری محصولات.</p>');
+                }
+            },
+            error: function() {
+                $('#hpo-product-list').html('<p>خطا در ارتباط با سرور.</p>');
+            }
+        });
+    });
     
     // Initialize product options form
     function initProductOptionsForm() {

@@ -53,6 +53,7 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
+    position: relative;
 }
 
 .hpo-popup-header h3 {
@@ -62,6 +63,7 @@
     color: #2271b1;
     width: 100%;
     text-align: center;
+    padding: 0 60px;
 }
 
 .hpo-popup-close {
@@ -473,4 +475,25 @@
 
 .hpo-child-category .hpo-products {
     padding-right: 10px;
+}
+
+/* Back Button */
+.hpo-back-button {
+    position: absolute;
+    right: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+    padding: 8px 15px;
+    background-color: #f0f0f1;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    color: #2271b1;
+    transition: all 0.3s ease;
+}
+
+.hpo-back-button:hover {
+    background-color: #e0e0e1;
+    color: #135e96;
 } 
