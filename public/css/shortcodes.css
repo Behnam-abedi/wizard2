@@ -396,4 +396,33 @@
         flex-direction: column;
         gap: 10px;
     }
+}
+
+/* Child Categories */
+.hpo-child-categories {
+    margin-top: 15px;
+    padding: 10px;
+    background: #f0f0f0;
+    border-radius: 4px;
+    border-right: 3px solid #2271b1;
+}
+
+.hpo-child-category {
+    margin-bottom: 15px;
+}
+
+.hpo-child-category:last-child {
+    margin-bottom: 0;
+}
+
+.hpo-child-category h5 {
+    margin: 0 0 8px;
+    font-size: 14px;
+    color: #2271b1;
+    padding-bottom: 5px;
+    border-bottom: 1px dashed #ddd;
+}
+
+.hpo-child-category .hpo-products {
+    padding-right: 10px;
 } 

@@ -159,7 +159,7 @@ jQuery(document).ready(function($) {
         var quantity = parseInt(form.find('input[name="quantity"]').val());
         var totalPrice = basePrice;
         
-        // Add product option prices
+        // Add product option prices from both parent and child categories
         form.find('input[name^="hpo_option"]:checked').each(function() {
             totalPrice += parseFloat($(this).data('price'));
         });

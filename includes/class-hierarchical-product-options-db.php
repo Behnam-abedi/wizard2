@@ -689,4 +689,24 @@ class Hierarchical_Product_Options_DB {
             array('id' => $id)
         );
     }
+
+    /**
+     * Get all categories assigned to a WooCommerce product
+     *
+     * @param int $wc_product_id WooCommerce product ID
+     * @return array All categories (both parent and child)
+     */
+    public function get_categories_for_product($wc_product_id) {
+        global $wpdb;
+        
+        $sql = $wpdb->prepare(
+            "SELECT c.* FROM $this->categories_table c
+             JOIN $this->assignments_table a ON c.id = a.category_id
+             WHERE a.wc_product_id = %d
+             ORDER BY c.parent_id, c.sort_order",
+            $wc_product_id
+        );
+        
+        return $wpdb->get_results($sql);
+    }
 } 

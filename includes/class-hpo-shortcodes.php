@@ -186,7 +186,23 @@ class HPO_Shortcodes {
         }
         
         $db = new Hierarchical_Product_Options_DB();
-        $options = $db->get_options_for_product($product_id);
+        
+        // Get all categories for this product (both parent and child)
+        $categories = $db->get_categories_for_product($product_id);
+        
+        // Organize categories into hierarchical structure
+        $parent_categories = array();
+        $child_categories = array();
+        
+        foreach ($categories as $category) {
+            if ($category->parent_id == 0) {
+                $parent_categories[] = $category;
+            } else {
+                $child_categories[$category->parent_id][] = $category;
+            }
+        }
+        
+        // Get weight options
         $weights = $db->get_weights_for_product($product_id);
         
         ob_start();
@@ -211,21 +227,22 @@ class HPO_Shortcodes {
                 <input type="hidden" name="product_id" value="<?php echo esc_attr($product_id); ?>">
                 <input type="hidden" name="hpo_base_price" value="<?php echo esc_attr($product->get_price()); ?>">
                 
-                <?php if (!empty($options)): ?>
+                <?php if (!empty($parent_categories)): ?>
                 <div class="hpo-option-section">
                     <h3>گزینه‌های محصول</h3>
                     <div class="hpo-options-list">
-                        <?php foreach ($options as $category): ?>
+                        <?php foreach ($parent_categories as $parent): ?>
                         <div class="hpo-category">
-                            <h4><?php echo esc_html($category->name); ?></h4>
+                            <h4><?php echo esc_html($parent->name); ?></h4>
                             <div class="hpo-products">
                                 <?php 
-                                $products = $db->get_products_by_category($category->id);
-                                foreach ($products as $opt_product): 
+                                // Get products for parent category
+                                $parent_products = $db->get_products_by_category($parent->id);
+                                foreach ($parent_products as $opt_product): 
                                 ?>
                                 <div class="hpo-product-option">
                                     <label>
-                                        <input type="radio" name="hpo_option[<?php echo esc_attr($category->id); ?>]" 
+                                        <input type="radio" name="hpo_option[<?php echo esc_attr($parent->id); ?>]" 
                                                value="<?php echo esc_attr($opt_product->id); ?>" 
                                                data-price="<?php echo esc_attr($opt_product->price); ?>">
                                         <?php echo esc_html($opt_product->name); ?>
@@ -234,6 +251,36 @@ class HPO_Shortcodes {
                                 </div>
                                 <?php endforeach; ?>
                             </div>
+                            
+                            <?php 
+                            // Display child categories for this parent
+                            if (isset($child_categories[$parent->id]) && !empty($child_categories[$parent->id])): 
+                            ?>
+                            <div class="hpo-child-categories">
+                                <?php foreach ($child_categories[$parent->id] as $child): ?>
+                                <div class="hpo-child-category">
+                                    <h5><?php echo esc_html($child->name); ?></h5>
+                                    <div class="hpo-products">
+                                        <?php 
+                                        // Get products for child category
+                                        $child_products = $db->get_products_by_category($child->id);
+                                        foreach ($child_products as $child_product): 
+                                        ?>
+                                        <div class="hpo-product-option">
+                                            <label>
+                                                <input type="radio" name="hpo_option[<?php echo esc_attr($child->id); ?>]" 
+                                                       value="<?php echo esc_attr($child_product->id); ?>" 
+                                                       data-price="<?php echo esc_attr($child_product->price); ?>">
+                                                <?php echo esc_html($child_product->name); ?>
+                                                <span class="hpo-option-price">(<?php echo wc_price($child_product->price); ?>)</span>
+                                            </label>
+                                        </div>
+                                        <?php endforeach; ?>
+                                    </div>
+                                </div>
+                                <?php endforeach; ?>
+                            </div>
+                            <?php endif; ?>
                         </div>
                         <?php endforeach; ?>
                     </div>
