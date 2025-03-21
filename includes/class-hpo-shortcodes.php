@@ -30,7 +30,16 @@ class HPO_Shortcodes {
         // Cart item display and price filters
         add_filter('woocommerce_get_item_data', array($this, 'add_cart_item_custom_data'), 10, 2);
         add_filter('woocommerce_cart_item_price', array($this, 'update_cart_item_price'), 10, 3);
+        add_filter('woocommerce_cart_item_subtotal', array($this, 'update_cart_item_price'), 10, 3);
         add_filter('woocommerce_before_calculate_totals', array($this, 'calculate_cart_item_prices'), 10, 1);
+        
+        // Filter to change price display format for our popups
+        add_filter('woocommerce_get_price_html', array($this, 'format_price_html'), 100, 2);
+        
+        // Ensure our custom data is preserved and products with options don't get merged in cart
+        add_filter('woocommerce_add_cart_item_data', array($this, 'prevent_cart_merging'), 10, 2);
+        add_filter('woocommerce_add_cart_item', array($this, 'setup_cart_item'), 10, 1);
+        add_filter('woocommerce_get_cart_item_from_session', array($this, 'get_cart_item_from_session'), 10, 2);
     }
     
     /**
@@ -255,7 +264,7 @@ class HPO_Shortcodes {
                                                value="<?php echo esc_attr($opt_product->id); ?>" 
                                                data-price="<?php echo esc_attr($opt_product->price); ?>">
                                         <?php echo esc_html($opt_product->name); ?>
-                                        <span class="hpo-option-price">(<?php echo wc_price($opt_product->price); ?>)</span>
+                                        <span class="hpo-option-price">(<?php echo number_format($opt_product->price); ?> تومان کیلویی)</span>
                                     </label>
                                 </div>
                                 <?php endforeach; ?>
@@ -281,7 +290,7 @@ class HPO_Shortcodes {
                                                        value="<?php echo esc_attr($child_product->id); ?>" 
                                                        data-price="<?php echo esc_attr($child_product->price); ?>">
                                                 <?php echo esc_html($child_product->name); ?>
-                                                <span class="hpo-option-price">(<?php echo wc_price($child_product->price); ?>)</span>
+                                                <span class="hpo-option-price">(<?php echo number_format($child_product->price); ?> تومان کیلویی)</span>
                                             </label>
                                         </div>
                                         <?php endforeach; ?>
@@ -338,7 +347,7 @@ class HPO_Shortcodes {
                                 ?>
                                 <option value="<?php echo esc_attr($grinder->id); ?>" 
                                         data-price="<?php echo esc_attr($grinder->price); ?>">
-                                    <?php echo esc_html($grinder->name); ?>
+                                    <?php echo esc_html($grinder->name); ?> (<?php echo number_format($grinder->price); ?> تومان)
                                 </option>
                                 <?php endforeach; ?>
                             </select>
@@ -362,7 +371,7 @@ class HPO_Shortcodes {
                 
                 <div class="hpo-total-price">
                     <span class="hpo-total-label">قیمت نهایی:</span>
-                    <span class="hpo-total-value" id="hpo-total-price"><?php echo wc_price($product->get_price()); ?></span>
+                    <span class="hpo-total-value" id="hpo-total-price"><?php echo number_format($product->get_price()); ?> تومان</span>
                 </div>
                 
                 <div class="hpo-add-to-cart">
@@ -408,7 +417,9 @@ class HPO_Shortcodes {
                 'grinding' => '',
                 'grinding_machine' => array(),
                 'customer_notes' => ''
-            )
+            ),
+            // Generate a unique key to prevent merging
+            'unique_key' => md5(microtime() . rand())
         );
         
         // Add options data if available
@@ -450,8 +461,13 @@ class HPO_Shortcodes {
             $cart_item_data['hpo_custom_data']['customer_notes'] = sanitize_textarea_field($data['hpo_customer_notes']);
         }
         
-        // Generate a unique key for this cart item to prevent merging with others
-        $cart_item_data['unique_key'] = md5(json_encode($cart_item_data) . microtime());
+        // Remove any existing items with the same product ID and options before adding
+        $cart = WC()->cart->get_cart();
+        foreach ($cart as $cart_item_key => $cart_item) {
+            if (isset($cart_item['product_id']) && $cart_item['product_id'] == $product_id && isset($cart_item['hpo_custom_data'])) {
+                WC()->cart->remove_cart_item($cart_item_key);
+            }
+        }
         
         // Add the product to the cart
         $cart_item_key = WC()->cart->add_to_cart($product_id, $quantity, 0, array(), $cart_item_data);
@@ -483,7 +499,7 @@ class HPO_Shortcodes {
                     $item_data[] = array(
                         'key' => 'گزینه',
                         'value' => $option['name'],
-                        'display' => $option['name'] . ' (' . $formatted_price . ')'
+                        'display' => $option['name'] . ' (' . $formatted_price . ' کیلویی)'
                     );
                 }
             }
@@ -505,15 +521,16 @@ class HPO_Shortcodes {
                     'value' => $grinding_text,
                     'display' => $grinding_text
                 );
-            }
-            
-            if (!empty($custom_data['grinding_machine'])) {
-                $formatted_price = number_format($custom_data['grinding_machine']['price']) . ' تومان';
-                $item_data[] = array(
-                    'key' => 'دستگاه آسیاب',
-                    'value' => $custom_data['grinding_machine']['name'],
-                    'display' => $custom_data['grinding_machine']['name'] . ' (' . $formatted_price . ')'
-                );
+                
+                // Only add grinding machine if grinding is 'ground'
+                if ($custom_data['grinding'] === 'ground' && !empty($custom_data['grinding_machine'])) {
+                    $formatted_price = number_format($custom_data['grinding_machine']['price']) . ' تومان';
+                    $item_data[] = array(
+                        'key' => 'دستگاه آسیاب',
+                        'value' => $custom_data['grinding_machine']['name'],
+                        'display' => $custom_data['grinding_machine']['name'] . ' (' . $formatted_price . ')'
+                    );
+                }
             }
             
             if (!empty($custom_data['customer_notes'])) {
@@ -579,8 +596,72 @@ class HPO_Shortcodes {
      * @return string Modified cart item price
      */
     public function update_cart_item_price($price, $cart_item, $cart_item_key) {
-        // Just return the price as calculated by WooCommerce, since we modified it in calculate_cart_item_prices
+        // Format the price in Toman instead of the WooCommerce default format
+        if (isset($cart_item['data']) && $cart_item['data']->get_price() > 0) {
+            $price_value = $cart_item['data']->get_price();
+            return number_format($price_value) . ' تومان';
+        }
         return $price;
+    }
+    
+    /**
+     * Filter to change price display format for our popups
+     *
+     * @param string $price Price HTML
+     * @param WC_Product $product Product object
+     * @return string Modified price HTML
+     */
+    public function format_price_html($price, $product) {
+        if (is_admin() && !defined('DOING_AJAX')) {
+            return $price;
+        }
+        
+        if ($product->get_price() > 0) {
+            $price_value = $product->get_price();
+            return number_format($price_value) . ' تومان';
+        }
+        return $price;
+    }
+    
+    /**
+     * Ensure our custom data is preserved and products with options don't get merged in cart
+     *
+     * @param array $cart_item_data Cart item data
+     * @param int $product_id Product ID
+     * @return array Modified cart item data
+     */
+    public function prevent_cart_merging($cart_item_data, $product_id) {
+        if (isset($cart_item_data['hpo_custom_data'])) {
+            $cart_item_data['unique_key'] = md5(json_encode($cart_item_data) . microtime());
+        }
+        return $cart_item_data;
+    }
+    
+    /**
+     * Setup cart item
+     *
+     * @param array $cart_item Cart item data
+     * @return array Modified cart item data
+     */
+    public function setup_cart_item($cart_item) {
+        if (isset($cart_item['hpo_custom_data'])) {
+            $cart_item['hpo_custom_data'] = array_map('sanitize_text_field', $cart_item['hpo_custom_data']);
+        }
+        return $cart_item;
+    }
+    
+    /**
+     * Get cart item from session
+     *
+     * @param array $cart_item Cart item data
+     * @param array $values Cart item values
+     * @return array Modified cart item data
+     */
+    public function get_cart_item_from_session($cart_item, $values) {
+        if (isset($values['hpo_custom_data'])) {
+            $cart_item['hpo_custom_data'] = $values['hpo_custom_data'];
+        }
+        return $cart_item;
     }
 }
 
