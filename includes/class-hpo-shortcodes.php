@@ -28,7 +28,7 @@ class HPO_Shortcodes {
         add_action('wp_ajax_nopriv_hpo_add_to_cart', array($this, 'ajax_add_to_cart'));
         
         // Cart item display and price filters
-        add_filter('woocommerce_get_item_data', array($this, 'add_cart_item_custom_data'), 10, 2);
+        add_filter('woocommerce_get_item_data', array($this, 'add_cart_item_custom_data'), 100, 2);
         add_filter('woocommerce_cart_item_price', array($this, 'update_cart_item_price'), 10, 3);
         add_filter('woocommerce_cart_item_subtotal', array($this, 'update_cart_item_price'), 10, 3);
         add_filter('woocommerce_before_calculate_totals', array($this, 'calculate_cart_item_prices'), 10, 1);
@@ -40,6 +40,12 @@ class HPO_Shortcodes {
         add_filter('woocommerce_add_cart_item_data', array($this, 'prevent_cart_merging'), 10, 2);
         add_filter('woocommerce_add_cart_item', array($this, 'setup_cart_item'), 10, 1);
         add_filter('woocommerce_get_cart_item_from_session', array($this, 'get_cart_item_from_session'), 10, 2);
+        
+        // Add filter to modify the product name in cart
+        add_filter('woocommerce_cart_item_name', array($this, 'modify_cart_item_name'), 10, 3);
+        
+        // Remove default WooCommerce grinding metadata from cart items
+        add_filter('woocommerce_display_item_meta', array($this, 'remove_grinding_metadata'), 10, 3);
     }
     
     /**
@@ -518,7 +524,9 @@ class HPO_Shortcodes {
     public function add_cart_item_custom_data($item_data, $cart_item) {
         // First, remove any default WooCommerce metadata that we handle ourselves
         foreach ($item_data as $key => $data) {
-            if (isset($data['key']) && ($data['key'] === 'Grinding' || $data['key'] === 'Weight' || $data['key'] === 'گزینه' || $data['key'] === 'وزن' || $data['key'] === 'آسیاب' || $data['key'] === 'قیمت محاسبه شده')) {
+            if (isset($data['key']) && ($data['key'] === 'Grinding' || $data['key'] === 'Weight' || $data['key'] === 'گزینه' || 
+                $data['key'] === 'وزن' || $data['key'] === 'آسیاب' || $data['key'] === 'وضعیت آسیاب' || 
+                $data['key'] === 'قیمت محاسبه شده' || $data['key'] === 'grinding_display' || $data['key'] === 'weight_display')) {
                 unset($item_data[$key]);
             }
         }
@@ -527,7 +535,7 @@ class HPO_Shortcodes {
         if (isset($cart_item['hpo_custom_data'])) {
             $custom_data = $cart_item['hpo_custom_data'];
             
-            // 1. Product options
+            // 1. Product options displayed with each option
             if (!empty($custom_data['options'])) {
                 foreach ($custom_data['options'] as $option) {
                     $formatted_price = number_format($option['price']) . ' تومان';
@@ -575,15 +583,7 @@ class HPO_Shortcodes {
                 );
             }
             
-            // 5. Display calculated price
-            if (isset($custom_data['calculated_price']) && $custom_data['calculated_price'] > 0) {
-                $calculated_price = number_format($custom_data['calculated_price']) . ' تومان';
-                $item_data[] = array(
-                    'key' => 'قیمت محاسبه شده',
-                    'value' => $calculated_price,
-                    'display' => $calculated_price
-                );
-            }
+            // We no longer show the calculated price here as it will be shown as the main product price
         }
         
         // Clean up the array by reindexing
@@ -657,7 +657,10 @@ class HPO_Shortcodes {
      */
     public function update_cart_item_price($price, $cart_item, $cart_item_key) {
         // Format the price in Toman instead of the WooCommerce default format
-        if (isset($cart_item['data']) && $cart_item['data']->get_price() > 0) {
+        if (isset($cart_item['hpo_custom_data']) && isset($cart_item['hpo_custom_data']['calculated_price']) && $cart_item['hpo_custom_data']['calculated_price'] > 0) {
+            $price_value = $cart_item['hpo_custom_data']['calculated_price'];
+            return number_format($price_value) . ' تومان';
+        } else if (isset($cart_item['data']) && $cart_item['data']->get_price() > 0) {
             $price_value = $cart_item['data']->get_price();
             return number_format($price_value) . ' تومان';
         }
@@ -698,19 +701,6 @@ class HPO_Shortcodes {
     }
     
     /**
-     * Setup cart item
-     *
-     * @param array $cart_item Cart item data
-     * @return array Modified cart item data
-     */
-    public function setup_cart_item($cart_item) {
-        if (isset($cart_item['hpo_custom_data'])) {
-            $cart_item['hpo_custom_data'] = array_map('sanitize_text_field', $cart_item['hpo_custom_data']);
-        }
-        return $cart_item;
-    }
-    
-    /**
      * Get cart item from session
      *
      * @param array $cart_item Cart item data
@@ -722,6 +712,52 @@ class HPO_Shortcodes {
             $cart_item['hpo_custom_data'] = $values['hpo_custom_data'];
         }
         return $cart_item;
+    }
+    
+    /**
+     * Setup cart item
+     *
+     * @param array $cart_item Cart item data
+     * @return array Modified cart item data
+     */
+    public function setup_cart_item($cart_item) {
+        // We don't map to sanitize_text_field anymore as it flattens arrays
+        // Just ensure we have the correct data structure
+        return $cart_item;
+    }
+    
+    /**
+     * Modify cart item name
+     *
+     * @param string $name Cart item name
+     * @param array $cart_item Cart item data
+     * @param array $cart_item_key Cart item key
+     * @return string Modified cart item name
+     */
+    public function modify_cart_item_name($name, $cart_item, $cart_item_key) {
+        if (isset($cart_item['hpo_custom_data']) && isset($cart_item['hpo_custom_data']['options'])) {
+            $options = array();
+            foreach ($cart_item['hpo_custom_data']['options'] as $option) {
+                $options[] = $option['name'];
+            }
+            $name .= ' (' . implode(', ', $options) . ')';
+        }
+        return $name;
+    }
+    
+    /**
+     * Remove grinding metadata from cart item
+     *
+     * @param string $html The metadata HTML
+     * @param array $item The cart item
+     * @param array $args Arguments for the display
+     * @return string Modified metadata HTML
+     */
+    public function remove_grinding_metadata($html, $item, $args) {
+        // This is a simple approach to remove the Grinding metadata
+        // We search for Grinding: Whole (No Grinding) or similar patterns
+        $html = preg_replace('/<[^>]+>Grinding:.*?<\/[^>]+>/', '', $html);
+        return $html;
     }
 }
 
