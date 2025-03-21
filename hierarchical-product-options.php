@@ -23,6 +23,9 @@ define('HPO_PLUGIN_URL', plugin_dir_url(__FILE__));
 // Include the main plugin class
 require_once HPO_PLUGIN_DIR . 'includes/class-hierarchical-product-options.php';
 
+// Include the shortcodes class
+require_once HPO_PLUGIN_DIR . 'includes/class-hpo-shortcodes.php';
+
 // Initialize the plugin
 function run_hierarchical_product_options() {
     $plugin = new Hierarchical_Product_Options();
