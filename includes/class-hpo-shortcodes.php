@@ -678,14 +678,24 @@ class HPO_Shortcodes {
      * @return string Modified cart item price
      */
     public function update_cart_item_price($price, $cart_item, $cart_item_key) {
-        // Format the price in Toman instead of the WooCommerce default format
-        if (isset($cart_item['hpo_custom_data']) && isset($cart_item['hpo_custom_data']['price_per_unit']) && $cart_item['hpo_custom_data']['price_per_unit'] > 0) {
+        // Get the price from custom data or product data
+        $price_value = 0;
+        
+        if (isset($cart_item['hpo_custom_data']) && isset($cart_item['hpo_custom_data']['price_per_unit'])) {
             $price_value = $cart_item['hpo_custom_data']['price_per_unit'];
-            return '<span class="woocommerce-Price-amount amount"><bdi>' . number_format($price_value) . ' تومان</bdi></span>';
-        } else if (isset($cart_item['data']) && $cart_item['data']->get_price() > 0) {
+        } elseif (isset($cart_item['data'])) {
             $price_value = $cart_item['data']->get_price();
-            return '<span class="woocommerce-Price-amount amount"><bdi>' . number_format($price_value) . ' تومان</bdi></span>';
         }
+        
+        // Only update if we have a valid price
+        if ($price_value > 0) {
+            // Format the price with the exact HTML structure WooCommerce expects
+            return sprintf(
+                '<span class="woocommerce-Price-amount amount"><bdi>%s&nbsp;<span class="woocommerce-Price-currencySymbol">تومان</span></bdi></span>',
+                number_format($price_value)
+            );
+        }
+        
         return $price;
     }
     
