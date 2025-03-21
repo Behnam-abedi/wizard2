@@ -198,44 +198,24 @@ jQuery(document).ready(function($) {
         var optionPrice = parseFloat($(this).data('price'));
         var optionName = $(this).data('name');
         var isChecked = $(this).prop('checked');
+        var categoryId = $(this).attr('name').match(/\[(\d+)\]/)[1];
         
         // For form submission
         $('#hpo-selected-option').val(optionId);
         
-        // Handle the selected option in our tracking array
-        if ($(this).attr('type') === 'radio') {
-            // For radio buttons, replace any option from the same group
-            var groupName = $(this).attr('name');
-            
-            // Remove previous selection from this group
-            selectedOptions = selectedOptions.filter(function(option) {
-                return option.group !== groupName;
+        // Remove any previous selection from this category
+        selectedOptions = selectedOptions.filter(function(option) {
+            return option.categoryId !== categoryId;
+        });
+        
+        // Add new selection if checked
+        if (isChecked) {
+            selectedOptions.push({
+                id: optionId,
+                price: optionPrice,
+                name: optionName,
+                categoryId: categoryId
             });
-            
-            // Add new selection
-            if (isChecked) {
-                selectedOptions.push({
-                    id: optionId,
-                    price: optionPrice,
-                    name: optionName,
-                    group: groupName
-                });
-            }
-        } else {
-            // For checkboxes, add or remove based on checked state
-            if (isChecked) {
-                // Add this option if checked
-                selectedOptions.push({
-                    id: optionId,
-                    price: optionPrice,
-                    name: optionName
-                });
-            } else {
-                // Remove this option if unchecked
-                selectedOptions = selectedOptions.filter(function(option) {
-                    return option.id !== optionId;
-                });
-            }
         }
         
         console.log("Current selected options:", selectedOptions);
@@ -401,13 +381,13 @@ jQuery(document).ready(function($) {
         }
         
         // Prepare the selected options for submission
-        // Selected options
         var selectedOptionsArray = [];
         selectedOptions.forEach(function(option) {
             selectedOptionsArray.push({
                 id: option.id,
                 name: option.name,
-                price: parseFloat(option.price)
+                price: parseFloat(option.price),
+                categoryId: option.categoryId
             });
         });
         
@@ -418,6 +398,13 @@ jQuery(document).ready(function($) {
         
         // Create a hidden field for categories if needed
         var selectedCategoriesArray = [];
+        selectedOptions.forEach(function(option) {
+            selectedCategoriesArray.push({
+                id: option.categoryId,
+                name: $('input[name="hpo_product_option[' + option.categoryId + ']"]:checked').closest('.hpo-products-options').data('category-name'),
+                price: 0
+            });
+        });
         var selectedCategoriesJson = JSON.stringify(selectedCategoriesArray);
         var categoriesField = $('<input type="hidden" name="hpo_selected_categories" />').val(selectedCategoriesJson);
         $(this).append(categoriesField);
@@ -446,11 +433,11 @@ jQuery(document).ready(function($) {
 function hpo_render_category_content($category, $settings) {
     // Render products
     if (!empty($category->products)): ?>
-        <div class="hpo-products-options" data-category-id="<?php echo esc_attr($category->id); ?>">
+        <div class="hpo-products-options" data-category-id="<?php echo esc_attr($category->id); ?>" data-category-name="<?php echo esc_attr($category->name); ?>">
             <?php foreach ($category->products as $product): ?>
             <div class="hpo-product-option-wrapper">
                 <label>
-                    <input type="radio" name="hpo_product_option" class="hpo-product-option" 
+                    <input type="radio" name="hpo_product_option[<?php echo esc_attr($category->id); ?>]" class="hpo-product-option" 
                            value="<?php echo esc_attr($product->id); ?>"
                            data-price="<?php echo esc_attr(floatval($product->price)); ?>"
                            data-name="<?php echo esc_attr($product->name); ?>">
