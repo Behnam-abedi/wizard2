@@ -614,31 +614,46 @@ class HPO_Shortcodes {
                 $custom_data = $cart_item['hpo_custom_data'];
                 
                 // If we have a price_per_unit, use it
-                if (isset($custom_data['price_per_unit']) && $custom_data['price_per_unit'] > 0) {
-                    // Set the price to the per-unit price so WooCommerce can calculate properly
-                    $cart_item['data']->set_price($custom_data['price_per_unit']);
-                    continue;
+                if (isset($custom_data['price_per_unit'])) {
+                    $price_per_unit = floatval($custom_data['price_per_unit']);
+                    if ($price_per_unit > 0) {
+                        // Set the price to the per-unit price so WooCommerce can calculate properly
+                        $cart_item['data']->set_price($price_per_unit);
+                        continue;
+                    }
                 }
                 
                 // If we have a pre-calculated price, use it
-                if (isset($custom_data['calculated_price']) && $custom_data['calculated_price'] > 0) {
-                    // Force update the product price using direct property access
-                    // This ensures the price is always set correctly
-                    $cart_item['data']->set_price($custom_data['calculated_price']);
-                    continue;
+                if (isset($custom_data['calculated_price'])) {
+                    $calculated_price = floatval($custom_data['calculated_price']);
+                    if ($calculated_price > 0) {
+                        // Force update the product price
+                        $cart_item['data']->set_price($calculated_price);
+                        continue;
+                    }
                 }
                 
                 // Otherwise calculate the price
-                $base_price = isset($custom_data['base_price']) && $custom_data['base_price'] > 0 
-                    ? $custom_data['base_price'] 
-                    : $cart_item['data']->get_price();
+                $base_price = 0;
+                if (isset($custom_data['base_price']) && floatval($custom_data['base_price']) > 0) {
+                    $base_price = floatval($custom_data['base_price']);
+                } elseif (isset($cart_item['data'])) {
+                    $base_price = floatval($cart_item['data']->get_price());
+                }
                 
+                // Ensure we have a valid base price
+                $base_price = max(0, $base_price);
                 $total_price = $base_price;
                 
                 // Add option prices
                 if (!empty($custom_data['options'])) {
                     foreach ($custom_data['options'] as $option) {
-                        $total_price += floatval($option['price']);
+                        if (isset($option['price'])) {
+                            $option_price = floatval($option['price']);
+                            if ($option_price > 0) {
+                                $total_price += $option_price;
+                            }
+                        }
                     }
                 }
                 
@@ -653,8 +668,14 @@ class HPO_Shortcodes {
                 // Add grinding machine price
                 if (!empty($custom_data['grinding']) && $custom_data['grinding'] === 'ground' 
                     && !empty($custom_data['grinding_machine']) && isset($custom_data['grinding_machine']['price'])) {
-                    $total_price += floatval($custom_data['grinding_machine']['price']);
+                    $grinding_price = floatval($custom_data['grinding_machine']['price']);
+                    if ($grinding_price > 0) {
+                        $total_price += $grinding_price;
+                    }
                 }
+                
+                // Ensure total price is valid
+                $total_price = max(0, $total_price);
                 
                 // Set the new price
                 $cart_item['data']->set_price($total_price);
@@ -682,9 +703,9 @@ class HPO_Shortcodes {
         $price_value = 0;
         
         if (isset($cart_item['hpo_custom_data']) && isset($cart_item['hpo_custom_data']['price_per_unit'])) {
-            $price_value = $cart_item['hpo_custom_data']['price_per_unit'];
+            $price_value = floatval($cart_item['hpo_custom_data']['price_per_unit']);
         } elseif (isset($cart_item['data'])) {
-            $price_value = $cart_item['data']->get_price();
+            $price_value = floatval($cart_item['data']->get_price());
         }
         
         // Only update if we have a valid price
@@ -696,6 +717,7 @@ class HPO_Shortcodes {
             );
         }
         
+        // Fallback to default price format if our price is zero or invalid
         return $price;
     }
     
@@ -931,7 +953,17 @@ class HPO_Shortcodes {
 
                 // Helper function to format numbers with commas
                 function numberWithCommas(x) {
+                    // Make sure x is a valid number
+                    x = parseFloat(x) || 0;
                     return Math.round(x).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+                }
+                
+                // Function to safely parse price text to number
+                function parsePrice(priceText) {
+                    // Remove all non-digit characters and parse as integer
+                    if (!priceText) return 0;
+                    let digits = priceText.replace(/[^\d]/g, '');
+                    return digits ? parseInt(digits) : 0;
                 }
 
                 // Update prices when any option changes
@@ -944,19 +976,30 @@ class HPO_Shortcodes {
                 $(document.body).on('updated_cart_totals wc_fragments_refreshed added_to_cart', function() {
                     $('.cart-widget-side .woocommerce-Price-amount.amount').each(function() {
                         let priceText = $(this).text();
-                        let price = parseInt(priceText.replace(/[^\d]/g, ''));
+                        let price = parsePrice(priceText);
+                        
                         if (price === 0) {
-                            // Find the correct price from the cart total
-                            let cartTotal = $('.cart-subtotal .amount').first().text();
-                            let correctPrice = parseInt(cartTotal.replace(/[^\d]/g, ''));
-                            $(this).html('<bdi>' + numberWithCommas(correctPrice) + '&nbsp;<span class="woocommerce-Price-currencySymbol">تومان</span></bdi>');
+                            // Try to find the correct price from cart total
+                            let cartTotalElement = $('.cart-subtotal .amount').first();
+                            if (cartTotalElement.length > 0) {
+                                let cartTotal = cartTotalElement.text();
+                                let correctPrice = parsePrice(cartTotal);
+                                
+                                if (correctPrice > 0) {
+                                    $(this).html('<bdi>' + numberWithCommas(correctPrice) + '&nbsp;<span class="woocommerce-Price-currencySymbol">تومان</span></bdi>');
+                                }
+                            }
                         }
                     });
                 });
 
                 // Initial calculation on page load
-                let initialPrice = calculateTotalPrice();
-                updateAllPriceDisplays(initialPrice);
+                setTimeout(function() {
+                    let initialPrice = calculateTotalPrice();
+                    if (initialPrice > 0) {
+                        updateAllPriceDisplays(initialPrice);
+                    }
+                }, 500); // Small delay to ensure form elements are loaded
             });
         </script>
         <?php
@@ -975,7 +1018,7 @@ class HPO_Shortcodes {
             // Get the cart
             $cart = WC()->cart;
             if (!$cart) {
-                return $price;
+                return floatval($price);
             }
             
             // Get the product ID
@@ -989,17 +1032,20 @@ class HPO_Shortcodes {
                     
                     // If we have custom data with a calculated price, use it
                     if (isset($cart_item['hpo_custom_data']) && 
-                        isset($cart_item['hpo_custom_data']['price_per_unit']) && 
-                        $cart_item['hpo_custom_data']['price_per_unit'] > 0) {
+                        isset($cart_item['hpo_custom_data']['price_per_unit'])) {
                         
-                        // Return our custom calculated price
-                        return $cart_item['hpo_custom_data']['price_per_unit'];
+                        $custom_price = floatval($cart_item['hpo_custom_data']['price_per_unit']);
+                        if ($custom_price > 0) {
+                            // Return our custom calculated price
+                            return $custom_price;
+                        }
                     }
                 }
             }
         }
         
-        return $price;
+        // Always return a valid price
+        return floatval($price);
     }
 }
 
