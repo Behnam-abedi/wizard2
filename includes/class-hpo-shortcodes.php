@@ -409,6 +409,16 @@ class HPO_Shortcodes {
         $product_id = absint($data['product_id']);
         $quantity = isset($data['quantity']) ? absint($data['quantity']) : 1;
         
+        // Get product to get base price
+        $product = wc_get_product($product_id);
+        if (!$product) {
+            wp_send_json_error(array('message' => 'محصول یافت نشد.'));
+            return;
+        }
+        
+        $base_price = $product->get_price();
+        $total_price = $base_price;
+        
         // Prepare the cart item data
         $cart_item_data = array(
             'hpo_custom_data' => array(
@@ -416,7 +426,9 @@ class HPO_Shortcodes {
                 'weight' => array(),
                 'grinding' => '',
                 'grinding_machine' => array(),
-                'customer_notes' => ''
+                'customer_notes' => '',
+                'base_price' => $base_price,
+                'calculated_price' => 0
             ),
             // Generate a unique key to prevent merging
             'unique_key' => md5(microtime() . rand())
@@ -431,6 +443,8 @@ class HPO_Shortcodes {
                     'name' => $option['name'],
                     'price' => $option['price']
                 );
+                // Add option price to total
+                $total_price += floatval($option['price']);
             }
         }
         
@@ -441,6 +455,12 @@ class HPO_Shortcodes {
                 'name' => $data['hpo_weight']['name'],
                 'coefficient' => $data['hpo_weight']['coefficient']
             );
+            
+            // Apply weight coefficient
+            $coefficient = floatval($data['hpo_weight']['coefficient']);
+            if ($coefficient > 0) {
+                $total_price *= $coefficient;
+            }
         }
         
         // Add grinding data if available
@@ -453,6 +473,9 @@ class HPO_Shortcodes {
                     'name' => $data['hpo_grinding_machine']['name'],
                     'price' => $data['hpo_grinding_machine']['price']
                 );
+                
+                // Add grinding machine price
+                $total_price += floatval($data['hpo_grinding_machine']['price']);
             }
         }
         
@@ -460,6 +483,9 @@ class HPO_Shortcodes {
         if (!empty($data['hpo_customer_notes'])) {
             $cart_item_data['hpo_custom_data']['customer_notes'] = sanitize_textarea_field($data['hpo_customer_notes']);
         }
+        
+        // Store the calculated price
+        $cart_item_data['hpo_custom_data']['calculated_price'] = $total_price;
         
         // Remove any existing items with the same product ID and options before adding
         $cart = WC()->cart->get_cart();
@@ -490,6 +516,14 @@ class HPO_Shortcodes {
      * @return array Modified item data
      */
     public function add_cart_item_custom_data($item_data, $cart_item) {
+        // First, remove any default WooCommerce grinding metadata
+        foreach ($item_data as $key => $data) {
+            if (isset($data['key']) && $data['key'] === 'Grinding') {
+                unset($item_data[$key]);
+            }
+        }
+        
+        // Then add our custom data
         if (isset($cart_item['hpo_custom_data'])) {
             $custom_data = $cart_item['hpo_custom_data'];
             
@@ -542,7 +576,8 @@ class HPO_Shortcodes {
             }
         }
         
-        return $item_data;
+        // Clean up the array by reindexing
+        return array_values($item_data);
     }
     
     /**
@@ -557,8 +592,19 @@ class HPO_Shortcodes {
         
         foreach ($cart->get_cart() as $cart_item_key => $cart_item) {
             if (isset($cart_item['hpo_custom_data'])) {
-                $base_price = $cart_item['data']->get_price();
                 $custom_data = $cart_item['hpo_custom_data'];
+                
+                // If we have a pre-calculated price, use it
+                if (isset($custom_data['calculated_price']) && $custom_data['calculated_price'] > 0) {
+                    $cart_item['data']->set_price($custom_data['calculated_price']);
+                    continue;
+                }
+                
+                // Otherwise calculate the price
+                $base_price = isset($custom_data['base_price']) && $custom_data['base_price'] > 0 
+                    ? $custom_data['base_price'] 
+                    : $cart_item['data']->get_price();
+                
                 $total_price = $base_price;
                 
                 // Add option prices
@@ -569,7 +615,7 @@ class HPO_Shortcodes {
                 }
                 
                 // Apply weight coefficient
-                if (!empty($custom_data['weight'])) {
+                if (!empty($custom_data['weight']) && isset($custom_data['weight']['coefficient'])) {
                     $coefficient = floatval($custom_data['weight']['coefficient']);
                     if ($coefficient > 0) {
                         $total_price *= $coefficient;
@@ -577,12 +623,16 @@ class HPO_Shortcodes {
                 }
                 
                 // Add grinding machine price
-                if (!empty($custom_data['grinding']) && $custom_data['grinding'] === 'ground' && !empty($custom_data['grinding_machine'])) {
+                if (!empty($custom_data['grinding']) && $custom_data['grinding'] === 'ground' 
+                    && !empty($custom_data['grinding_machine']) && isset($custom_data['grinding_machine']['price'])) {
                     $total_price += floatval($custom_data['grinding_machine']['price']);
                 }
                 
                 // Set the new price
                 $cart_item['data']->set_price($total_price);
+                
+                // Store the calculated price for next time
+                $cart->cart_contents[$cart_item_key]['hpo_custom_data']['calculated_price'] = $total_price;
             }
         }
     }
