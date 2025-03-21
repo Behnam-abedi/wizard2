@@ -873,7 +873,7 @@ class HPO_Shortcodes {
             
             /* Fix the product price in cart by ensuring the woocommerce-Price-amount shows our custom price */
             .woocommerce-cart .woocommerce-Price-amount.amount {
-                display: none;
+                display: inline-block !important;
             }
             
             /* Show our custom price format instead */
@@ -894,40 +894,69 @@ class HPO_Shortcodes {
         </style>
         <script type="text/javascript">
             jQuery(document).ready(function($) {
-                // Function to update price display
-                function updateCartPriceDisplay() {
-                    // Check if we're on a cart page
-                    if ($('.woocommerce-cart-form').length > 0) {
-                        // Find all custom quantity elements and extract their price
-                        $('.hpo-custom-quantity').each(function() {
-                            var priceText = $(this).text();
-                            var priceMatch = priceText.match(/(\d+) × ([\d,]+) تومان/);
-                            
-                            if (priceMatch && priceMatch.length >= 3) {
-                                var quantity = parseInt(priceMatch[1]);
-                                var unitPrice = priceMatch[2].replace(/,/g, '');
-                                var totalPrice = quantity * parseInt(unitPrice);
-                                
-                                // Find the nearby price amount and update it
-                                var $row = $(this).closest('tr');
-                                $row.find('.product-price .woocommerce-Price-amount').html('<span class="woocommerce-Price-currencySymbol"></span>' + numberWithCommas(unitPrice) + ' تومان');
-                                $row.find('.product-subtotal .woocommerce-Price-amount').html('<span class="woocommerce-Price-currencySymbol"></span>' + numberWithCommas(totalPrice) + ' تومان');
-                            }
-                        });
-                    }
+                // Function to update all price displays
+                function updateAllPriceDisplays(totalPrice) {
+                    // Update the total price in the order popup
+                    $('#hpo-total-price').text(numberWithCommas(totalPrice) + ' تومان');
+                    
+                    // Update WooCommerce price amount in the popup
+                    $('.woocommerce-Price-amount.amount').each(function() {
+                        $(this).html('<bdi>' + numberWithCommas(totalPrice) + '&nbsp;<span class="woocommerce-Price-currencySymbol">تومان</span></bdi>');
+                    });
                 }
-                
+
+                // Function to calculate total price based on selections
+                function calculateTotalPrice() {
+                    let basePrice = parseFloat($('input[name="hpo_base_price"]').val()) || 0;
+                    let totalPrice = basePrice;
+
+                    // Add option prices
+                    $('input[type="radio"]:checked').each(function() {
+                        let price = parseFloat($(this).data('price')) || 0;
+                        totalPrice += price;
+                    });
+
+                    // Apply weight coefficient
+                    let weightCoefficient = parseFloat($('input[name="hpo_weight"]:checked').data('coefficient')) || 1;
+                    totalPrice *= weightCoefficient;
+
+                    // Add grinding machine price if applicable
+                    if ($('input[name="hpo_grinding"]:checked').val() === 'ground') {
+                        let grindingPrice = parseFloat($('#hpo-grinding-machine option:selected').data('price')) || 0;
+                        totalPrice += grindingPrice;
+                    }
+
+                    return totalPrice;
+                }
+
                 // Helper function to format numbers with commas
                 function numberWithCommas(x) {
-                    return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+                    return Math.round(x).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
                 }
-                
-                // Run on page load
-                updateCartPriceDisplay();
-                
-                // Run whenever cart is updated
-                $(document.body).on('updated_cart_totals', updateCartPriceDisplay);
-                $(document.body).on('wc_fragments_refreshed', updateCartPriceDisplay);
+
+                // Update prices when any option changes
+                $('.hpo-product-options-form').on('change', 'input[type="radio"], select', function() {
+                    let totalPrice = calculateTotalPrice();
+                    updateAllPriceDisplays(totalPrice);
+                });
+
+                // Update cart display when cart is updated
+                $(document.body).on('updated_cart_totals wc_fragments_refreshed added_to_cart', function() {
+                    $('.cart-widget-side .woocommerce-Price-amount.amount').each(function() {
+                        let priceText = $(this).text();
+                        let price = parseInt(priceText.replace(/[^\d]/g, ''));
+                        if (price === 0) {
+                            // Find the correct price from the cart total
+                            let cartTotal = $('.cart-subtotal .amount').first().text();
+                            let correctPrice = parseInt(cartTotal.replace(/[^\d]/g, ''));
+                            $(this).html('<bdi>' + numberWithCommas(correctPrice) + '&nbsp;<span class="woocommerce-Price-currencySymbol">تومان</span></bdi>');
+                        }
+                    });
+                });
+
+                // Initial calculation on page load
+                let initialPrice = calculateTotalPrice();
+                updateAllPriceDisplays(initialPrice);
             });
         </script>
         <?php
