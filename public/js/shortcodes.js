@@ -113,6 +113,25 @@ jQuery(document).ready(function($) {
         // Update price when options change
         $('input[name^="hpo_option"], input[name="hpo_weight"], select[name="hpo_grinding_machine"]').on('change', function() {
             updateTotalPrice();
+            
+            // Handle visual selection for product options
+            if ($(this).attr('name').startsWith('hpo_option')) {
+                // Remove selected class from all options in this category
+                var name = $(this).attr('name');
+                $('input[name="' + name + '"]').closest('.hpo-product-option').removeClass('selected');
+                
+                // Add selected class to the current option
+                $(this).closest('.hpo-product-option').addClass('selected');
+            }
+            
+            // Handle visual selection for weight options
+            if ($(this).attr('name') === 'hpo_weight') {
+                // Remove selected class from all weight options
+                $('.hpo-weight-option').removeClass('selected');
+                
+                // Add selected class to the selected weight option
+                $(this).closest('.hpo-weight-option').addClass('selected');
+            }
         });
         
         // Handle form submission

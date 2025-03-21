@@ -220,6 +220,7 @@
     border: 1px solid #ddd;
     border-radius: 4px;
     transition: all 0.2s ease;
+    position: relative;
 }
 
 .hpo-product-option:hover,
@@ -228,9 +229,34 @@
     border-color: #aaa;
 }
 
-.hpo-product-option input,
-.hpo-weight-option input {
+.hpo-product-option input[type="radio"],
+.hpo-weight-option input[type="radio"] {
     margin-left: 5px;
+    margin-right: 8px;
+    visibility: visible;
+    opacity: 1;
+    position: relative;
+    pointer-events: auto;
+}
+
+.hpo-product-option label,
+.hpo-weight-option label {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    cursor: pointer;
+}
+
+.hpo-product-option input[type="radio"]:checked + span,
+.hpo-weight-option input[type="radio"]:checked + span {
+    font-weight: bold;
+    color: #2271b1;
+}
+
+.hpo-product-option.selected,
+.hpo-weight-option.selected {
+    background-color: #f0f7ff;
+    border-color: #2271b1;
 }
 
 .hpo-option-price {

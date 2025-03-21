@@ -281,7 +281,7 @@ class HPO_Shortcodes {
                                         <input type="radio" name="hpo_option[<?php echo esc_attr($parent->id); ?>]" 
                                                value="<?php echo esc_attr($opt_product->id); ?>" 
                                                data-price="<?php echo esc_attr($opt_product->price); ?>">
-                                        <?php echo esc_html($opt_product->name); ?>
+                                        <span class="hpo-option-name"><?php echo esc_html($opt_product->name); ?></span>
                                         <span class="hpo-option-price">(<?php echo number_format($opt_product->price); ?> تومان)</span>
                                     </label>
                                 </div>
@@ -307,7 +307,7 @@ class HPO_Shortcodes {
                                                 <input type="radio" name="hpo_option[<?php echo esc_attr($child->id); ?>]" 
                                                        value="<?php echo esc_attr($child_product->id); ?>" 
                                                        data-price="<?php echo esc_attr($child_product->price); ?>">
-                                                <?php echo esc_html($child_product->name); ?>
+                                                <span class="hpo-option-name"><?php echo esc_html($child_product->name); ?></span>
                                                 <span class="hpo-option-price">(<?php echo number_format($child_product->price); ?> تومان)</span>
                                             </label>
                                         </div>
@@ -333,7 +333,7 @@ class HPO_Shortcodes {
                                 <input type="radio" name="hpo_weight" 
                                        value="<?php echo esc_attr($weight->id); ?>" 
                                        data-coefficient="<?php echo esc_attr($weight->coefficient); ?>">
-                                <?php echo esc_html($weight->name); ?>
+                                <span class="hpo-option-name"><?php echo esc_html($weight->name); ?></span>
                             </label>
                         </div>
                         <?php endforeach; ?>
