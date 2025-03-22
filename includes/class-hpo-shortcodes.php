@@ -325,21 +325,19 @@ class HPO_Shortcodes {
                 </div>
                 <?php endif; ?>
                 
-                <div class="hpo-option-section">
+                <div class="hpo-option-section hpo-grinding-options-section">
                     <h3>گزینه‌های آسیاب</h3>
                     <div class="hpo-grinding-options">
                         <div class="hpo-grinding-toggle">
-                            <label>
-                                <input type="radio" name="hpo_grinding" value="whole" checked>
-                                دانه کامل (بدون آسیاب)
-                            </label>
-                            <label>
-                                <input type="radio" name="hpo_grinding" value="ground">
-                                آسیاب شده
-                            </label>
+                            <div class="hpo-toggle-container" data-active="whole">
+                                <div class="hpo-toggle-slider"></div>
+                                <div class="hpo-toggle-option whole active" data-value="whole">دانه کامل</div>
+                                <div class="hpo-toggle-option ground" data-value="ground">آسیاب شده</div>
+                            </div>
+                            <input type="hidden" name="hpo_grinding" value="whole">
                         </div>
                         
-                        <div class="hpo-grinding-machines" style="display:none;">
+                        <div class="hpo-grinding-machines">
                             <label for="hpo-grinding-machine">انتخاب دستگاه آسیاب:</label>
                             <select name="hpo_grinding_machine" id="hpo-grinding-machine">
                                 <option value="">-- انتخاب دستگاه آسیاب --</option>

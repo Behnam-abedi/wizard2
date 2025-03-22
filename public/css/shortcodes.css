@@ -292,33 +292,131 @@
     margin-right: 5px;
 }
 
-/* Grinding Options */
-.hpo-grinding-toggle {
-    display: flex;
-    gap: 20px;
-    margin-bottom: 15px;
+/* Grinding Options Section */
+.hpo-grinding-options-section {
+    background: #fff;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
 }
 
-.hpo-grinding-toggle label {
+.hpo-grinding-options {
+    margin-top: 15px;
+}
+
+.hpo-grinding-toggle {
     display: flex;
-    align-items: center;
-    gap: 5px;
+    justify-content: center;
+    margin-bottom: 20px;
+}
+
+.hpo-toggle-container {
+    background: #f5f5f5;
+    border-radius: 30px;
+    padding: 4px;
+    position: relative;
+    width: 280px;
+    display: flex;
+    justify-content: space-between;
+    cursor: pointer;
+    user-select: none;
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.hpo-toggle-slider {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    width: calc(50% - 4px);
+    height: calc(100% - 8px);
+    background: #2271b1;
+    border-radius: 25px;
+    transition: transform 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    transform: translateX(0);
+}
+
+.hpo-toggle-container[data-active="ground"] .hpo-toggle-slider {
+    transform: translateX(-100%);
+}
+
+.hpo-toggle-container .hpo-toggle-option {
+    flex: 1;
+    text-align: center;
+    padding: 8px 15px;
+    cursor: pointer;
+    position: relative;
+    z-index: 1;
+    transition: all 0.3s ease;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.hpo-toggle-container .hpo-toggle-option.active {
+    color: #fff;
+    font-weight: 600;
+}
+
+.hpo-toggle-container .hpo-toggle-option:not(.active) {
+    color: #666;
+}
+
+.hpo-toggle-container .hpo-toggle-option:hover:not(.active) {
+    color: #333;
 }
 
 .hpo-grinding-machines {
-    padding: 15px;
-    background: #fff;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    margin-top: 10px;
+    max-height: 0;
+    overflow: hidden;
+    transition: all 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+    opacity: 0;
+    transform: translateY(-10px);
+}
+
+.hpo-grinding-machines.show {
+    max-height: 200px;
+    margin-top: 15px;
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.hpo-grinding-machines label {
+    display: block;
+    margin-bottom: 8px;
+    color: #444;
+    font-size: 14px;
+    font-weight: 500;
 }
 
 .hpo-grinding-machines select {
     width: 100%;
-    padding: 8px;
+    padding: 10px 15px;
     border: 1px solid #ddd;
-    border-radius: 4px;
-    margin-top: 5px;
+    border-radius: 6px;
+    background-color: #fff;
+    font-size: 14px;
+    color: #444;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%23666' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14L2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: left 15px center;
+    padding-left: 35px;
+}
+
+.hpo-grinding-machines select:focus {
+    border-color: #2271b1;
+    outline: none;
+    box-shadow: 0 0 0 1px rgba(34, 113, 177, 0.2);
+}
+
+.hpo-grinding-machines select:hover {
+    border-color: #2271b1;
+}
+
+.hpo-grinding-machines select option {
+    padding: 8px;
 }
 
 /* Notes Textarea */

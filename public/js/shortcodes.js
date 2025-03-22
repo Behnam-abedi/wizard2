@@ -331,4 +331,70 @@ jQuery(document).ready(function($) {
         // Update the displayed price
         $('#hpo-total-price').text(formattedPrice + ' تومان');
     }
+
+    // Handle grinding toggle
+    function initGrindingToggle() {
+        $(document).on('click', '.hpo-toggle-option', function() {
+            const $this = $(this);
+            const $toggleContainer = $this.closest('.hpo-toggle-container');
+            const $slider = $toggleContainer.find('.hpo-toggle-slider');
+            const $options = $toggleContainer.find('.hpo-toggle-option');
+            const $input = $toggleContainer.closest('.hpo-grinding-toggle').find('input[name="hpo_grinding"]');
+            const $grindingMachines = $toggleContainer.closest('.hpo-grinding-options').find('.hpo-grinding-machines');
+            const isGround = $this.hasClass('ground');
+            
+            // Update toggle container state
+            $toggleContainer.attr('data-active', isGround ? 'ground' : 'whole');
+            
+            // Update active states
+            $options.removeClass('active');
+            $this.addClass('active');
+            
+            // Update hidden input
+            $input.val(isGround ? 'ground' : 'whole').trigger('change');
+            
+            // Show/hide grinding machines with animation
+            if (isGround) {
+                $grindingMachines.addClass('show');
+                setTimeout(function() {
+                    $grindingMachines.find('select').focus();
+                }, 300);
+            } else {
+                $grindingMachines.removeClass('show');
+                $('#hpo-grinding-machine').val('');
+            }
+        });
+
+        // Initialize the toggle state on page load
+        $('.hpo-grinding-toggle').each(function() {
+            const $input = $(this).find('input[name="hpo_grinding"]');
+            const $toggleContainer = $(this).find('.hpo-toggle-container');
+            const $options = $toggleContainer.find('.hpo-toggle-option');
+            const $grindingMachines = $(this).closest('.hpo-grinding-options').find('.hpo-grinding-machines');
+            const currentValue = $input.val();
+            
+            // Set initial toggle container state
+            $toggleContainer.attr('data-active', currentValue);
+            
+            if (currentValue === 'ground') {
+                $options.filter('.ground').addClass('active');
+                $options.filter('.whole').removeClass('active');
+                $grindingMachines.addClass('show');
+            } else {
+                $options.filter('.whole').addClass('active');
+                $options.filter('.ground').removeClass('active');
+                $grindingMachines.removeClass('show');
+            }
+        });
+    }
+    
+    // Initialize grinding toggle when document is ready
+    initGrindingToggle();
+    
+    // Also initialize grinding toggle after AJAX content is loaded
+    $(document).on('ajaxComplete', function(event, xhr, settings) {
+        if (settings.url && settings.url.indexOf('hpo_load_product_details') !== -1) {
+            setTimeout(initGrindingToggle, 100);
+        }
+    });
 }); 
