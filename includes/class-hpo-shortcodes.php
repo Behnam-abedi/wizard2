@@ -169,6 +169,8 @@ class HPO_Shortcodes {
                             $description = $product->get_short_description();
                             if (!empty($description)) {
                                 echo '<div class="hpo-product-description">' . wp_kses_post($description) . '</div>';
+                            }else{
+                                echo '<div class="hpo-product-description">بدون توضیحات</div>';
                             }
                             ?>
                         </div>
