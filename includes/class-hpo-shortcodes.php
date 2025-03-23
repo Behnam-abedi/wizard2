@@ -249,7 +249,7 @@ class HPO_Shortcodes {
                 
                 <?php if (!empty($parent_categories)): ?>
                 <div class="hpo-option-section">
-                    <h3>گزینه‌های محصول</h3>
+                    <!-- <h3>گزینه‌های محصول</h3> -->
                     <div class="hpo-options-list">
                         <?php foreach ($parent_categories as $parent): ?>
                         <div class="hpo-category">
@@ -338,7 +338,7 @@ class HPO_Shortcodes {
                         <div class="hpo-grinding-machines">
                             <label for="hpo-grinding-machine">انتخاب دستگاه آسیاب:</label>
                             <select name="hpo_grinding_machine" id="hpo-grinding-machine">
-                                <option value="">-- انتخاب دستگاه آسیاب --</option>
+                                <option value="">دستگاه خود را انتخاب کنید</option>
                                 <?php 
                                 $grinders = $db->get_all_grinders();
                                 foreach ($grinders as $grinder): 
@@ -359,12 +359,7 @@ class HPO_Shortcodes {
                 </div>
                 
                 <div class="hpo-quantity-section">
-                    <h3>تعداد</h3>
-                    <div class="hpo-quantity-input">
-                        <button type="button" class="hpo-quantity-minus">-</button>
-                        <input type="number" name="quantity" value="1" min="1" max="99">
-                        <button type="button" class="hpo-quantity-plus">+</button>
-                    </div>
+
                 </div>
                 
                 <div class="hpo-total-price">
@@ -374,6 +369,12 @@ class HPO_Shortcodes {
                 
                 <div class="hpo-add-to-cart">
                     <button type="submit" class="hpo-add-to-cart-button">افزودن به سبد خرید</button>
+                    <h3>تعداد</h3>
+                    <div class="hpo-quantity-input">
+                        <button type="button" class="hpo-quantity-minus">-</button>
+                        <input type="number" name="quantity" value="1" min="1" max="99">
+                        <button type="button" class="hpo-quantity-plus">+</button>
+                    </div>
                 </div>
             </form>
         </div>

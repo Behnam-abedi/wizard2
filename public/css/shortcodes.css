@@ -211,9 +211,9 @@
 .hpo-option-section {
     margin-bottom: 25px;
     padding: 20px;
-    background: #ffffff;
+
     border-radius: 12px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+
 }
 
 .hpo-option-section h3 {
@@ -296,10 +296,10 @@
 
 /* Grinding Options Section */
 .hpo-grinding-options-section {
-    background: #fff;
+
     border-radius: 8px;
     padding: 20px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+
 }
 
 .hpo-grinding-options {
@@ -373,6 +373,10 @@
     transition: all 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
     opacity: 0;
     transform: translateY(-10px);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
 }
 
 .hpo-grinding-machines.show {
@@ -391,31 +395,23 @@
 }
 
 .hpo-grinding-machines select {
-    width: 100%;
-    padding: 10px 15px;
-    border: 1px solid #ddd;
-    border-radius: 6px;
-    background-color: #fff;
-    font-size: 14px;
-    color: #444;
-    transition: all 0.2s ease;
-    cursor: pointer;
-    appearance: none;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%23666' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14L2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E");
-    background-repeat: no-repeat;
-    background-position: left 15px center;
-    padding-left: 35px;
+    width: 100%!important   ;
+    padding: 0px 15px!important;
+    border-radius: 15px!important;
+    background-color: #f5f5f5!important;
+    font-size: 14px!important;
+    cursor: pointer!important;
+    background-position: left 15px center!important ;
+    padding-left: 35px!important;
+    max-width: 360px!important;
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.1)!important;
 }
 
 .hpo-grinding-machines select:focus {
-    border-color: #2271b1;
-    outline: none;
-    box-shadow: 0 0 0 1px rgba(34, 113, 177, 0.2);
+    outline: none!important;
 }
 
-.hpo-grinding-machines select:hover {
-    border-color: #2271b1;
-}
+
 
 .hpo-grinding-machines select option {
     padding: 8px;
@@ -428,6 +424,10 @@
     border: 1px solid #ddd;
     border-radius: 4px;
     resize: vertical;
+    border-radius: 15px!important;
+    border-color: rgb(226, 232, 240)!important;
+    height: 66px!important;
+
 }
 
 /* Quantity Input */
@@ -475,6 +475,8 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
+    position: sticky;
+    bottom: 0;
 }
 
 .hpo-total-label {
@@ -491,6 +493,10 @@
 .hpo-add-to-cart {
     margin-top: 20px;
     text-align: center;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: row-reverse;
 }
 
 .hpo-add-to-cart-button {
@@ -700,9 +706,7 @@
 .hpo-weight-section {
     margin-bottom: 25px;
     padding: 20px;
-    background: #ffffff;
     border-radius: 12px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
 .hpo-weight-section h3 {
