@@ -307,23 +307,21 @@ class HPO_Shortcodes {
                 </div>
                 <?php endif; ?>
                 
-                <?php if (!empty($weights)): ?>
-                <div class="hpo-option-section">
+                <div class="hpo-weight-section">
                     <h3>گزینه‌های وزن</h3>
-                    <div class="hpo-weight-options">
+                    <div class="hpo-weight-grid">
                         <?php foreach ($weights as $weight): ?>
-                        <div class="hpo-weight-option">
+                        <div class="hpo-weight-item">
                             <label>
                                 <input type="radio" name="hpo_weight" 
                                        value="<?php echo esc_attr($weight->id); ?>" 
                                        data-coefficient="<?php echo esc_attr($weight->coefficient); ?>">
-                                <span class="hpo-option-name"><?php echo esc_html($weight->name); ?></span>
+                                <span class="hpo-weight-text"><?php echo esc_html($weight->name); ?></span>
                             </label>
                         </div>
                         <?php endforeach; ?>
                     </div>
                 </div>
-                <?php endif; ?>
                 
                 <div class="hpo-option-section hpo-grinding-options-section">
                     <h3>گزینه‌های آسیاب</h3>
