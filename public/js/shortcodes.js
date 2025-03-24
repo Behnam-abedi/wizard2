@@ -1,7 +1,20 @@
 jQuery(document).ready(function($) {
+    // Add body class when popup is open to prevent background scrolling
+    function lockBodyScroll() {
+        $('body').addClass('hpo-popup-open');
+    }
+    
+    function unlockBodyScroll() {
+        $('body').removeClass('hpo-popup-open');
+    }
+    
     // Order button click - open product selection popup
     $('#hpo-order-button').on('click', function() {
         $('#hpo-popup-overlay').fadeIn(300);
+        lockBodyScroll();
+        
+        // Initialize popup height
+        setTimeout(adjustPopupHeight, 100);
         
         // Load products via AJAX
         $.ajax({
@@ -31,6 +44,7 @@ jQuery(document).ready(function($) {
     // Close product list popup
     $('#hpo-popup-close').on('click', function() {
         $('#hpo-popup-overlay').fadeOut(300);
+        unlockBodyScroll();
     });
     
     // Initialize product selection functionality
@@ -102,6 +116,9 @@ jQuery(document).ready(function($) {
                         $('.hpo-popup-header').prepend('<button class="hpo-back-button">بازگشت</button>');
                     }
                     
+                    // Reset scroll position to top after content change
+                    $('.hpo-popup-content').scrollTop(0);
+                    
                     // Initialize product options form
                     initProductOptionsForm();
                 } else {
@@ -116,6 +133,15 @@ jQuery(document).ready(function($) {
 
     // Handle back button click
     $(document).on('click', '.hpo-back-button', function() {
+        // Add loading indicator before starting the AJAX request
+        $('#hpo-product-list').html('<div class="hpo-loading">در حال بارگذاری...</div>');
+        
+        // Update header before AJAX request to provide immediate feedback
+        $('.hpo-popup-header h3').text('انتخاب محصول');
+        
+        // Remove back button immediately to prevent double clicks
+        $(this).remove();
+        
         // Reload the products list
         $.ajax({
             url: hpoAjax.ajaxUrl,
@@ -153,7 +179,16 @@ jQuery(document).ready(function($) {
         const $addToCartButton = $('.hpo-add-to-cart-button');
         $addToCartButton.prop('disabled', true).addClass('disabled');
         
-        // Function to validate all selections and enable/disable add to cart button
+        // Get sections
+        const $productOptionsSection = $('.hpo-option-section:not(.hpo-grinding-options-section)');
+        const $weightSection = $('.hpo-weight-section');
+        const $grindingSection = $('.hpo-grinding-options-section');
+        
+        // Initially disable weight and grinding sections
+        $weightSection.addClass('disabled-section');
+        $grindingSection.addClass('disabled-section');
+        
+        // Function to validate all selections and enable/disable sections and add-to-cart button
         function validateSelections() {
             // Check if a product option is selected
             const hasProductOption = $('input[name^="hpo_option"]:checked').length > 0;
@@ -169,6 +204,20 @@ jQuery(document).ready(function($) {
             if (grindingValue === 'ground') {
                 const grindingMachine = $('select[name="hpo_grinding_machine"]').val();
                 grindingValid = grindingMachine !== '' && grindingMachine !== null;
+            }
+            
+            // Enable/disable weight section based on product option selection
+            if (hasProductOption) {
+                $weightSection.removeClass('disabled-section');
+            } else {
+                $weightSection.addClass('disabled-section');
+            }
+            
+            // Enable/disable grinding section based on weight selection
+            if (hasProductOption && hasWeight) {
+                $grindingSection.removeClass('disabled-section');
+            } else {
+                $grindingSection.addClass('disabled-section');
             }
             
             // Enable add to cart button only if all selections are valid
@@ -246,14 +295,52 @@ jQuery(document).ready(function($) {
             }
         });
         
+        // Handle section clicks when disabled
+        $('.disabled-section').on('click', function(e) {
+            // If the section is disabled, show a message to complete previous steps
+            if ($(this).hasClass('disabled-section')) {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                // Determine which section this is
+                if ($(this).hasClass('hpo-weight-section')) {
+                    alert('لطفا ابتدا گزینه محصول را انتخاب کنید.');
+                } else if ($(this).hasClass('hpo-grinding-options-section')) {
+                    alert('لطفا ابتدا گزینه وزن را انتخاب کنید.');
+                }
+                return false;
+            }
+        });
+        
+        // Disable inputs in disabled sections
+        function updateInputStates() {
+            // Disable all inputs in disabled sections
+            $('.disabled-section input, .disabled-section select').prop('disabled', true);
+            
+            // Enable all inputs in enabled sections
+            $('.hpo-option-section:not(.disabled-section) input, .hpo-option-section:not(.disabled-section) select, .hpo-weight-section:not(.disabled-section) input').prop('disabled', false);
+        }
+        
         // Handle grinding toggle option click
         $(document).on('click', '.hpo-toggle-option', function() {
+            // Check if the section is disabled
+            if ($(this).closest('.disabled-section').length) {
+                alert('لطفا ابتدا گزینه وزن را انتخاب کنید.');
+                return false;
+            }
+            
             // After toggle action, validate selections again
             setTimeout(validateSelections, 100);
         });
         
-        // Run initial validation
+        // Run initial validation and update input states
         validateSelections();
+        updateInputStates();
+        
+        // Update input states when validation changes
+        $(document).on('click', 'input[type="radio"], select', function() {
+            setTimeout(updateInputStates, 100);
+        });
         
         // Handle form submission
         $('.hpo-product-options-form').on('submit', function(e) {
@@ -351,6 +438,7 @@ jQuery(document).ready(function($) {
                         // Close popups
                         $('#hpo-product-details-popup').fadeOut(300);
                         $('#hpo-popup-overlay').fadeOut(300);
+                        unlockBodyScroll();
                         
                         // Show success message
                         $('body').append('<div class="hpo-success-message">محصول با موفقیت به سبد خرید اضافه شد.</div>');
@@ -373,6 +461,9 @@ jQuery(document).ready(function($) {
                 }
             });
         });
+        
+        // Ensure popup height is correct when content changes
+        adjustPopupHeight();
     }
     
     // Calculate and update the total price
@@ -532,4 +623,25 @@ jQuery(document).ready(function($) {
             setTimeout(initGrindingToggle, 100);
         }
     });
+
+    // Add event listeners for handling device orientation changes
+    $(window).on('resize orientationchange', function() {
+        if ($('#hpo-popup-overlay').is(':visible')) {
+            adjustPopupHeight();
+        }
+    });
+    
+    // Function to adjust popup height based on viewport
+    function adjustPopupHeight() {
+        var windowHeight = $(window).height();
+        var headerHeight = $('.hpo-popup-header').outerHeight();
+        $('.hpo-popup-content').css('height', 'calc(100% - ' + headerHeight + 'px)');
+        
+        // Scroll to active section if any
+        if ($('.hpo-option-section:not(.disabled-section)').length) {
+            setTimeout(function() {
+                $('.hpo-popup-content').scrollTop(0);
+            }, 100);
+        }
+    }
 }); 

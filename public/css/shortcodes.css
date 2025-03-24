@@ -654,6 +654,16 @@
     font-size: 14px;
     color: #2271b1;
     transition: all 0.3s ease;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.hpo-back-button:before {
+    content: "\2190"; /* Unicode left arrow */
+    margin-left: 5px;
+    font-size: 16px;
 }
 
 .hpo-back-button:hover {
@@ -881,4 +891,215 @@
     .hpo-weight-grid {
         grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
     }
-} 
+}
+
+/* Disabled Section */
+.disabled-section {
+    position: relative;
+    opacity: 0.6;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+}
+
+.disabled-section::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(255, 255, 255, 0.4);
+    z-index: 10;
+    border-radius: 12px;
+    pointer-events: none;
+}
+
+.disabled-section h3 {
+    color: #999 !important;
+}
+
+/* Section transitions */
+.hpo-option-section,
+.hpo-weight-section,
+.hpo-grinding-options-section {
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.hpo-option-section:not(.disabled-section) {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.hpo-weight-section:not(.disabled-section) {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.hpo-grinding-options-section:not(.disabled-section) {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* Section highlighting for active state */
+.hpo-option-section:not(.disabled-section),
+.hpo-weight-section:not(.disabled-section),
+.hpo-grinding-options-section:not(.disabled-section) {
+    box-shadow: 0 0 15px rgba(59, 130, 246, 0.1);
+    background-color: #f8fafc;
+}
+
+/* Mobile Responsive Enhancements */
+@media (max-width: 768px) {
+    /* Full-screen popup on mobile */
+    .hpo-popup-container {
+        width: 100%;
+        height: 100%;
+        max-width: 100%;
+        max-height: 100%;
+        border-radius: 0;
+    }
+    
+    .hpo-popup-content {
+        height: calc(100% - 60px);
+        max-height: none;
+        padding: 15px;
+    }
+    
+    /* Fix back button positioning */
+    .hpo-back-button {
+        position: absolute;
+        right: 15px;
+        top: 50%;
+        transform: translateY(-50%);
+        padding: 6px 12px;
+        font-size: 13px;
+        z-index: 10;
+    }
+    
+    /* Adjust header for mobile */
+    .hpo-popup-header {
+        padding: 12px 15px;
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        background-color: #fff;
+    }
+    
+    .hpo-popup-header h3 {
+        font-size: 16px;
+        padding: 0 70px;  /* Make room for back and close buttons */
+    }
+    
+    /* Adjust close button */
+    .hpo-popup-close {
+        position: absolute;
+        left: 15px;
+        top: 50%;
+        transform: translateY(-50%);
+        z-index: 10;
+    }
+    
+    /* Adjust product options for mobile */
+    .hpo-option-section,
+    .hpo-weight-section,
+    .hpo-grinding-options-section {
+        padding: 15px;
+        margin-bottom: 15px;
+    }
+    
+    /* Fix total price bar to bottom on mobile */
+    .hpo-total-price {
+        position: sticky;
+        bottom: 0;
+        margin: 10px -15px -15px -15px;
+        border-radius: 0;
+        box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+        z-index: 99;
+    }
+    
+    /* Add to cart button adjustments */
+    .hpo-add-to-cart {
+        margin-bottom: 20px; /* Add space before the fixed total price bar */
+    }
+    
+    /* Better product grid for small screens */
+    .hpo-products-grid {
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+    
+    /* Adjust product item height */
+    .hpo-product-item {
+        height: auto;
+        min-height: 100px;
+    }
+}
+
+/* Support for very small screens */
+@media (max-width: 480px) {
+    .hpo-popup-header h3 {
+        font-size: 14px;
+        padding: 0 60px;
+    }
+    
+    .hpo-back-button,
+    .hpo-popup-close {
+        padding: 5px 10px;
+        font-size: 12px;
+    }
+    
+    .hpo-weight-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .hpo-toggle-container {
+        width: 100%;
+        max-width: 240px;
+    }
+}
+
+/* Body lock when popup is open */
+body.hpo-popup-open {
+    overflow: hidden;
+    position: fixed;
+    width: 100%;
+    height: 100%;
+}
+
+/* Ensure popup can be scrolled on mobile */
+.hpo-popup-overlay {
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* Override fixed positioning on mobile to ensure proper scrolling */
+@media (max-width: 768px) {
+    .hpo-popup-overlay,
+    .hpo-product-details-popup {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 999999;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-start;
+        align-items: stretch;
+    }
+    
+    .hpo-popup-container {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+    
+    .hpo-popup-content {
+        flex: 1;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+}
