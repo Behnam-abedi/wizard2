@@ -18,10 +18,6 @@ jQuery(document).ready(function($) {
                 if (response.success) {
                     $('#hpo-product-list').html(response.data.html);
                     initProductSelection();
-                    // Add next step button
-                    if (!$('.hpo-next-step').length) {
-                        $('#hpo-product-list').append('<button class="hpo-next-step">مرحله بعد</button>');
-                    }
                 } else {
                     $('#hpo-product-list').html('<p>خطا در بارگذاری محصولات.</p>');
                 }
@@ -39,7 +35,22 @@ jQuery(document).ready(function($) {
     
     // Initialize product selection functionality
     function initProductSelection() {
+        // Unbind previous event handlers to prevent duplicates
+        $('.hpo-product-item').off('click');
+        $(document).off('click', '.hpo-next-step');
+        
+        // Reset selection
+        $('.hpo-product-item').removeClass('selected');
+        
+        // Create new local variable for product ID
         let selectedProductId = null;
+        
+        // Add the next step button in disabled state
+        if (!$('.hpo-next-step').length) {
+            $('#hpo-product-list').append('<button class="hpo-next-step disabled">مرحله بعد</button>');
+        } else {
+            $('.hpo-next-step').addClass('disabled');
+        }
 
         // Handle product item click
         $('.hpo-product-item').on('click', function() {
@@ -49,14 +60,18 @@ jQuery(document).ready(function($) {
             $(this).addClass('selected');
             // Store the selected product ID
             selectedProductId = $(this).data('product-id');
+            
+            // Enable the next step button
+            $('.hpo-next-step').removeClass('disabled');
         });
 
         // Handle next step button click
         $(document).on('click', '.hpo-next-step', function() {
-            if (selectedProductId) {
-                loadProductDetails(selectedProductId);
-            } else {
-                alert('لطفا یک محصول را انتخاب کنید.');
+            // Only proceed if not disabled
+            if(!$(this).hasClass('disabled')) {
+                if (selectedProductId) {
+                    loadProductDetails(selectedProductId);
+                }
             }
         });
     }
@@ -115,14 +130,13 @@ jQuery(document).ready(function($) {
             success: function(response) {
                 if (response.success) {
                     $('#hpo-product-list').html(response.data.html);
-                    initProductSelection();
-                    // Add next step button
-                    if (!$('.hpo-next-step').length) {
-                        $('#hpo-product-list').append('<button class="hpo-next-step">مرحله بعد</button>');
-                    }
+                    
                     // Update header and remove back button
                     $('.hpo-popup-header h3').text('انتخاب محصول');
                     $('.hpo-back-button').remove();
+                    
+                    // Reinitialize product selection with clean state
+                    initProductSelection();
                 } else {
                     $('#hpo-product-list').html('<p>خطا در بارگذاری محصولات.</p>');
                 }
@@ -135,6 +149,36 @@ jQuery(document).ready(function($) {
     
     // Initialize product options form
     function initProductOptionsForm() {
+        // Disable add to cart button initially
+        const $addToCartButton = $('.hpo-add-to-cart-button');
+        $addToCartButton.prop('disabled', true).addClass('disabled');
+        
+        // Function to validate all selections and enable/disable add to cart button
+        function validateSelections() {
+            // Check if a product option is selected
+            const hasProductOption = $('input[name^="hpo_option"]:checked').length > 0;
+            
+            // Check if a weight option is selected
+            const hasWeight = $('input[name="hpo_weight"]:checked').length > 0;
+            
+            // Check grinding selection
+            const grindingValue = $('input[name="hpo_grinding"]').val();
+            let grindingValid = true;
+            
+            // If grinding is set to ground, check if a grinding machine is selected
+            if (grindingValue === 'ground') {
+                const grindingMachine = $('select[name="hpo_grinding_machine"]').val();
+                grindingValid = grindingMachine !== '' && grindingMachine !== null;
+            }
+            
+            // Enable add to cart button only if all selections are valid
+            if (hasProductOption && hasWeight && grindingValid) {
+                $addToCartButton.prop('disabled', false).removeClass('disabled');
+            } else {
+                $addToCartButton.prop('disabled', true).addClass('disabled');
+            }
+        }
+
         // Toggle grinding options
         $('input[name="hpo_grinding"]').on('change', function() {
             if ($(this).val() === 'ground') {
@@ -144,6 +188,16 @@ jQuery(document).ready(function($) {
                 $('#hpo-grinding-machine').val('');
             }
             updateTotalPrice();
+            validateSelections();
+        });
+        
+        // Handle grinding machine selection
+        $('select[name="hpo_grinding_machine"]').on('change', function() {
+            console.log('Grinding machine selection changed');
+            console.log('Selected value:', $(this).val());
+            console.log('Selected option price:', $(this).find('option:selected').data('price'));
+            updateTotalPrice();
+            validateSelections();
         });
         
         // Quantity plus/minus buttons
@@ -168,6 +222,7 @@ jQuery(document).ready(function($) {
         // Update price when options change
         $('input[name^="hpo_option"], input[name="hpo_weight"], select[name="hpo_grinding_machine"]').on('change', function() {
             updateTotalPrice();
+            validateSelections();
             
             // Handle visual selection for product options
             if ($(this).attr('name').startsWith('hpo_option')) {
@@ -191,21 +246,42 @@ jQuery(document).ready(function($) {
             }
         });
         
+        // Handle grinding toggle option click
+        $(document).on('click', '.hpo-toggle-option', function() {
+            // After toggle action, validate selections again
+            setTimeout(validateSelections, 100);
+        });
+        
+        // Run initial validation
+        validateSelections();
+        
         // Handle form submission
         $('.hpo-product-options-form').on('submit', function(e) {
             e.preventDefault();
             
+            // Extra validation before submission
+            if ($addToCartButton.prop('disabled')) {
+                return false;
+            }
+            
             var form = $(this);
             var productId = form.find('input[name="product_id"]').val();
+            var basePrice = parseFloat(form.find('input[name="hpo_base_price"]').val()) || 0;
+            var quantity = parseInt(form.find('input[name="quantity"]').val()) || 1;
+            
+            // Get the total calculated price
+            var calculatedPrice = form.data('calculated-price') || 0;
             
             // Create data object to collect all selections
             var formData = {
                 'product_id': productId,
-                'quantity': form.find('input[name="quantity"]').val(),
+                'quantity': quantity,
                 'add-to-cart': productId,
+                'base_price': basePrice,
+                'total_price': calculatedPrice,
                 'hpo_options': {},
                 'hpo_weight': '',
-                'hpo_grinding': form.find('input[name="hpo_grinding"]:checked').val(),
+                'hpo_grinding': form.find('input[name="hpo_grinding"]').val(),
                 'hpo_grinding_machine': '',
                 'hpo_customer_notes': form.find('textarea[name="hpo_customer_notes"]').val()
             };
@@ -216,7 +292,7 @@ jQuery(document).ready(function($) {
                 var categoryId = selectedOption.attr('name').match(/\[(\d+)\]/)[1];
                 var optionId = selectedOption.val();
                 var optionName = selectedOption.closest('label').text().trim();
-                var optionPrice = selectedOption.data('price');
+                var optionPrice = parseFloat(selectedOption.data('price')) || 0;
                 
                 formData.hpo_options[categoryId] = {
                     id: optionId,
@@ -228,24 +304,35 @@ jQuery(document).ready(function($) {
             // Get selected weight
             var selectedWeight = form.find('input[name="hpo_weight"]:checked');
             if (selectedWeight.length) {
+                var weightName = selectedWeight.closest('label').text().trim();
+                var weightCoefficient = parseFloat(selectedWeight.data('coefficient')) || 1;
+                
                 formData.hpo_weight = {
                     id: selectedWeight.val(),
-                    name: selectedWeight.closest('label').text().trim(),
-                    coefficient: selectedWeight.data('coefficient')
+                    name: weightName,
+                    coefficient: weightCoefficient
                 };
             }
             
             // Get grinding machine if grinding is selected
             if (formData.hpo_grinding === 'ground') {
                 var grindingMachine = form.find('select[name="hpo_grinding_machine"]');
-                if (grindingMachine.val()) {
+                var selectedGrinder = grindingMachine.find('option:selected');
+                
+                if (selectedGrinder.val()) {
+                    var grinderPrice = parseFloat(selectedGrinder.data('price')) || 0;
+                    
                     formData.hpo_grinding_machine = {
-                        id: grindingMachine.val(),
-                        name: grindingMachine.find('option:selected').text().trim(),
-                        price: grindingMachine.find('option:selected').data('price')
+                        id: selectedGrinder.val(),
+                        name: selectedGrinder.text().trim(),
+                        price: grinderPrice
                     };
                 }
             }
+            
+            // For debugging - can be removed in production
+            console.log('Submitting data to cart:');
+            console.log(formData);
             
             // Convert the data object to a string for AJAX
             var serializedData = $.param({
@@ -290,54 +377,95 @@ jQuery(document).ready(function($) {
     
     // Calculate and update the total price
     function updateTotalPrice() {
+        // Get form and base values
         var form = $('.hpo-product-options-form');
-        var basePrice = parseFloat(form.find('input[name="hpo_base_price"]').val());
-        var quantity = parseInt(form.find('input[name="quantity"]').val());
-        var totalPrice = basePrice;
+        var basePrice = parseFloat(form.find('input[name="hpo_base_price"]').val()) || 0;
+        var quantity = parseInt(form.find('input[name="quantity"]').val()) || 1;
         
-        // Add product option price (now just one selected option)
+        console.log('Starting price calculation:');
+        console.log('Base price:', basePrice);
+        
+        // Step 1: Start with base price
+        var calculatedPrice = basePrice;
+        
+        // Step 2: Add selected product option price
         var selectedOption = form.find('input[name^="hpo_option"]:checked');
         if (selectedOption.length) {
-            totalPrice += parseFloat(selectedOption.data('price'));
+            var optionPrice = parseFloat(selectedOption.data('price')) || 0;
+            calculatedPrice += optionPrice;
+            console.log('Option price:', optionPrice);
+            console.log('Price after adding option:', calculatedPrice);
         }
         
-        // Apply weight coefficient
+        // Step 3: Apply weight coefficient (if selected)
         var weightOption = form.find('input[name="hpo_weight"]:checked');
         if (weightOption.length) {
-            var coefficient = parseFloat(weightOption.data('coefficient'));
-            totalPrice *= coefficient;
+            var coefficient = parseFloat(weightOption.data('coefficient')) || 1;
+            calculatedPrice *= coefficient;
+            console.log('Weight coefficient:', coefficient);
+            console.log('Price after applying weight coefficient:', calculatedPrice);
         }
         
-        // Add grinding price
-        if (form.find('input[name="hpo_grinding"]:checked').val() === 'ground') {
-            var grindingMachine = form.find('select[name="hpo_grinding_machine"]');
-            var selectedOption = grindingMachine.find('option:selected');
+        // Step 4: Add grinding price (if applicable)
+        var grindingValue = form.find('input[name="hpo_grinding"]').val();
+        console.log('Grinding value:', grindingValue);
+        
+        if (grindingValue === 'ground') {
+            var grindingSelect = form.find('select[name="hpo_grinding_machine"]');
+            var selectedGrinder = grindingSelect.find('option:selected');
             
-            if (selectedOption.val()) {
-                totalPrice += parseFloat(selectedOption.data('price'));
+            if (selectedGrinder.length && selectedGrinder.val()) {
+                // Get the price directly from the data attribute
+                var grindingPrice = selectedGrinder.data('price');
+                
+                // Convert to a proper number
+                grindingPrice = parseFloat(grindingPrice) || 0;
+                
+                console.log('Selected grinder:', selectedGrinder.text());
+                console.log('Grinding price (raw):', selectedGrinder.data('price'));
+                console.log('Grinding price (parsed):', grindingPrice);
+                
+                // Add to total
+                calculatedPrice += grindingPrice;
+                console.log('Price after adding grinding:', calculatedPrice);
+            } else {
+                console.log('No grinding machine selected or invalid selection');
             }
         }
         
-        // Multiply by quantity
-        totalPrice *= quantity;
+        // Step 5: Multiply by quantity
+        var totalPrice = calculatedPrice * quantity;
+        console.log('Quantity:', quantity);
+        console.log('Final price:', totalPrice);
         
-        // Format the price
+        // Format the price with Farsi numerals
         var formattedPrice = new Intl.NumberFormat('fa-IR', {
             style: 'decimal',
             minimumFractionDigits: 0,
             maximumFractionDigits: 0
         }).format(totalPrice);
         
+        console.log('Formatted price:', formattedPrice);
+        
         // Update the displayed price
         $('#hpo-total-price').text(formattedPrice + ' تومان');
+        
+        // Store the calculated price for easier access
+        form.data('calculated-price', totalPrice);
     }
 
     // Handle grinding toggle
     function initGrindingToggle() {
+        // Ensure grinding machine select changes trigger price updates
+        $(document).on('change', 'select[name="hpo_grinding_machine"]', function() {
+            console.log('Grinding machine changed to:', $(this).find('option:selected').text());
+            console.log('Grinding machine price:', $(this).find('option:selected').data('price'));
+            updateTotalPrice();
+        });
+
         $(document).on('click', '.hpo-toggle-option', function() {
             const $this = $(this);
             const $toggleContainer = $this.closest('.hpo-toggle-container');
-            const $slider = $toggleContainer.find('.hpo-toggle-slider');
             const $options = $toggleContainer.find('.hpo-toggle-option');
             const $input = $toggleContainer.closest('.hpo-grinding-toggle').find('input[name="hpo_grinding"]');
             const $grindingMachines = $toggleContainer.closest('.hpo-grinding-options').find('.hpo-grinding-machines');
@@ -350,8 +478,8 @@ jQuery(document).ready(function($) {
             $options.removeClass('active');
             $this.addClass('active');
             
-            // Update hidden input
-            $input.val(isGround ? 'ground' : 'whole').trigger('change');
+            // Update hidden input and trigger price update
+            $input.val(isGround ? 'ground' : 'whole');
             
             // Show/hide grinding machines with animation
             if (isGround) {
@@ -361,8 +489,15 @@ jQuery(document).ready(function($) {
                 }, 300);
             } else {
                 $grindingMachines.removeClass('show');
-                $('#hpo-grinding-machine').val('');
+                // Reset grinding machine selection when switching to whole beans
+                const $grindingSelect = $('#hpo-grinding-machine');
+                if ($grindingSelect.length) {
+                    $grindingSelect.val('');
+                }
             }
+            
+            // Update price calculation after toggle
+            setTimeout(updateTotalPrice, 100);
         });
 
         // Initialize the toggle state on page load

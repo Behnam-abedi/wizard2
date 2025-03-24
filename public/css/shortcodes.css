@@ -166,13 +166,26 @@
     cursor: pointer;
     transition: all 0.3s ease;
     text-align: center;
-
 }
 
 .hpo-next-step:hover {
     background-color: #cecece;
     border: none;
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+/* Disabled Next Step Button */
+.hpo-next-step.disabled {
+    background-color: #f0f0f0;
+    color: #aaaaaa;
+    cursor: not-allowed;
+    opacity: 0.7;
+    pointer-events: none;
+}
+
+.hpo-next-step.disabled:hover {
+    background-color: #f0f0f0;
+    box-shadow: none;
 }
 
 /* Product Details */
@@ -310,6 +323,7 @@
     display: flex;
     justify-content: center;
     margin-bottom: 20px;
+    width: 100%;
 }
 
 .hpo-toggle-container {
@@ -323,6 +337,7 @@
     cursor: pointer;
     user-select: none;
     box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
+    margin: 0 auto;
 }
 
 .hpo-toggle-slider {
@@ -507,12 +522,27 @@
     border: none;
     border-radius: 4px;
     cursor: pointer;
-    transition: background-color 0.3s ease;
+    transition: all 0.3s ease;
     width: 100%;
 }
 
 .hpo-add-to-cart-button:hover {
     background-color: #135e96;
+}
+
+/* Disabled Add to Cart Button */
+.hpo-add-to-cart-button.disabled,
+.hpo-add-to-cart-button:disabled {
+    background-color: #f0f0f0;
+    color: #aaaaaa;
+    cursor: not-allowed;
+    opacity: 0.7;
+    pointer-events: none;
+}
+
+.hpo-add-to-cart-button.disabled:hover,
+.hpo-add-to-cart-button:disabled:hover {
+    background-color: #f0f0f0;
 }
 
 /* Success Message */
@@ -552,8 +582,32 @@
     }
     
     .hpo-grinding-toggle {
+        flex-direction: row;
+        gap: 0;
+        justify-content: center;
+        align-items: center;
+        width: 100%;
+    }
+    
+    .hpo-toggle-container {
+        width: 100%;
+        max-width: 280px;
+        margin: 0 auto;
+    }
+    
+    .hpo-grinding-machines {
+        width: 100%;
+    }
+    
+    .hpo-grinding-machines.show {
+        display: flex;
         flex-direction: column;
-        gap: 10px;
+        align-items: center;
+    }
+    
+    .hpo-grinding-machines select {
+        width: 100% !important;
+        max-width: 100% !important;
     }
 }
 

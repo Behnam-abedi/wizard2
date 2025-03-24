@@ -342,10 +342,12 @@ class HPO_Shortcodes {
                                 <?php 
                                 $grinders = $db->get_all_grinders();
                                 foreach ($grinders as $grinder): 
+                                    // Ensure price is a numeric value
+                                    $grinder_price = floatval($grinder->price);
                                 ?>
                                 <option value="<?php echo esc_attr($grinder->id); ?>" 
-                                        data-price="<?php echo esc_attr($grinder->price); ?>">
-                                    <?php echo esc_html($grinder->name); ?> (<?php echo number_format($grinder->price); ?> تومان)
+                                        data-price="<?php echo esc_attr($grinder_price); ?>">
+                                    <?php echo esc_html($grinder->name); ?> (<?php echo number_format($grinder_price); ?> تومان)
                                 </option>
                                 <?php endforeach; ?>
                             </select>
