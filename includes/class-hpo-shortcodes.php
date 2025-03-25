@@ -118,6 +118,12 @@ class HPO_Shortcodes {
                 <div class="hpo-popup-header">
                     <h3>انتخاب محصول</h3>
                     <span class="hpo-popup-close" id="hpo-popup-close">&times;</span>
+                    <div class="hpo-header-price">
+                    <span>مبلغ سفارش:</span>
+                        <i class="hpo-cart-icon"></i>
+                        <span class="hpo-total-value" id="hpo-total-price">0 تومان</span>
+                        
+                    </div>
                 </div>
                 <div class="hpo-popup-content">
                     <div class="hpo-product-list" id="hpo-product-list">
@@ -260,20 +266,7 @@ class HPO_Shortcodes {
         ob_start();
         ?>
         <div class="hpo-product-details">
-            <div class="hpo-product-main-info">
-                <div class="hpo-product-image">
-                    <?php echo $product->get_image('medium'); ?>
-                </div>
-                <div class="hpo-product-summary">
-                    <h2><?php echo esc_html($product->get_name()); ?></h2>
-                    <div class="hpo-product-price">
-                        <?php echo $product->get_price_html(); ?>
-                    </div>
-                    <div class="hpo-product-description">
-                        <?php echo wpautop($product->get_short_description()); ?>
-                    </div>
-                </div>
-            </div>
+
             
             <form class="hpo-product-options-form">
                 <input type="hidden" name="product_id" value="<?php echo esc_attr($product_id); ?>">
@@ -295,6 +288,7 @@ class HPO_Shortcodes {
                                 <div class="hpo-product-option">
                                     <div class="hpo-product-option-header">
                                         <?php echo esc_html($category_paths[$parent->id]); ?>
+
                                     </div>
                                     <label>
                                         <div class="hpo-product-option-name-price">
@@ -412,10 +406,10 @@ class HPO_Shortcodes {
 
                 </div>
                 
-                <div class="hpo-total-price">
+                <!-- <div class="hpo-total-price">
                     <span class="hpo-total-label">قیمت نهایی:</span>
                     <span class="hpo-total-value" id="hpo-total-price"><?php echo number_format($product->get_price()); ?> تومان</span>
-                </div>
+                </div> -->
                 
                 <div class="hpo-add-to-cart">
                     <button type="submit" class="hpo-add-to-cart-button">افزودن به سبد خرید</button>

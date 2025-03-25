@@ -558,8 +558,14 @@ jQuery(document).ready(function($) {
         
         console.log('Formatted price:', formattedPrice);
         
-        // Update the displayed price
+        // Update the displayed price in both locations
         $('#hpo-total-price').text(formattedPrice + ' تومان');
+        
+        // Make header price display animate when updated
+        $('.hpo-header-price').addClass('price-updated');
+        setTimeout(function() {
+            $('.hpo-header-price').removeClass('price-updated');
+        }, 500);
         
         // Store the calculated price for easier access
         form.data('calculated-price', totalPrice);
@@ -687,4 +693,22 @@ jQuery(document).ready(function($) {
             }, 100);
         }
     }
+
+    // Make entire product option box clickable
+    $(document).on('click', '.hpo-product-option', function(e) {
+        // Don't trigger if clicking on the radio button itself (it will handle its own click)
+        if (e.target.type !== 'radio') {
+            // Find the radio button inside this box
+            const radio = $(this).find('input[type="radio"]');
+            
+            // Toggle its checked state
+            radio.prop('checked', true).trigger('change');
+            
+            // Remove selected class from all options
+            $('.hpo-product-option').removeClass('selected');
+            
+            // Add selected class to this option
+            $(this).addClass('selected');
+        }
+    });
 }); 

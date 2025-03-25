@@ -255,54 +255,98 @@
     gap: 10px;
 }
 
+/* Improve product option styling */
 .hpo-product-option {
-    padding: 12px 15px;
-    background: #fff;
-    border: 1px solid #e2e8f0;
-    border-radius: 8px;
-    transition: all 0.25s ease;
-    margin-bottom: 10px;
-    position: relative;
+  padding: 15px;
+  background: #fff;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  transition: all 0.25s ease;
+  margin-bottom: 0;
+  position: relative;
+  cursor: pointer;
 }
 
+/* Hide the radio button but keep it functional */
+.hpo-product-option input[type="radio"] {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+/* Hover state */
 .hpo-product-option:hover {
-    border-color: #3b82f6;
-    background: #f8faff;
-    transform: translateY(-1px);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  border-color: #3b82f6;
+  background: #f0f7ff;
+  transform: translateY(-2px);
+  /* box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); */
 }
 
+/* Selected state */
 .hpo-product-option.selected {
-    background-color: #f0f7ff;
-    border-color: #2271b1;
-    border-width: 1.5px;
+  background-image: linear-gradient(56deg, #210280 0%, #3230D2 100%);
+  border-color: #210280;
+  color: white;
+  transform: translateY(-2px);
+  /* box-shadow: 0 4px 10px rgba(33, 2, 128, 0.3); */
+}
+
+/* Make all text in selected items white */
+.hpo-product-option.selected .hpo-option-name,
+.hpo-product-option.selected .hpo-option-price,
+.hpo-product-option.selected .hpo-product-option-description {
+  color: white !important;
+}
+
+/* Style the category path header */
+.hpo-product-option-header {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  background-color: rgba(0, 0, 0, 0.15);
+  border-radius: 5px;
+  color: #ffffff;
+  font-size: 12px;
+  padding: 3px 0;
+  margin-bottom: 10px;
+  transition: all 0.25s ease;
+}
+
+/* Make header white in selected state */
+.hpo-product-option.selected .hpo-product-option-header {
+  background-color: rgba(255, 255, 255, 0.2);
+  color: white;
 }
 
 .hpo-product-option label {
     display: flex;
     flex-direction: column;
+    align-items: center;
     width: 100%;
     cursor: pointer;
     padding: 0;
     margin: 0;
+
 }
 
 .hpo-product-option-name-price {
     display: flex;
     align-items: center;
     width: 100%;
+    justify-content: center;
 }
 
 .hpo-product-option .hpo-option-name {
     margin-right: 8px;
-    font-weight: 500;
+    font-weight: 700;
     color: #333;
+    font-size: 16px;
 }
 
 .hpo-product-option .hpo-option-price {
     display: block;
     margin-top: 4px;
-    margin-right: 24px;
     font-size: 13px;
     color: #2271b1;
 }
@@ -313,15 +357,7 @@
     color: #666;
     line-height: 1.4;
     padding-right: 24px;
-}
-
-.hpo-product-option input[type="radio"] {
-    margin-left: 0;
-    margin-right: 8px;
-    visibility: visible;
-    opacity: 1;
-    position: relative;
-    pointer-events: auto;
+    text-align: center;
 }
 
 .hpo-product-option input[type="radio"]:checked + span {
@@ -525,13 +561,15 @@
     padding: 15px;
     background: #f1f8ff;
     border-radius: 6px;
-    margin: 20px 0;
     font-size: 18px;
     display: flex;
     justify-content: space-between;
     align-items: center;
     position: sticky;
     bottom: 0;
+    box-shadow: 0 0 10px 0 rgba(0, 0, 0, 0.1);
+    margin: -15px; /* مقدار برابر با padding والد */
+    width: calc(100% + 30px); /* جبران کاهش عرض بخاطر margin منفی */
 }
 
 .hpo-total-label {
@@ -980,12 +1018,6 @@
 }
 
 /* Section highlighting for active state */
-.hpo-option-section:not(.disabled-section),
-.hpo-weight-section:not(.disabled-section),
-.hpo-grinding-options-section:not(.disabled-section) {
-    box-shadow: 0 0 15px rgba(59, 130, 246, 0.1);
-    background-color: #f8fafc;
-}
 
 /* Mobile Responsive Enhancements */
 @media (max-width: 768px) {
@@ -1190,4 +1222,73 @@ body.hpo-popup-open {
   .hpo-options-list {
     grid-template-columns: 1fr !important;
   }
+}
+
+/* Header Price Styling */
+.hpo-header-price {
+    position: absolute;
+    left: 50px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    align-items: center;
+    background-color: #ffffff;
+    padding: 6px 10px;
+    border-radius: 20px;
+    z-index: 5;
+    transition: all 0.3s ease;
+    border: 1px solid #c7c7c7;
+    min-width: 150px;
+    justify-content: center;
+    gap: 10px;
+}
+
+.hpo-header-price:hover {
+
+}
+
+.hpo-cart-icon {
+    display: inline-block;
+    width: 18px;
+    height: 18px;
+    margin-right: 8px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23210280'%3E%3Cpath d='M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96 0 1.1.9 2 2 2h12v-2H7.42c-.14 0-.25-.11-.25-.25l.03-.12.9-1.63h7.45c.75 0 1.41-.41 1.75-1.03l3.58-6.49c.08-.14.12-.31.12-.48 0-.55-.45-1-1-1H5.21l-.94-2H1zm16 16c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: contain;
+}
+
+.hpo-header-price .hpo-total-value {
+    font-size: 14px;
+    font-weight: 600;
+    color: #210280;
+}
+
+@media (max-width: 768px) {
+    .hpo-header-price {
+        left: 15px;
+        padding: 4px 8px;
+    }
+    
+    .hpo-header-price .hpo-total-value {
+        font-size: 12px;
+    }
+}
+
+/* Animation for price update */
+@keyframes priceUpdate {
+    0% {
+        transform: translateY(-50%) scale(1);
+    }
+    50% {
+        transform: translateY(-50%) scale(1.1);
+        background-color: #d6e9ff;
+    }
+    100% {
+        transform: translateY(-50%) scale(1);
+    }
+}
+
+.hpo-header-price.price-updated {
+    animation: priceUpdate 0.5s ease;
 }
