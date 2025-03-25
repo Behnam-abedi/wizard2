@@ -169,6 +169,7 @@ class Hierarchical_Product_Options_Admin {
         add_action('wp_ajax_hpo_update_order', array($this, 'ajax_update_order'));
         add_action('wp_ajax_hpo_assign_product_categories', array($this, 'ajax_assign_product_categories'));
         add_action('wp_ajax_hpo_delete_assignment', array($this, 'ajax_delete_assignment'));
+        add_action('wp_ajax_hpo_update_assignment_description', array($this, 'ajax_update_assignment_description'));
         add_action('wp_ajax_hpo_add_weight', array($this, 'ajax_add_weight'));
         add_action('wp_ajax_hpo_update_weight', array($this, 'ajax_update_weight'));
         add_action('wp_ajax_hpo_delete_weight', array($this, 'ajax_delete_weight'));
@@ -417,7 +418,7 @@ class Hierarchical_Product_Options_Admin {
     }
     
     /**
-     * AJAX: Assign product categories
+     * AJAX: Assign categories to product
      */
     public function ajax_assign_product_categories() {
         check_ajax_referer('hpo_nonce', 'nonce');
@@ -428,18 +429,24 @@ class Hierarchical_Product_Options_Admin {
         
         $wc_product_id = isset($_POST['wc_product_id']) ? intval($_POST['wc_product_id']) : 0;
         $category_id = isset($_POST['category_id']) ? intval($_POST['category_id']) : 0;
+        $description = isset($_POST['description']) ? sanitize_text_field($_POST['description']) : '';
         
         if (empty($wc_product_id) || empty($category_id)) {
-            wp_send_json_error(__('Please select both a product and a category', 'hierarchical-product-options'));
+            wp_send_json_error(__('Product and category are required', 'hierarchical-product-options'));
+        }
+        
+        // Check description length (max 53 characters)
+        if (!empty($description) && mb_strlen($description) > 53) {
+            wp_send_json_error(__('Description must be 53 characters or less', 'hierarchical-product-options'));
         }
         
         $db = new Hierarchical_Product_Options_DB();
-        $result = $db->assign_categories_to_product($wc_product_id, $category_id);
+        $result = $db->assign_categories_to_product($wc_product_id, $category_id, $description);
         
         if ($result) {
             wp_send_json_success();
         } else {
-            wp_send_json_error(__('Failed to assign category', 'hierarchical-product-options'));
+            wp_send_json_error(__('Failed to assign product to category', 'hierarchical-product-options'));
         }
     }
     
@@ -483,6 +490,56 @@ class Hierarchical_Product_Options_Admin {
             wp_send_json_success();
         } else {
             wp_send_json_error(__('Failed to delete assignment', 'hierarchical-product-options'));
+        }
+    }
+
+    /**
+     * AJAX: Update assignment description
+     */
+    public function ajax_update_assignment_description() {
+        check_ajax_referer('hpo_nonce', 'nonce');
+        
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(__('Permission denied', 'hierarchical-product-options'));
+        }
+        
+        $assignment_id = isset($_POST['assignment_id']) ? intval($_POST['assignment_id']) : 0;
+        $description = isset($_POST['description']) ? sanitize_text_field($_POST['description']) : '';
+        
+        if (empty($assignment_id)) {
+            wp_send_json_error(__('Assignment ID is required', 'hierarchical-product-options'));
+        }
+        
+        // Check description length (max 53 characters)
+        if (mb_strlen($description) > 53) {
+            wp_send_json_error(__('Description must be 53 characters or less', 'hierarchical-product-options'));
+        }
+        
+        $db = new Hierarchical_Product_Options_DB();
+        
+        // First get the assignment to find the product ID
+        $assignment = $db->get_assignment($assignment_id);
+        if (!$assignment) {
+            wp_send_json_error(__('Assignment not found', 'hierarchical-product-options'));
+        }
+        
+        // Get all assignments for this product
+        $product_assignments = $db->get_assignments_for_product($assignment->wc_product_id);
+        
+        // Update each assignment with the same description
+        $success = true;
+        foreach ($product_assignments as $product_assignment) {
+            $result = $db->update_assignment_description($product_assignment->id, $description);
+            if ($result === false) {
+                $success = false;
+                break;
+            }
+        }
+        
+        if ($success) {
+            wp_send_json_success();
+        } else {
+            wp_send_json_error(__('Failed to update description for all assignments', 'hierarchical-product-options'));
         }
     }
 

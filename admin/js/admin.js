@@ -453,6 +453,65 @@
             });
         });
         
+        // Edit description
+        $(document).on('click', '.hpo-edit-description', function(e) {
+            e.preventDefault();
+            
+            var assignmentId = $(this).data('id');
+            var productId = $(this).data('product-id');
+            var currentDescription = $(this).data('description') || '';
+            var $cell = $(this).closest('div.hpo-product-description-wrapper');
+            
+            // Create the edit form
+            var $form = $('<div class="hpo-inline-edit">' +
+                '<textarea maxlength="53" rows="2">' + currentDescription + '</textarea>' +
+                '<div class="hpo-desc-actions">' +
+                '<button class="button button-small hpo-save-description">Save</button> ' +
+                '<button class="button button-small hpo-cancel-edit">Cancel</button>' +
+                '</div>' +
+                '<div class="hpo-limit-info">حداکثر 53 کاراکتر مجاز است</div>' +
+                '</div>');
+            
+            // Replace the cell content with the form
+            $cell.find('.hpo-desc-text, .hpo-edit-description').hide();
+            $cell.append($form);
+            
+            // Set up save handler
+            $form.find('.hpo-save-description').on('click', function() {
+                var newDescription = $form.find('textarea').val();
+                
+                var data = {
+                    action: 'hpo_update_assignment_description',
+                    nonce: hpo_data.nonce,
+                    assignment_id: assignmentId,
+                    description: newDescription
+                };
+                
+                $.post(hpo_data.ajax_url, data, function(response) {
+                    if (response.success) {
+                        // Update the displayed text and data attribute
+                        $cell.find('.hpo-desc-text').text(newDescription);
+                        $cell.find('.hpo-edit-description').data('description', newDescription);
+                        
+                        // Remove the edit form and show the original elements
+                        $form.remove();
+                        $cell.find('.hpo-desc-text, .hpo-edit-description').show();
+                    } else {
+                        alert(response.data);
+                    }
+                });
+            });
+            
+            // Set up cancel handler
+            $form.find('.hpo-cancel-edit').on('click', function() {
+                $form.remove();
+                $cell.find('.hpo-desc-text, .hpo-edit-description').show();
+            });
+            
+            // Focus the textarea
+            $form.find('textarea').focus();
+        });
+        
         /**
          * Initialize sortable functionality
          */

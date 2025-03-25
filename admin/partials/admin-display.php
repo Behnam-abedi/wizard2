@@ -70,6 +70,12 @@
                     </div>
                     
                     <div class="hpo-form-row">
+                        <label for="hpo-product-description"><?php echo esc_html__('Short Description', 'hierarchical-product-options'); ?></label>
+                        <textarea id="hpo-product-description" name="description" rows="2" maxlength="53" placeholder="<?php echo esc_attr__('Enter a short description (max 53 characters)', 'hierarchical-product-options'); ?>"></textarea>
+                        <div class="hpo-limit-info">حداکثر 53 کاراکتر مجاز است</div>
+                    </div>
+                    
+                    <div class="hpo-form-row">
                         <button type="submit" class="button button-primary"><?php echo esc_html__('Assign to Product', 'hierarchical-product-options'); ?></button>
                     </div>
                 </form>
@@ -100,6 +106,16 @@
                                 // Group assignments by product
                                 $products = array();
                                 foreach ($assignments as $assignment) {
+                                    // Get category name - this was missing before
+                                    $category = $db->get_category($assignment->category_id);
+                                    if ($category) {
+                                        $assignment->category_name = $category->name;
+                                        $assignment->parent_id = $category->parent_id;
+                                    } else {
+                                        $assignment->category_name = __('Unknown', 'hierarchical-product-options');
+                                        $assignment->parent_id = 0;
+                                    }
+                                    
                                     if (!isset($products[$assignment->wc_product_id])) {
                                         $products[$assignment->wc_product_id] = array(
                                             'product' => wc_get_product($assignment->wc_product_id),
@@ -122,7 +138,23 @@
                             ?>
                             <tr>
                                 <?php if ($index === 0): // Show product name only in the first row ?>
-                                <td rowspan="<?php echo count($data['categories']); ?>"><?php echo esc_html($data['product']->get_name()); ?></td>
+                                <td rowspan="<?php echo count($data['categories']); ?>">
+                                    <?php echo esc_html($data['product']->get_name()); ?>
+                                    <div class="hpo-product-description-wrapper">
+                                        <div class="hpo-desc-text">
+                                            <?php 
+                                            // Use the description from the first assignment for this product
+                                            echo esc_html($data['categories'][0]->short_description); 
+                                            ?>
+                                        </div>
+                                        <button class="button button-small hpo-edit-description" 
+                                                data-id="<?php echo esc_attr($data['categories'][0]->id); ?>" 
+                                                data-product-id="<?php echo esc_attr($data['categories'][0]->wc_product_id); ?>"
+                                                data-description="<?php echo esc_attr($data['categories'][0]->short_description); ?>">
+                                            <span class="dashicons dashicons-edit"></span>
+                                        </button>
+                                    </div>
+                                </td>
                                 <?php endif; ?>
                                 
                                 <td>
@@ -132,7 +164,7 @@
                                         // Get child categories for this parent
                                         $child_categories = array();
                                         foreach ($assignments as $child) {
-                                            if ($child->parent_id == $assignment->category_id) {
+                                            if (isset($child->parent_id) && $child->parent_id == $assignment->category_id) {
                                                 $child_categories[] = $child->category_name;
                                             }
                                         }

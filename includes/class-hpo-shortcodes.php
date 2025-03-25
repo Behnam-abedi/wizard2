@@ -143,10 +143,15 @@ class HPO_Shortcodes {
         // Get all products that have hierarchical options
         $assignments = $db->get_category_product_assignments();
         $product_ids = array();
+        $product_descriptions = array();
         
         foreach ($assignments as $assignment) {
             if (!in_array($assignment->wc_product_id, $product_ids)) {
                 $product_ids[] = $assignment->wc_product_id;
+                // Store the description if available
+                if (!empty($assignment->short_description)) {
+                    $product_descriptions[$assignment->wc_product_id] = $assignment->short_description;
+                }
             }
         }
         
@@ -166,11 +171,16 @@ class HPO_Shortcodes {
                         <div class="hpo-product-info">
                             <h4><?php echo esc_html($product->get_name()); ?></h4>
                             <?php
-                            $description = $product->get_short_description();
-                            if (!empty($description)) {
-                                echo '<div class="hpo-product-description">' . wp_kses_post($description) . '</div>';
-                            }else{
-                                echo '<div class="hpo-product-description">بدون توضیحات</div>';
+                            // Use our custom short description if available, otherwise use product short description
+                            if (isset($product_descriptions[$product_id])) {
+                                echo '<div class="hpo-product-description">' . esc_html($product_descriptions[$product_id]) . '</div>';
+                            } else {
+                                $description = $product->get_short_description();
+                                if (!empty($description)) {
+                                    echo '<div class="hpo-product-description">' . wp_kses_post($description) . '</div>';
+                                } else {
+                                    echo '<div class="hpo-product-description">بدون توضیحات</div>';
+                                }
                             }
                             ?>
                         </div>

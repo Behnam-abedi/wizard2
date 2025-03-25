@@ -234,6 +234,70 @@
     font-style: italic;
 }
 
+/* Description field styling */
+.hpo-description-cell {
+    position: relative;
+}
+
+.hpo-product-description-wrapper {
+    margin-top: 5px;
+    font-size: 12px;
+    color: #666;
+    font-style: italic;
+    display: flex;
+    align-items: center;
+}
+
+.hpo-product-description-wrapper .hpo-desc-text {
+    flex-grow: 1;
+    margin-right: 5px;
+}
+
+.hpo-desc-text {
+    display: inline-block;
+    margin-right: 10px;
+}
+
+.hpo-inline-edit {
+    margin-top: 10px;
+}
+
+.hpo-inline-edit textarea {
+    width: 100%;
+    padding: 5px;
+    margin-bottom: 5px;
+}
+
+.hpo-desc-actions {
+    display: flex;
+    gap: 5px;
+    margin-bottom: 5px;
+}
+
+.hpo-limit-info {
+    color: #888;
+    font-size: 11px;
+    margin-top: 5px;
+}
+
+/* Character limit warning */
+textarea[maxlength] {
+    border-color: #ddd;
+    transition: border-color 0.3s;
+}
+
+textarea[maxlength]:focus {
+    border-color: #2271b1;
+}
+
+textarea[maxlength].length-warning {
+    border-color: #ffb900;
+}
+
+textarea[maxlength].length-error {
+    border-color: #d63638;
+}
+
 /* Add CSS for product description */
 .hpo-item-description {
     margin-top: 5px;

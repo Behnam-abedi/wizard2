@@ -62,6 +62,7 @@ class Hierarchical_Product_Options_DB {
             id mediumint(9) NOT NULL AUTO_INCREMENT,
             wc_product_id mediumint(9) NOT NULL,
             category_id mediumint(9) NOT NULL,
+            short_description varchar(53) DEFAULT '',
             PRIMARY KEY  (id),
             KEY wc_product_id (wc_product_id)
         ) $charset_collate;";
@@ -263,61 +264,43 @@ class Hierarchical_Product_Options_DB {
      *
      * @param int $wc_product_id WooCommerce product ID
      * @param int $category_id Parent category ID
-     * @return bool Success
+     * @param string $short_description Short description (max 53 chars)
+     * @return int New assignment ID
      */
-    public function assign_categories_to_product($wc_product_id, $category_id) {
+    public function assign_categories_to_product($wc_product_id, $category_id, $short_description = '') {
         global $wpdb;
         
-        // Instead of deleting all assignments for this product, we'll only delete 
-        // the assignments that conflict with the new category and its children/parents
-        
-        // Get all child categories of the selected category
-        $children = $this->get_child_categories($category_id);
-        
-        // Get all parent categories of the selected category
-        $parents = $this->get_parent_categories($category_id);
-        
-        // Create a list of all category IDs in this hierarchy (parents, selected category, children)
-        $related_category_ids = array($category_id);
-        
-        foreach ($children as $child) {
-            $related_category_ids[] = $child->id;
-        }
-        
-        foreach ($parents as $parent) {
-            $related_category_ids[] = $parent->id;
-        }
-        
-        // Delete any existing assignments for related categories
-        if (!empty($related_category_ids)) {
-            $related_ids_string = implode(',', array_map('intval', $related_category_ids));
-            $sql = "DELETE FROM $this->assignments_table 
-                    WHERE (wc_product_id = %d AND category_id IN ($related_ids_string))
-                    OR (category_id = %d)";
-            $wpdb->query($wpdb->prepare($sql, $wc_product_id, $category_id));
-        }
-        
-        // Add assignment for parent category
-        $result = $wpdb->insert(
-            $this->assignments_table,
-            array(
-                'wc_product_id' => $wc_product_id,
-                'category_id' => $category_id
+        // Check if this assignment already exists
+        $existing = $wpdb->get_var(
+            $wpdb->prepare(
+                "SELECT id FROM $this->assignments_table WHERE wc_product_id = %d AND category_id = %d",
+                $wc_product_id,
+                $category_id
             )
         );
         
-        // Add assignments for all child categories
-        foreach ($children as $child) {
-            $wpdb->insert(
-                $this->assignments_table,
-                array(
-                    'wc_product_id' => $wc_product_id,
-                    'category_id' => $child->id
-                )
-            );
+        if ($existing) {
+            // Update short description if provided
+            if (!empty($short_description)) {
+                $wpdb->update(
+                    $this->assignments_table,
+                    array('short_description' => substr($short_description, 0, 53)),
+                    array('id' => $existing)
+                );
+            }
+            return $existing;
         }
         
-        return $result !== false;
+        $wpdb->insert(
+            $this->assignments_table,
+            array(
+                'wc_product_id' => $wc_product_id,
+                'category_id' => $category_id,
+                'short_description' => substr($short_description, 0, 53)
+            )
+        );
+        
+        return $wpdb->insert_id;
     }
     
     /**
@@ -382,24 +365,54 @@ class Hierarchical_Product_Options_DB {
     public function get_category_product_assignments() {
         global $wpdb;
         
-        $sql = "SELECT a.*, c.name as category_name, c.parent_id 
-                FROM $this->assignments_table a
-                JOIN $this->categories_table c ON a.category_id = c.id
-                ORDER BY c.parent_id, c.name";
-                
-        $assignments = $wpdb->get_results($sql);
+        $sql = "SELECT * FROM $this->assignments_table";
         
-        // Add parent category names if available
-        foreach ($assignments as $assignment) {
-            if ($assignment->parent_id > 0) {
-                $parent = $this->get_category($assignment->parent_id);
-                if ($parent) {
-                    $assignment->parent_name = $parent->name;
-                }
-            }
-        }
+        return $wpdb->get_results($sql);
+    }
+    
+    /**
+     * Get product-category assignment by ID
+     *
+     * @param int $id Assignment ID
+     * @return object Assignment
+     */
+    public function get_assignment($id) {
+        global $wpdb;
         
-        return $assignments;
+        $sql = $wpdb->prepare("SELECT * FROM $this->assignments_table WHERE id = %d", $id);
+        
+        return $wpdb->get_row($sql);
+    }
+    
+    /**
+     * Update product-category assignment description
+     *
+     * @param int $id Assignment ID
+     * @param string $short_description Short description (max 53 chars)
+     * @return bool Success
+     */
+    public function update_assignment_description($id, $short_description) {
+        global $wpdb;
+        
+        return $wpdb->update(
+            $this->assignments_table,
+            array('short_description' => substr($short_description, 0, 53)),
+            array('id' => $id)
+        );
+    }
+    
+    /**
+     * Get product-category assignments for a specific WooCommerce product
+     *
+     * @param int $wc_product_id WooCommerce product ID
+     * @return array Assignments
+     */
+    public function get_assignments_for_product($wc_product_id) {
+        global $wpdb;
+        
+        $sql = $wpdb->prepare("SELECT * FROM $this->assignments_table WHERE wc_product_id = %d", $wc_product_id);
+        
+        return $wpdb->get_results($sql);
     }
     
     /**
