@@ -272,10 +272,12 @@ class HPO_Shortcodes {
                                 ?>
                                 <div class="hpo-product-option">
                                     <label>
-                                        <input type="radio" name="hpo_option[<?php echo esc_attr($parent->id); ?>]" 
-                                               value="<?php echo esc_attr($opt_product->id); ?>" 
-                                               data-price="<?php echo esc_attr($opt_product->price); ?>">
-                                        <span class="hpo-option-name"><?php echo esc_html($opt_product->name); ?></span>
+                                        <div class="hpo-product-option-name-price">
+                                            <input type="radio" name="hpo_option[<?php echo esc_attr($parent->id); ?>]" 
+                                                   value="<?php echo esc_attr($opt_product->id); ?>" 
+                                                   data-price="<?php echo esc_attr($opt_product->price); ?>">
+                                            <span class="hpo-option-name"><?php echo esc_html($opt_product->name); ?></span>
+                                        </div>
                                         <span class="hpo-option-price">(<?php echo number_format($opt_product->price); ?> تومان)</span>
                                     </label>
                                     <div class="hpo-product-option-description">
@@ -301,10 +303,12 @@ class HPO_Shortcodes {
                                         ?>
                                         <div class="hpo-product-option">
                                             <label>
-                                                <input type="radio" name="hpo_option[<?php echo esc_attr($child->id); ?>]" 
-                                                       value="<?php echo esc_attr($child_product->id); ?>" 
-                                                       data-price="<?php echo esc_attr($child_product->price); ?>">
-                                                <span class="hpo-option-name"><?php echo esc_html($child_product->name); ?></span>
+                                                <div class="hpo-product-option-name-price">
+                                                    <input type="radio" name="hpo_option[<?php echo esc_attr($child->id); ?>]" 
+                                                           value="<?php echo esc_attr($child_product->id); ?>" 
+                                                           data-price="<?php echo esc_attr($child_product->price); ?>">
+                                                    <span class="hpo-option-name"><?php echo esc_html($child_product->name); ?></span>
+                                                </div>
                                                 <span class="hpo-option-price">(<?php echo number_format($child_product->price); ?> تومان)</span>
                                             </label>
                                             <div class="hpo-product-option-description">

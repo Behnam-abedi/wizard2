@@ -255,25 +255,68 @@
     gap: 10px;
 }
 
-.hpo-product-option,
-.hpo-weight-option {
-    padding: 8px 12px;
+.hpo-product-option {
+    padding: 12px 15px;
     background: #fff;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    transition: all 0.2s ease;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    transition: all 0.25s ease;
+    margin-bottom: 10px;
     position: relative;
 }
 
-.hpo-product-option:hover,
-.hpo-weight-option:hover {
-    background: #f1f1f1;
-    border-color: #aaa;
+.hpo-product-option:hover {
+    border-color: #3b82f6;
+    background: #f8faff;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
-.hpo-product-option input[type="radio"],
-.hpo-weight-option input[type="radio"] {
-    margin-left: 5px;
+.hpo-product-option.selected {
+    background-color: #f0f7ff;
+    border-color: #2271b1;
+    border-width: 1.5px;
+}
+
+.hpo-product-option label {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    cursor: pointer;
+    padding: 0;
+    margin: 0;
+}
+
+.hpo-product-option-name-price {
+    display: flex;
+    align-items: center;
+    width: 100%;
+}
+
+.hpo-product-option .hpo-option-name {
+    margin-right: 8px;
+    font-weight: 500;
+    color: #333;
+}
+
+.hpo-product-option .hpo-option-price {
+    display: block;
+    margin-top: 4px;
+    margin-right: 24px;
+    font-size: 13px;
+    color: #2271b1;
+}
+
+.hpo-product-option-description {
+    margin-top: 8px;
+    font-size: 12px;
+    color: #666;
+    line-height: 1.4;
+    padding-right: 24px;
+}
+
+.hpo-product-option input[type="radio"] {
+    margin-left: 0;
     margin-right: 8px;
     visibility: visible;
     opacity: 1;
@@ -281,12 +324,9 @@
     pointer-events: auto;
 }
 
-.hpo-product-option label,
-.hpo-weight-option label {
-    display: flex;
-    align-items: center;
-    width: 100%;
-    cursor: pointer;
+.hpo-product-option input[type="radio"]:checked + span {
+    font-weight: bold;
+    color: #2271b1;
 }
 
 .hpo-product-option input[type="radio"]:checked + span,
@@ -678,34 +718,33 @@
 }
 
 .hpo-weight-option {
+    padding: 8px 12px;
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    transition: all 0.2s ease;
     position: relative;
-    margin: 0;
-    padding: 0;
+}
+
+.hpo-weight-option:hover {
+    background: #f1f1f1;
+    border-color: #aaa;
 }
 
 .hpo-weight-option label {
     display: flex;
     align-items: center;
     width: 100%;
-    padding: 10px 14px;
-    background: #ffffff;
-    border: 1px solid #e2e8f0;
-    border-radius: 15px;
     cursor: pointer;
-    transition: all 0.25s ease;
-}
-
-.hpo-weight-option:hover label {
-    border-color: #3b82f6;
-    background: #f8faff;
-    transform: translateY(-1px);
 }
 
 .hpo-weight-option input[type="radio"] {
-    position: absolute;
-    opacity: 0;
-    width: 0;
-    height: 0;
+    margin-left: 5px;
+    margin-right: 8px;
+    visibility: visible;
+    opacity: 1;
+    position: relative;
+    pointer-events: auto;
 }
 
 .hpo-weight-option .hpo-option-name {
