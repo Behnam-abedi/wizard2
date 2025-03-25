@@ -1156,3 +1156,38 @@ body.hpo-popup-open {
     color: #999;
     font-style: italic;
 }
+
+.hpo-options-list {
+  display: grid !important;
+  grid-template-columns: repeat(2, 1fr) !important;
+  gap: 15px !important;
+}
+
+/* Hide category structure */
+.hpo-category h4,
+.hpo-child-category h5 {
+  display: none !important;
+}
+
+/* Make containers invisible in layout */
+.hpo-category, 
+.hpo-child-categories,
+.hpo-child-category,
+.hpo-products {
+  display: contents !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* Fix product option styling */
+.hpo-product-option {
+  margin-bottom: 0 !important;
+  width: 100% !important;
+}
+
+/* Mobile view */
+@media (max-width: 768px) {
+  .hpo-options-list {
+    grid-template-columns: 1fr !important;
+  }
+}

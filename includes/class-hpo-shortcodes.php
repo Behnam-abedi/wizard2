@@ -223,12 +223,34 @@ class HPO_Shortcodes {
         // Organize categories into hierarchical structure
         $parent_categories = array();
         $child_categories = array();
+        $category_paths = array(); // Store category paths for display
+        
+        // Get the product name for the category paths
+        $product_name = $product->get_name();
         
         foreach ($categories as $category) {
             if ($category->parent_id == 0) {
                 $parent_categories[] = $category;
+                // For parent categories, add product name before category name
+                $category_paths[$category->id] = $product_name . ' > ' . $category->name;
             } else {
                 $child_categories[$category->parent_id][] = $category;
+                
+                // Get all parent categories to build the full path
+                $parents = $db->get_parent_categories($category->id);
+                
+                // Build path from product name to deepest parent to current category
+                $parent_names = array($product_name); // Start with product name
+                
+                if (!empty($parents)) {
+                    foreach (array_reverse($parents) as $parent) {
+                        $parent_names[] = $parent->name;
+                    }
+                }
+                $parent_names[] = $category->name;
+                $path = implode(' > ', $parent_names);
+                
+                $category_paths[$category->id] = $path;
             }
         }
         
@@ -271,6 +293,9 @@ class HPO_Shortcodes {
                                 foreach ($parent_products as $opt_product): 
                                 ?>
                                 <div class="hpo-product-option">
+                                    <div class="hpo-product-option-header">
+                                        <?php echo esc_html($category_paths[$parent->id]); ?>
+                                    </div>
                                     <label>
                                         <div class="hpo-product-option-name-price">
                                             <input type="radio" name="hpo_option[<?php echo esc_attr($parent->id); ?>]" 
@@ -302,6 +327,9 @@ class HPO_Shortcodes {
                                         foreach ($child_products as $child_product): 
                                         ?>
                                         <div class="hpo-product-option">
+                                            <div class="hpo-product-option-header">
+                                                <?php echo esc_html($category_paths[$child->id]); ?>
+                                            </div>
                                             <label>
                                                 <div class="hpo-product-option-name-price">
                                                     <input type="radio" name="hpo_option[<?php echo esc_attr($child->id); ?>]" 
