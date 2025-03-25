@@ -20,12 +20,12 @@ class Hierarchical_Product_Options_Admin {
     public function add_admin_menu() {
         add_menu_page(
             __('Hierarchical Product Options', 'hierarchical-product-options'),
-            __('Product Options', 'hierarchical-product-options'),
+            __('HPO Options', 'hierarchical-product-options'),
             'manage_options',
             'hierarchical-product-options',
             array($this, 'display_admin_page'),
-            'dashicons-menu-alt',
-            30
+            'dashicons-list-view',
+            25
         );
         
         add_submenu_page(
@@ -36,6 +36,9 @@ class Hierarchical_Product_Options_Admin {
             'hierarchical-product-options-settings',
             array($this, 'display_settings_page')
         );
+        
+        // Check if database needs upgrade
+        $this->maybe_upgrade_database();
     }
 
     /**
@@ -281,20 +284,25 @@ class Hierarchical_Product_Options_Admin {
         $name = isset($_POST['name']) ? sanitize_text_field($_POST['name']) : '';
         $price = isset($_POST['price']) ? floatval($_POST['price']) : 0;
         $category_id = isset($_POST['category_id']) ? intval($_POST['category_id']) : 0;
+        $description = isset($_POST['description']) ? sanitize_textarea_field($_POST['description']) : '';
+        
+        // محدود کردن طول توضیحات به 53 کاراکتر
+        $description = mb_substr($description, 0, 53);
         
         if (empty($name) || empty($category_id)) {
             wp_send_json_error(__('Invalid data', 'hierarchical-product-options'));
         }
         
         $db = new Hierarchical_Product_Options_DB();
-        $id = $db->add_product($name, $price, $category_id);
+        $id = $db->add_product($name, $price, $category_id, $description);
         
         if ($id) {
             wp_send_json_success(array(
                 'id' => $id,
                 'name' => $name,
                 'price' => $price,
-                'category_id' => $category_id
+                'category_id' => $category_id,
+                'description' => $description
             ));
         } else {
             wp_send_json_error(__('Failed to add product', 'hierarchical-product-options'));
@@ -315,6 +323,10 @@ class Hierarchical_Product_Options_Admin {
         $name = isset($_POST['name']) ? sanitize_text_field($_POST['name']) : '';
         $price = isset($_POST['price']) ? floatval($_POST['price']) : 0;
         $category_id = isset($_POST['category_id']) ? intval($_POST['category_id']) : 0;
+        $description = isset($_POST['description']) ? sanitize_textarea_field($_POST['description']) : '';
+        
+        // محدود کردن طول توضیحات به 53 کاراکتر
+        $description = mb_substr($description, 0, 53);
         
         if (empty($id) || empty($name) || empty($category_id)) {
             wp_send_json_error(__('Invalid data', 'hierarchical-product-options'));
@@ -325,7 +337,8 @@ class Hierarchical_Product_Options_Admin {
         $result = $db->update_product($id, array(
             'name' => $name,
             'price' => $price,
-            'category_id' => $category_id
+            'category_id' => $category_id,
+            'description' => $description
         ));
         
         if ($result !== false) {
@@ -1027,6 +1040,11 @@ class Hierarchical_Product_Options_Admin {
                             </button>
                         </div>
                     </div>
+                    <?php if (!empty(trim($product->description))): ?>
+                    <div class="hpo-item-description"><?php echo esc_html($product->description); ?></div>
+                    <?php else: ?>
+                    <div class="hpo-item-description no-description"><?php echo esc_html__('بدون توضیحات', 'hierarchical-product-options'); ?></div>
+                    <?php endif; ?>
                 </li>
                 <?php endforeach; ?>
             </ul>
@@ -1040,5 +1058,29 @@ class Hierarchical_Product_Options_Admin {
         </li>
         <?php
         endforeach;
+    }
+
+    /**
+     * Check if database needs an upgrade and perform it
+     */
+    public function maybe_upgrade_database() {
+        $db_version = get_option('hpo_db_version', '1.0');
+        
+        // If the version is less than the current version, upgrade
+        if (version_compare($db_version, '1.1', '<')) {
+            global $wpdb;
+            $products_table = $wpdb->prefix . 'hpo_products';
+            
+            // Check if description column exists
+            $column_exists = $wpdb->get_results("SHOW COLUMNS FROM {$products_table} LIKE 'description'");
+            
+            if (empty($column_exists)) {
+                // Add description column
+                $wpdb->query("ALTER TABLE {$products_table} ADD COLUMN `description` text DEFAULT '' AFTER `category_id`");
+            }
+            
+            // Update the version
+            update_option('hpo_db_version', '1.1');
+        }
     }
 } 

@@ -230,6 +230,9 @@ jQuery(document).ready(function($) {
 
         // Toggle grinding options
         $('input[name="hpo_grinding"]').on('change', function() {
+            // Reset quantity to 1 when grinding option changes
+            resetQuantity();
+            
             if ($(this).val() === 'ground') {
                 $('.hpo-grinding-machines').slideDown(200);
             } else {
@@ -269,7 +272,11 @@ jQuery(document).ready(function($) {
         });
         
         // Update price when options change
-        $('input[name^="hpo_option"], input[name="hpo_weight"], select[name="hpo_grinding_machine"]').on('change', function() {
+        $('input[name^="hpo_option"], input[name="hpo_weight"]').on('change', function() {
+            // Reset quantity to 1 when product options or weight change
+            resetQuantity();
+            
+            // Update the price and validate selections
             updateTotalPrice();
             validateSelections();
             
@@ -293,6 +300,15 @@ jQuery(document).ready(function($) {
                 // Add selected class to the selected weight option
                 $(this).closest('.hpo-weight-option').addClass('selected');
             }
+        });
+        
+        // Handle grinding machine selection separately
+        $('select[name="hpo_grinding_machine"]').on('change', function() {
+            // Reset quantity to 1 when grinding machine changes
+            resetQuantity();
+            
+            updateTotalPrice();
+            validateSelections();
         });
         
         // Handle section clicks when disabled
@@ -477,24 +493,24 @@ jQuery(document).ready(function($) {
         console.log('Base price:', basePrice);
         
         // Step 1: Start with base price
-        var calculatedPrice = basePrice;
+        var unitPrice = basePrice;
         
         // Step 2: Add selected product option price
         var selectedOption = form.find('input[name^="hpo_option"]:checked');
         if (selectedOption.length) {
             var optionPrice = parseFloat(selectedOption.data('price')) || 0;
-            calculatedPrice += optionPrice;
+            unitPrice += optionPrice;
             console.log('Option price:', optionPrice);
-            console.log('Price after adding option:', calculatedPrice);
+            console.log('Price after adding option:', unitPrice);
         }
         
         // Step 3: Apply weight coefficient (if selected)
         var weightOption = form.find('input[name="hpo_weight"]:checked');
         if (weightOption.length) {
             var coefficient = parseFloat(weightOption.data('coefficient')) || 1;
-            calculatedPrice *= coefficient;
+            unitPrice *= coefficient;
             console.log('Weight coefficient:', coefficient);
-            console.log('Price after applying weight coefficient:', calculatedPrice);
+            console.log('Price after applying weight coefficient:', unitPrice);
         }
         
         // Step 4: Add grinding price (if applicable)
@@ -516,16 +532,20 @@ jQuery(document).ready(function($) {
                 console.log('Grinding price (raw):', selectedGrinder.data('price'));
                 console.log('Grinding price (parsed):', grindingPrice);
                 
-                // Add to total
-                calculatedPrice += grindingPrice;
-                console.log('Price after adding grinding:', calculatedPrice);
+                // Add to unit price
+                unitPrice += grindingPrice;
+                console.log('Price after adding grinding:', unitPrice);
             } else {
                 console.log('No grinding machine selected or invalid selection');
             }
         }
         
+        // Store the unit price for easier access
+        form.data('unit-price', unitPrice);
+        
         // Step 5: Multiply by quantity
-        var totalPrice = calculatedPrice * quantity;
+        var totalPrice = unitPrice * quantity;
+        console.log('Unit price:', unitPrice);
         console.log('Quantity:', quantity);
         console.log('Final price:', totalPrice);
         
@@ -545,16 +565,31 @@ jQuery(document).ready(function($) {
         form.data('calculated-price', totalPrice);
     }
 
-    // Handle grinding toggle
+    // Reset quantity to 1 when any product options change
+    function resetQuantity() {
+        var quantityInput = $('input[name="quantity"]');
+        if (quantityInput.length) {
+            quantityInput.val(1);
+        }
+    }
+
+    // Initialize grinding toggle
     function initGrindingToggle() {
         // Ensure grinding machine select changes trigger price updates
         $(document).on('change', 'select[name="hpo_grinding_machine"]', function() {
             console.log('Grinding machine changed to:', $(this).find('option:selected').text());
             console.log('Grinding machine price:', $(this).find('option:selected').data('price'));
+            // Reset quantity to 1 when grinding machine changes
+            resetQuantity();
             updateTotalPrice();
         });
 
         $(document).on('click', '.hpo-toggle-option', function() {
+            // Skip if this section is disabled
+            if ($(this).closest('.disabled-section').length) {
+                return false;
+            }
+            
             const $this = $(this);
             const $toggleContainer = $this.closest('.hpo-toggle-container');
             const $options = $toggleContainer.find('.hpo-toggle-option');
@@ -571,6 +606,9 @@ jQuery(document).ready(function($) {
             
             // Update hidden input and trigger price update
             $input.val(isGround ? 'ground' : 'whole');
+            
+            // Reset quantity to 1 when grinding option changes
+            resetQuantity();
             
             // Show/hide grinding machines with animation
             if (isGround) {
@@ -589,6 +627,11 @@ jQuery(document).ready(function($) {
             
             // Update price calculation after toggle
             setTimeout(updateTotalPrice, 100);
+            
+            // Validate to enable/disable notes and other sections
+            if (typeof validateSelections === 'function') {
+                setTimeout(validateSelections, 150);
+            }
         });
 
         // Initialize the toggle state on page load

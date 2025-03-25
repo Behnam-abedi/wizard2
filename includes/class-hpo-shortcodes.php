@@ -268,6 +268,9 @@ class HPO_Shortcodes {
                                         <span class="hpo-option-name"><?php echo esc_html($opt_product->name); ?></span>
                                         <span class="hpo-option-price">(<?php echo number_format($opt_product->price); ?> تومان)</span>
                                     </label>
+                                    <div class="hpo-product-option-description">
+                                        <?php echo !empty($opt_product->description) ? esc_html($opt_product->description) : '<span class="no-description">بدون توضیحات</span>'; ?>
+                                    </div>
                                 </div>
                                 <?php endforeach; ?>
                             </div>
@@ -294,6 +297,9 @@ class HPO_Shortcodes {
                                                 <span class="hpo-option-name"><?php echo esc_html($child_product->name); ?></span>
                                                 <span class="hpo-option-price">(<?php echo number_format($child_product->price); ?> تومان)</span>
                                             </label>
+                                            <div class="hpo-product-option-description">
+                                                <?php echo !empty($child_product->description) ? esc_html($child_product->description) : '<span class="no-description">بدون توضیحات</span>'; ?>
+                                            </div>
                                         </div>
                                         <?php endforeach; ?>
                                     </div>

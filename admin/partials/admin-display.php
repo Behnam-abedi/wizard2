@@ -274,6 +274,12 @@
             </div>
             
             <div class="hpo-form-row">
+                <label for="hpo-product-description"><?php echo esc_html__('Description', 'hierarchical-product-options'); ?></label>
+                <textarea id="hpo-product-description" name="description" rows="3" maxlength="53" placeholder="<?php echo esc_attr__('Enter product description (max 53 characters)', 'hierarchical-product-options'); ?>"></textarea>
+                <div class="hpo-limit-info">حداکثر 53 کاراکتر مجاز است</div>
+            </div>
+            
+            <div class="hpo-form-row">
                 <label for="hpo-product-category"><?php echo esc_html__('Category', 'hierarchical-product-options'); ?></label>
                 <select id="hpo-product-category" name="category_id" required>
                     <option value=""><?php echo esc_html__('Select a category...', 'hierarchical-product-options'); ?></option>

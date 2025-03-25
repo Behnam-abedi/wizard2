@@ -9,6 +9,16 @@
         // Initialize sortable for categories
         initSortable();
         
+        // کد ساده برای نمایش پیام هشدار هنگام رسیدن به محدودیت کاراکتر
+        $(document).on('input', '#hpo-product-description', function() {
+            var maxLength = 53;
+            var currentLength = $(this).val().length;
+            
+            if (currentLength >= maxLength) {
+                alert('به محدودیت 53 کاراکتر رسیدید!');
+            }
+        });
+        
         // Tab navigation - make sure this is properly active
         $('.nav-tab').on('click', function(e) {
             e.preventDefault();
@@ -94,7 +104,8 @@
                     nonce: hpo_data.nonce,
                     name: $(this).find('[name="name"]').val(),
                     price: $(this).find('[name="price"]').val(),
-                    category_id: $(this).find('[name="category_id"]').val()
+                    category_id: $(this).find('[name="category_id"]').val(),
+                    description: $(this).find('[name="description"]').val()
                 };
                 
                 $.post(hpo_data.ajax_url, data, function(response) {
@@ -181,7 +192,8 @@
                     nonce: hpo_data.nonce,
                     name: $(this).find('[name="name"]').val(),
                     price: $(this).find('[name="price"]').val(),
-                    category_id: $(this).find('[name="category_id"]').val()
+                    category_id: $(this).find('[name="category_id"]').val(),
+                    description: $(this).find('[name="description"]').val()
                 };
                 
                 $.post(hpo_data.ajax_url, data, function(response) {
@@ -253,6 +265,13 @@
             var productId = $(this).data('id');
             var productName = $(this).closest('.hpo-item-header').find('.hpo-item-name').text();
             var productPrice = $(this).closest('.hpo-item-header').find('.hpo-item-price').text().replace(/[^0-9.]/g, '');
+            var productDescription = $(this).closest('.hpo-product-item').find('.hpo-item-description').text();
+            
+            // اگر "بدون توضیحات" بود، آن را خالی کنیم
+            if (productDescription.trim() === 'No description' || productDescription.trim() === 'بدون توضیحات') {
+                productDescription = '';
+            }
+            
             var categoryId = $(this).closest('.hpo-products-list').data('category-id');
             
             // Clone the template
@@ -262,6 +281,7 @@
             // Set the values
             $form.find('[name="name"]').val(productName);
             $form.find('[name="price"]').val(productPrice);
+            $form.find('[name="description"]').val(productDescription);
             $form.find('[name="category_id"]').val(categoryId);
             $form.find('button[type="submit"]').text(hpo_data.strings.save);
             
@@ -278,7 +298,8 @@
                     id: productId,
                     name: $(this).find('[name="name"]').val(),
                     price: $(this).find('[name="price"]').val(),
-                    category_id: $(this).find('[name="category_id"]').val()
+                    category_id: $(this).find('[name="category_id"]').val(),
+                    description: $(this).find('[name="description"]').val()
                 };
                 
                 $.post(hpo_data.ajax_url, data, function(response) {

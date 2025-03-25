@@ -232,4 +232,46 @@
 .hpo-child-categories-list small {
     color: #666;
     font-style: italic;
+}
+
+/* Add CSS for product description */
+.hpo-item-description {
+    margin-top: 5px;
+    padding: 5px 10px 5px 30px;
+    font-size: 12px;
+    color: #666;
+    font-style: italic;
+    border-top: 1px solid #f0f0f0;
+    background: #f9f9f9;
+}
+
+.hpo-item-description.no-description {
+    color: #999;
+}
+
+/* Add styles for description field in the form */
+#hpo-product-description {
+    width: 100%;
+    min-height: 80px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 8px;
+    box-sizing: border-box;
+}
+
+/* استایل برای پیام محدودیت کاراکتر */
+.hpo-limit-info {
+    font-size: 12px;
+    color: #666;
+    margin-top: 5px;
+    padding: 3px 8px;
+    background-color: #f9f9f9;
+    border-right: 2px solid #2271b1;
+    border-radius: 3px;
+}
+
+/* استایل برای textarea در زمان رسیدن به محدودیت کاراکتر */
+#hpo-product-description:invalid {
+    border-color: #d63638;
+    box-shadow: 0 0 0 1px #d63638;
 } 
