@@ -1332,3 +1332,20 @@ body.hpo-popup-open {
 .hpo-header-price.price-updated {
     animation: priceUpdate 0.5s ease;
 }
+.header-title{
+    width: 100%!important;
+    display: flex!important;
+    justify-content: center!important;
+    font-size: 20px!important;
+    font-weight: 800!important;
+}
+.description-title{
+    padding: 10px;
+    border-right: 5px solid ;
+    border-image: linear-gradient(56deg, #210280 0%, #3230D2 100%) 1;
+    border-radius: 4px;
+    background-color: #f0f0f0;
+    max-width: 90%;
+    display: block;
+    margin: 31px auto;
+}
