@@ -54,6 +54,7 @@
     justify-content: space-between;
     align-items: center;
     position: relative;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1)
 }
 
 .hpo-popup-header h3 {
@@ -755,6 +756,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .hpo-back-button:before {
@@ -768,6 +770,7 @@
     /* width: 10px; */
     color: #cecdcd;
     margin-right: -14px;
+    box-shadow: -2px 0px 5px #0000001f;
 }
 
 .hpo-back-button:hover {
@@ -1270,6 +1273,8 @@ body.hpo-popup-open {
     justify-content: space-between;
     padding-left: 10px;
     margin-left: 10px;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+
 }
 
 .hpo-header-price:hover {
@@ -1288,6 +1293,7 @@ body.hpo-popup-open {
     background-color: #ffffff;
     border-radius: 50%;
     margin-right: -3px;
+    box-shadow: -2px 0px 5px #0000001f;
 }
 
 .hpo-header-price .hpo-total-value {

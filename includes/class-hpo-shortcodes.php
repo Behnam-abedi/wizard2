@@ -78,7 +78,12 @@ class HPO_Shortcodes {
             HPO_VERSION,
             true
         );
-        
+        wp_enqueue_script(
+            'hpo-scroll-scripts',
+            HPO_PLUGIN_URL . 'public/js/scroll.js',
+            HPO_VERSION,
+            true
+        );
         wp_localize_script(
             'hpo-shortcode-scripts',
             'hpoAjax',
@@ -349,7 +354,7 @@ class HPO_Shortcodes {
                 </div>
                 <?php endif; ?>
                 
-                <div class="hpo-weight-section">
+                <div class="hpo-weight-section" id="weight-section">
                     <h3>گزینه‌های وزن</h3>
                     <div class="hpo-weight-grid">
                         <?php foreach ($weights as $weight): ?>
