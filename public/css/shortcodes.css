@@ -69,11 +69,23 @@
 .hpo-popup-close {
     font-size: 24px;
     cursor: pointer;
-    color: #777;
+    color: #ffffff;
+    background-color: #cecdcd;
+    border-radius: 50px;
+    width: 30px;
+    height: 30px;
+    padding: -2px;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    border: none;
+    transition: all 0.3s;
 }
 
 .hpo-popup-close:hover {
-    color: #d63638;
+    color: #000000;
 }
 
 .hpo-popup-content {
@@ -99,7 +111,7 @@
 
 .hpo-product-item {
     border: 1px solid rgba(0, 0, 0, 0.123);
-    border-radius: 6px;
+    border-radius: 10px;
     overflow: hidden;
     transition: all 0.3s ease;
     padding: 15px;
@@ -114,9 +126,16 @@
 }
 
 .hpo-product-item.selected {
-    border-color: #2271b1;
-    box-shadow: 0 0 0 4px rgba(34, 113, 177, 0.1);
+    background-image: linear-gradient(56deg, #210280 0%, #3230D2 100%);
 }
+.hpo-product-item.selected .hpo-product-info h4 {
+    color: #ffffff;
+}
+.hpo-product-item.selected .hpo-product-description {
+    color: #ffffff;
+}
+
+
 
 .hpo-product-image {
     display: none;
@@ -162,10 +181,11 @@
     background-color: #dadada;
     color: #ffffff;
     /* border: 1px solid #0000001a; */
-    border-radius: 4px;
+    border-radius: 35px;
     cursor: pointer;
     transition: all 0.3s ease;
     text-align: center;
+    background-image: linear-gradient(56deg, #210280 0%, #3230D2 100%);
 }
 
 .hpo-next-step:hover {
@@ -724,13 +744,12 @@
     right: 20px;
     top: 50%;
     transform: translateY(-50%);
-    padding: 8px 15px;
-    background-color: #f0f0f1;
-    border: 1px solid #ddd;
-    border-radius: 4px;
+    padding: 7px 21px;
+    background-color: #cecdcd;
+    border-radius: 20px;
     cursor: pointer;
     font-size: 14px;
-    color: #2271b1;
+    color: #ffffff;
     transition: all 0.3s ease;
     line-height: 1;
     display: flex;
@@ -739,14 +758,21 @@
 }
 
 .hpo-back-button:before {
-    content: "\2190"; /* Unicode left arrow */
-    margin-left: 5px;
+    content: "\2190";
+    margin-left: 10px;
     font-size: 16px;
+    background-color: #ffffff;
+    border-radius: 15px;
+    padding: 4px 5px;
+    font-size: 16px;
+    /* width: 10px; */
+    color: #cecdcd;
+    margin-right: -14px;
 }
 
 .hpo-back-button:hover {
     background-color: #e0e0e1;
-    color: #135e96;
+    color: #3d3d3d;
 }
 
 .hpo-weight-options {
@@ -1232,15 +1258,18 @@ body.hpo-popup-open {
     transform: translateY(-50%);
     display: flex;
     align-items: center;
-    background-color: #ffffff;
     padding: 6px 10px;
     border-radius: 20px;
     z-index: 5;
     transition: all 0.3s ease;
-    border: 1px solid #c7c7c7;
+    border: 1px solid #ececec;
     min-width: 150px;
     justify-content: center;
-    gap: 10px;
+    background-color: #cecdcd;
+    color: #ffffff;
+    justify-content: space-between;
+    padding-left: 10px;
+    margin-left: 10px;
 }
 
 .hpo-header-price:hover {
@@ -1249,19 +1278,24 @@ body.hpo-popup-open {
 
 .hpo-cart-icon {
     display: inline-block;
-    width: 18px;
-    height: 18px;
-    margin-right: 8px;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23210280'%3E%3Cpath d='M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96 0 1.1.9 2 2 2h12v-2H7.42c-.14 0-.25-.11-.25-.25l.03-.12.9-1.63h7.45c.75 0 1.41-.41 1.75-1.03l3.58-6.49c.08-.14.12-.31.12-.48 0-.55-.45-1-1-1H5.21l-.94-2H1zm16 16c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2z'/%3E%3C/svg%3E");
+    width: 30px;
+    height: 28px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23cecdcd'%3E%3Cpath d='M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96 0 1.1.9 2 2 2h12v-2H7.42c-.14 0-.25-.11-.25-.25l.03-.12.9-1.63h7.45c.75 0 1.41-.41 1.75-1.03l3.58-6.49c.08-.14.12-.31.12-.48 0-.55-.45-1-1-1H5.21l-.94-2H1zm16 16c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2z'/%3E%3C/svg%3E");
     background-repeat: no-repeat;
     background-position: center;
     background-size: contain;
+    background-size: 20px 20px;
+    background-color: #ffffff;
+    border-radius: 50%;
+    margin-right: -3px;
 }
 
 .hpo-header-price .hpo-total-value {
     font-size: 14px;
     font-weight: 600;
-    color: #210280;
+    color: #ffffff;
+    width: 80%;
+    text-align: center;
 }
 
 @media (max-width: 768px) {

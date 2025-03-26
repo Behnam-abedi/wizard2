@@ -119,8 +119,8 @@ class HPO_Shortcodes {
                     <h3>انتخاب محصول</h3>
                     <span class="hpo-popup-close" id="hpo-popup-close">&times;</span>
                     <div class="hpo-header-price">
-                    <span>مبلغ سفارش:</span>
-                        <i class="hpo-cart-icon"></i>
+                    <i class="hpo-cart-icon"></i>
+                        
                         <span class="hpo-total-value" id="hpo-total-price">0 تومان</span>
                         
                     </div>
@@ -297,7 +297,7 @@ class HPO_Shortcodes {
                                                    data-price="<?php echo esc_attr($opt_product->price); ?>">
                                             <span class="hpo-option-name"><?php echo esc_html($opt_product->name); ?></span>
                                         </div>
-                                        <span class="hpo-option-price">(<?php echo number_format($opt_product->price); ?> تومان)</span>
+                                        <span class="hpo-option-price"><?php echo number_format($opt_product->price); ?> تومان</span>
                                     </label>
                                     <div class="hpo-product-option-description">
                                         <?php echo !empty($opt_product->description) ? esc_html($opt_product->description) : '<span class="no-description">بدون توضیحات</span>'; ?>
@@ -331,7 +331,7 @@ class HPO_Shortcodes {
                                                            data-price="<?php echo esc_attr($child_product->price); ?>">
                                                     <span class="hpo-option-name"><?php echo esc_html($child_product->name); ?></span>
                                                 </div>
-                                                <span class="hpo-option-price">(<?php echo number_format($child_product->price); ?> تومان)</span>
+                                                <span class="hpo-option-price"><?php echo number_format($child_product->price); ?> تومان</span>
                                             </label>
                                             <div class="hpo-product-option-description">
                                                 <?php echo !empty($child_product->description) ? esc_html($child_product->description) : '<span class="no-description">بدون توضیحات</span>'; ?>
