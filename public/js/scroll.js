@@ -1,62 +1,70 @@
-function initializePopupObserver() {
-    // انتخاب المان اصلی که تغییرات آن را رصد می‌کنیم
-    const popupContainer = document.querySelector('.hpo-popup-container');
-    
-    if (!popupContainer) {
-        // اگر المان وجود نداشت، بعد از 500 میلی‌ثانیه مجددا چک می‌کنیم
-        setTimeout(initializePopupObserver, 500);
-        return;
-    }
-
-    // تنظیمات MutationObserver برای رصد تغییرات در فرزندان و زیردرخت
-    const observerConfig = {
-        childList: true,
-        subtree: true
+// تابع debounce برای بهینه‌سازی
+function debounce(func, delay) {
+    let timeoutId;
+    return (...args) => {
+        clearTimeout(timeoutId);
+        timeoutId = setTimeout(() => func.apply(this, args), delay);
     };
-
-    // تابعی که هنگام تغییرات اجرا می‌شود
-    const mutationCallback = function(mutationsList, observer) {
-        handleProductListChanges();
-    };
-
-    // ایجاد مشاهده‌گر
-    const observer = new MutationObserver(mutationCallback);
-    observer.observe(popupContainer, observerConfig);
-
-    // یک بار در ابتدا نیز چک می‌کنیم
-    handleProductListChanges();
 }
 
-function handleProductListChanges() {
-    const productList = document.querySelector('.hpo-product-list');
-    
-    if (!productList) {
-        return; // اگر لیست محصولات وجود ندارد خارج می‌شویم
-    }
+// ذخیره‌سازی عناصر با ایونت‌های فعال
+const eventRegistry = new WeakMap();
 
-    // پیدا کردن گزینه‌های محصول (حداقل 2 مورد)
-    const productOptions = document.querySelectorAll('.hpo-product-option');
-    if (productOptions.length < 2) return;
+// بررسی وجود ایونت
+function isEventRegistered(element, type) {
+    return eventRegistry.has(element) && eventRegistry.get(element).includes(type);
+}
 
-    // اضافه کردن ایونت به هر گزینه (با جلوگیری از اضافه شدن تکراری)
-    productOptions.forEach(option => {
-        // اگر قبلا ایونت اضافه شده، اضافه نکن
-        if (option.dataset.clickEnabled) return;
-        
-        option.addEventListener('click', function() {
-            const targetSection = document.getElementById('weight-section');
-            if (targetSection) {
-                targetSection.scrollIntoView({
-                    behavior: 'smooth',
-                    block: 'start'
-                });
-            }
-        });
+// ثبت ایونت
+function registerEvent(element, type) {
+    if (!eventRegistry.has(element)) eventRegistry.set(element, []);
+    eventRegistry.get(element).push(type);
+}
 
-        // علامتگذاری المان برای جلوگیری از اضافه شدن تکراری
-        option.dataset.clickEnabled = 'true';
+// اسکرول به بخش وزن
+function scrollToWeightSection() {
+    document.getElementById('weight-section')?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start'
     });
 }
 
-// شروع رصد از هنگام لود شدن صفحه
-document.addEventListener('DOMContentLoaded', initializePopupObserver);
+// مدیریت محصولات
+function handleProductListChanges() {
+    document.querySelectorAll('.hpo-product-option').forEach(option => {
+        if (!isEventRegistered(option, 'click')) {
+            option.addEventListener('click', scrollToWeightSection);
+            registerEvent(option, 'click');
+        }
+    });
+}
+
+// تنظیمات مشاهده‌گر
+const observerConfig = {
+    childList: true,
+    subtree: true,
+    attributes: false,
+    characterData: false
+};
+
+// راه‌اندازی مشاهده‌گر
+function initObserver() {
+    const observer = new MutationObserver(debounce(() => {
+        handleProductListChanges();
+    }, 100));
+
+    const checkContainer = () => {
+        const container = document.querySelector('.hpo-popup-container');
+        if (container) {
+            observer.observe(container, observerConfig);
+            handleProductListChanges();
+        } else {
+            requestAnimationFrame(checkContainer);
+        }
+    };
+    
+    checkContainer();
+}
+
+// شروع پس از آمادگی DOM
+document.addEventListener('DOMContentLoaded', initObserver);

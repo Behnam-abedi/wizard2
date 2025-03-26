@@ -121,7 +121,6 @@ class HPO_Shortcodes {
         <div class="hpo-popup-overlay" id="hpo-popup-overlay" style="display: none;">
             <div class="hpo-popup-container">
                 <div class="hpo-popup-header">
-                    <h3>انتخاب محصول</h3>
                     <span class="hpo-popup-close" id="hpo-popup-close">&times;</span>
                     <div class="hpo-header-price">
                     <i class="hpo-cart-icon"></i>
@@ -274,9 +273,7 @@ class HPO_Shortcodes {
 
             
             <form class="hpo-product-options-form">
-                <input type="hidden" name="product_id" value="<?php echo esc_attr($product_id); ?>">
-                <input type="hidden" name="hpo_base_price" value="<?php echo esc_attr($product->get_price()); ?>">
-                
+                <span><?php echo esc_attr($product_name) ?></span>
                 <?php if (!empty($parent_categories)): ?>
                 <div class="hpo-option-section">
                     <!-- <h3>گزینه‌های محصول</h3> -->
@@ -295,6 +292,7 @@ class HPO_Shortcodes {
                                         <?php echo esc_html($category_paths[$parent->id]); ?>
 
                                     </div>
+                                    
                                     <label>
                                         <div class="hpo-product-option-name-price">
                                             <input type="radio" name="hpo_option[<?php echo esc_attr($parent->id); ?>]" 

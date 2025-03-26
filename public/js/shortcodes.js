@@ -295,10 +295,10 @@ jQuery(document).ready(function($) {
             // Handle visual selection for weight options
             if ($(this).attr('name') === 'hpo_weight') {
                 // Remove selected class from all weight options
-                $('.hpo-weight-option').removeClass('selected');
+                $('.hpo-weight-item').removeClass('selected');
                 
                 // Add selected class to the selected weight option
-                $(this).closest('.hpo-weight-option').addClass('selected');
+                $(this).closest('.hpo-weight-item').addClass('selected');
             }
         });
         
@@ -710,5 +710,73 @@ jQuery(document).ready(function($) {
             // Add selected class to this option
             $(this).addClass('selected');
         }
+    });
+
+    // Make entire weight item box clickable with improved handling
+    $(document).on('click', '.hpo-weight-item', function(e) {
+        console.log('Weight item clicked:', $(this).find('label').text().trim());
+        console.log('Is in disabled section:', $(this).closest('.disabled-section').length > 0);
+        console.log('Click target type:', e.target.type);
+        console.log('Weight item HTML structure:', $(this).html().trim().substring(0, 100) + '...');
+        
+        // Don't trigger if clicking on the radio button itself (it will handle its own click)
+        if (e.target.type !== 'radio' && !$(this).closest('.disabled-section').length) {
+            // Find the radio button inside this box
+            const radio = $(this).find('input[type="radio"]');
+            console.log('Found radio button:', radio.length > 0);
+            
+            // Toggle its checked state 
+            if (radio.length) {
+                radio.prop('checked', true);
+                console.log('Radio checked state set to:', radio.prop('checked'));
+                
+                // Manually trigger the change event
+                radio.trigger('change');
+                
+                // Remove selected class from all weight options
+                $('.hpo-weight-item').removeClass('selected');
+                
+                // Add selected class to this option
+                $(this).addClass('selected');
+                
+                console.log('Selected class applied to weight item');
+                
+                // Directly scroll to grinding section after weight selection
+                setTimeout(function() {
+                    const $grindingSection = $('.hpo-grinding-options-section');
+                    console.log('Attempting to scroll to grinding section:', $grindingSection.length > 0);
+                    
+                    if ($grindingSection.length) {
+                        const $popupContent = $('.hpo-popup-content');
+                        const offsetTop = $grindingSection.offset().top - $popupContent.offset().top;
+                        console.log('Scrolling to grinding section with offset:', offsetTop);
+                        
+                        $popupContent.animate({
+                            scrollTop: $popupContent.scrollTop() + offsetTop - 20
+                        }, 500);
+                    }
+                }, 300);
+            } else {
+                console.log('ERROR: No radio button found in the weight item');
+            }
+        }
+    });
+
+    // Update the input[name="hpo_weight"] change handler to ensure proper handling
+    $('body').on('change', 'input[name="hpo_weight"]', function() {
+        console.log('Weight option changed via input change event');
+        
+        // Reset quantity to 1 when weight option changes
+        resetQuantity();
+        
+        // Update the price and validate selections
+        updateTotalPrice();
+        validateSelections();
+        
+        // Handle visual selection for weight options
+        $('.hpo-weight-item').removeClass('selected');
+        $(this).closest('.hpo-weight-item').addClass('selected');
+        
+        console.log('Weight selection processed');
     });
 }); 
