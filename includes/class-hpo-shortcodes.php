@@ -123,6 +123,7 @@ class HPO_Shortcodes {
             <div class="hpo-popup-container">
                 <div class="hpo-popup-header">
                 <?php echo '<img src="' . get_site_icon_url() . '" alt="Site Logo">'; ?>
+                <?php echo '<img src="' . get_custom_logo() . '" alt="Site Logo">'; ?>
                     <span class="hpo-popup-close" id="hpo-popup-close">&times;</span>
                     <div class="hpo-header-price">
                         <i class="hpo-cart-icon"></i>
