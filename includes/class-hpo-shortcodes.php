@@ -119,14 +119,14 @@ class HPO_Shortcodes {
         </div>
         
         <div class="hpo-popup-overlay" id="hpo-popup-overlay" style="display: none;">
+        
             <div class="hpo-popup-container">
                 <div class="hpo-popup-header">
+                <?php echo '<img src="' . get_site_icon_url() . '" alt="Site Logo">'; ?>
                     <span class="hpo-popup-close" id="hpo-popup-close">&times;</span>
                     <div class="hpo-header-price">
-                    <i class="hpo-cart-icon"></i>
-                        
+                        <i class="hpo-cart-icon"></i>
                         <span class="hpo-total-value" id="hpo-total-price">0 تومان</span>
-                        
                     </div>
                 </div>
                 <div class="hpo-popup-content">
@@ -357,7 +357,8 @@ class HPO_Shortcodes {
                 <?php endif; ?>
                 
                 <div class="hpo-weight-section" id="weight-section">
-                    <h3>گزینه‌های وزن</h3>
+                    <h3>انتخاب وزن محصول</h3>
+                    <span class="description-weight-grinding">از بین یکی از گزینه های زیر وزن سفارش مورد نظر خود را انتخاب کنید</span>
                     <div class="hpo-weight-grid">
                         <?php foreach ($weights as $weight): ?>
                         <div class="hpo-weight-item">
@@ -373,19 +374,21 @@ class HPO_Shortcodes {
                 </div>
                 
                 <div class="hpo-option-section hpo-grinding-options-section">
-                    <h3>گزینه‌های آسیاب</h3>
+                    <h3>وضعیت آسیاب</h3>
+                    <span class="description-weight-grinding">در صورتی که مایل به آسیاب شدن محصول مورد نظر هستید دستگاه اسپرسو ساز خود را برای ما مشخص کنید</span>
+
                     <div class="hpo-grinding-options">
                         <div class="hpo-grinding-toggle">
                             <div class="hpo-toggle-container" data-active="whole">
                                 <div class="hpo-toggle-slider"></div>
-                                <div class="hpo-toggle-option whole active" data-value="whole">دانه کامل</div>
-                                <div class="hpo-toggle-option ground" data-value="ground">آسیاب شده</div>
+                                <div class="hpo-toggle-option whole active" data-value="whole">بدون آسیاب</div>
+                                <div class="hpo-toggle-option ground" data-value="ground">آسیاب</div>
                             </div>
                             <input type="hidden" name="hpo_grinding" value="whole">
                         </div>
                         
                         <div class="hpo-grinding-machines">
-                            <label for="hpo-grinding-machine">انتخاب دستگاه آسیاب:</label>
+                            <label for="hpo-grinding-machine">دستگاه خود را از لیست زیر انتخاب کنید</label>
                             <select name="hpo_grinding_machine" id="hpo-grinding-machine">
                                 <option value="">دستگاه خود را انتخاب کنید</option>
                                 <?php 
@@ -420,11 +423,12 @@ class HPO_Shortcodes {
                 
                 <div class="hpo-add-to-cart">
                     <button type="submit" class="hpo-add-to-cart-button">افزودن به سبد خرید</button>
-                    <h3>تعداد</h3>
                     <div class="hpo-quantity-input">
-                        <button type="button" class="hpo-quantity-minus">-</button>
-                        <input type="number" name="quantity" value="1" min="1" max="99">
                         <button type="button" class="hpo-quantity-plus">+</button>
+                        <input type="number" name="quantity" value="1" min="1" max="99" readonly>
+                        <button type="button" class="hpo-quantity-minus">-</button>
+                        <!-- <h3>تعداد</h3> -->
+
                     </div>
                 </div>
             </form>

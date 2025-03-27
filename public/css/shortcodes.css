@@ -51,7 +51,7 @@
     background-color: #ffffff;
     border-bottom: 1px solid #ddd;
     display: flex;
-    justify-content: space-between;
+    justify-content: end;
     align-items: center;
     position: relative;
     box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1)
@@ -539,29 +539,42 @@
     border-radius: 15px!important;
     border-color: rgb(226, 232, 240)!important;
     height: 66px!important;
-
+    min-height:66px!important;
 }
 
 /* Quantity Input */
 .hpo-quantity-input {
     display: flex;
     align-items: center;
+    flex-direction: row-reverse;
+
 }
 
 .hpo-quantity-input input {
     width: 60px;
     text-align: center;
     padding: 8px;
-    border: 1px solid #ddd;
+    border: 0px solid #ddd;
     border-radius: 0;
+    background-color: #e6edff!important;
+}
+.hpo-quantity-input input:focus {
+    border:none;
+
+}
+.hpo-quantity-input input::-webkit-outer-spin-button,
+.hpo-quantity-input input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
 }
 
+/* Firefox */
+.hpo-quantity-input input[type=number] {
+  -moz-appearance: textfield;
+}
 .hpo-quantity-minus,
 .hpo-quantity-plus {
-    width: 30px;
-    height: 36px;
     border: 1px solid #ddd;
-    background: #f4f4f4;
     cursor: pointer;
     font-size: 18px;
     display: flex;
@@ -570,11 +583,23 @@
 }
 
 .hpo-quantity-minus {
-    border-radius: 4px 0 0 4px;
+    width: 39px;
+    background-image: linear-gradient(-56deg, #210280 0%, #3230D2 100%);
+    height: 100% !important;
+    padding: 10px 0px;
+    color: #fff;
+    border-top-right-radius: 10px;
+    border-bottom-right-radius: 10px;
 }
 
 .hpo-quantity-plus {
-    border-radius: 0 4px 4px 0;
+    width: 39px;
+    background-image: linear-gradient(56deg, #210280 0%, #3230D2 100%);
+    height: 100% !important;
+    padding: 10px 0px;
+    color: #fff;
+    border-top-left-radius: 10px;
+    border-bottom-left-radius: 10px;
 }
 
 /* Total Price */
@@ -611,15 +636,16 @@
     justify-content: center;
     align-items: center;
     flex-direction: row-reverse;
+    gap: 30px;
 }
 
 .hpo-add-to-cart-button {
     padding: 12px 24px;
     font-size: 16px;
-    background-color: #2271b1;
+    background-image: linear-gradient(56deg, #210280 0%, #3230D2 100%);
     color: #fff;
     border: none;
-    border-radius: 4px;
+    border-radius: 10px;
     cursor: pointer;
     transition: all 0.3s ease;
     width: 100%;
@@ -1348,4 +1374,10 @@ body.hpo-popup-open {
     max-width: 90%;
     display: block;
     margin: 31px auto;
+}
+.description-weight-grinding{
+    font-size: 12px;
+    margin-top: -14px !important;
+    margin-bottom: 17px !important;
+    display: block;
 }
