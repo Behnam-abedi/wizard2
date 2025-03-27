@@ -90,7 +90,7 @@
 }
 
 .hpo-popup-content {
-    padding: 20px;
+    padding: 12px!important;
     overflow-y: auto;
     max-height: calc(90vh - 70px); /* 70px is the header height + padding */
 }
@@ -325,7 +325,7 @@
   width: 100%;
   display: flex;
   justify-content: center;
-  background-color: rgba(0, 0, 0, 0.15);
+  background-color: rgba(0, 0, 0, 0.24);
   border-radius: 5px;
   color: #ffffff;
   font-size: 12px;
@@ -640,15 +640,15 @@
 }
 
 .hpo-add-to-cart-button {
-    padding: 12px 24px;
-    font-size: 16px;
-    background-image: linear-gradient(56deg, #210280 0%, #3230D2 100%);
-    color: #fff;
-    border: none;
-    border-radius: 10px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    width: 100%;
+    padding: 12px 24px!important;
+    font-size: 16px!important;
+    background-image: linear-gradient(56deg, #210280 0%, #3230D2 100%)!important;
+    color: #fff!important;
+    border: none!important;
+    border-radius: 10px!important;
+    cursor: pointer!important;
+    transition: all 0.3s ease!important;
+    width: 100%!important;
 }
 
 .hpo-add-to-cart-button:hover {
@@ -1292,7 +1292,7 @@ body.hpo-popup-open {
     z-index: 5;
     transition: all 0.3s ease;
     border: 1px solid #ececec;
-    min-width: 150px;
+    min-width: 180px;
     justify-content: center;
     background-color: #cecdcd;
     color: #ffffff;
@@ -1380,4 +1380,10 @@ body.hpo-popup-open {
     margin-top: -14px !important;
     margin-bottom: 17px !important;
     display: block;
+}
+.hpo-logo{
+    width: 80px;
+    height: 34px;
+    margin: auto;
+    object-fit: cover;
 }

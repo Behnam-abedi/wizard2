@@ -122,8 +122,15 @@ class HPO_Shortcodes {
         
             <div class="hpo-popup-container">
                 <div class="hpo-popup-header">
-                <?php echo '<img src="' . get_site_icon_url() . '" alt="Site Logo">'; ?>
-                <?php echo '<img src="' . get_custom_logo() . '" alt="Site Logo">'; ?>
+                <?php 
+                    $custom_logo_id = get_theme_mod('custom_logo');
+                    $logo_url = wp_get_attachment_image_url($custom_logo_id, 'full'); 
+
+                    if ($logo_url) {
+                        echo '<img src="' . esc_url($logo_url) . '" alt="Site Logo" class="hpo-logo">';
+                    }
+                    ?>
+
                     <span class="hpo-popup-close" id="hpo-popup-close">&times;</span>
                     <div class="hpo-header-price">
                         <i class="hpo-cart-icon"></i>
