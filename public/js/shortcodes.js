@@ -108,6 +108,8 @@ jQuery(document).ready(function($) {
             success: function(response) {
                 if (response.success) {
                     // Update the content in the same popup
+
+                    
                     $('#hpo-product-list').html(response.data.html);
                     $('.hpo-popup-header h3').text(response.data.product_title);
                     
@@ -331,7 +333,7 @@ jQuery(document).ready(function($) {
         // Disable inputs in disabled sections
         function updateInputStates() {
             // Disable all inputs in disabled sections
-            $('.disabled-section input, .disabled-section select').prop('disabled', true);
+            $('.disabled-section input').prop('disabled', true);
             
             // Enable all inputs in enabled sections
             $('.hpo-option-section:not(.disabled-section) input, .hpo-option-section:not(.disabled-section) select, .hpo-weight-section:not(.disabled-section) input').prop('disabled', false);
