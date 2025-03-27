@@ -8,6 +8,54 @@ jQuery(document).ready(function($) {
         $('body').removeClass('hpo-popup-open');
     }
     
+    // Function to validate all selections and enable/disable sections and add-to-cart button
+    function validateSelections() {
+        // Check if form exists first
+        if ($('.hpo-product-options-form').length === 0) return;
+        
+        const $addToCartButton = $('.hpo-add-to-cart-button');
+        const $productOptionsSection = $('.hpo-option-section:not(.hpo-grinding-options-section)');
+        const $weightSection = $('.hpo-weight-section');
+        const $grindingSection = $('.hpo-grinding-options-section');
+        
+        // Check if a product option is selected
+        const hasProductOption = $('input[name^="hpo_option"]:checked').length > 0;
+        
+        // Check if a weight option is selected
+        const hasWeight = $('input[name="hpo_weight"]:checked').length > 0;
+        
+        // Check grinding selection
+        const grindingValue = $('input[name="hpo_grinding"]').val();
+        let grindingValid = true;
+        
+        // If grinding is set to ground, check if a grinding machine is selected
+        if (grindingValue === 'ground') {
+            const grindingMachine = $('select[name="hpo_grinding_machine"]').val();
+            grindingValid = grindingMachine !== '' && grindingMachine !== null;
+        }
+        
+        // Enable/disable weight section based on product option selection
+        if (hasProductOption) {
+            $weightSection.removeClass('disabled-section');
+        } else {
+            $weightSection.addClass('disabled-section');
+        }
+        
+        // Enable/disable grinding section based on weight selection
+        if (hasProductOption && hasWeight) {
+            $grindingSection.removeClass('disabled-section');
+        } else {
+            $grindingSection.addClass('disabled-section');
+        }
+        
+        // Enable add to cart button only if all selections are valid
+        if (hasProductOption && hasWeight && grindingValid) {
+            $addToCartButton.prop('disabled', false).removeClass('disabled');
+        } else {
+            $addToCartButton.prop('disabled', true).addClass('disabled');
+        }
+    }
+    
     // Order button click - open product selection popup
     $('#hpo-order-button').on('click', function() {
         $('#hpo-popup-overlay').fadeIn(300);
@@ -190,46 +238,6 @@ jQuery(document).ready(function($) {
         $weightSection.addClass('disabled-section');
         $grindingSection.addClass('disabled-section');
         
-        // Function to validate all selections and enable/disable sections and add-to-cart button
-        function validateSelections() {
-            // Check if a product option is selected
-            const hasProductOption = $('input[name^="hpo_option"]:checked').length > 0;
-            
-            // Check if a weight option is selected
-            const hasWeight = $('input[name="hpo_weight"]:checked').length > 0;
-            
-            // Check grinding selection
-            const grindingValue = $('input[name="hpo_grinding"]').val();
-            let grindingValid = true;
-            
-            // If grinding is set to ground, check if a grinding machine is selected
-            if (grindingValue === 'ground') {
-                const grindingMachine = $('select[name="hpo_grinding_machine"]').val();
-                grindingValid = grindingMachine !== '' && grindingMachine !== null;
-            }
-            
-            // Enable/disable weight section based on product option selection
-            if (hasProductOption) {
-                $weightSection.removeClass('disabled-section');
-            } else {
-                $weightSection.addClass('disabled-section');
-            }
-            
-            // Enable/disable grinding section based on weight selection
-            if (hasProductOption && hasWeight) {
-                $grindingSection.removeClass('disabled-section');
-            } else {
-                $grindingSection.addClass('disabled-section');
-            }
-            
-            // Enable add to cart button only if all selections are valid
-            if (hasProductOption && hasWeight && grindingValid) {
-                $addToCartButton.prop('disabled', false).removeClass('disabled');
-            } else {
-                $addToCartButton.prop('disabled', true).addClass('disabled');
-            }
-        }
-
         // Toggle grinding options
         $('input[name="hpo_grinding"]').on('change', function() {
             // Reset quantity to 1 when grinding option changes
@@ -637,9 +645,7 @@ jQuery(document).ready(function($) {
             setTimeout(updateTotalPrice, 100);
             
             // Validate to enable/disable notes and other sections
-            if (typeof validateSelections === 'function') {
-                setTimeout(validateSelections, 150);
-            }
+            setTimeout(validateSelections, 150);
         });
 
         // Initialize the toggle state on page load
