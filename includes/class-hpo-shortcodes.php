@@ -282,7 +282,8 @@ class HPO_Shortcodes {
             
             <form class="hpo-product-options-form">
                 <span class="header-title"><?php echo esc_attr($product_name) ?></span>
-
+                <input type="hidden" name="product_id" value="<?php echo esc_attr($product_id); ?>">
+                <input type="hidden" name="hpo_base_price" value="<?php echo esc_attr($product->get_price()); ?>">
                 <div class="description-title">
                     <span>در لیست زیر می‌توانید محصول موردنظر خود را از دسته قهوه‌های <?php echo esc_attr($product_name) ?> انتخاب کرده و سپس وزن و وضعیت آسیاب موردنظر را برای ثبت سفارش تعیین کنید.</span>
             </div>
