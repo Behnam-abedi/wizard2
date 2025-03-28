@@ -37,6 +37,7 @@ jQuery(document).ready(function($) {
         // Enable/disable weight section based on product option selection
         if (hasProductOption) {
             $weightSection.removeClass('disabled-section');
+            
         } else {
             $weightSection.addClass('disabled-section');
         }
@@ -588,7 +589,37 @@ jQuery(document).ready(function($) {
             quantityInput.val(1);
         }
     }
+    function resetAllFields() {
+        // Reset quantity
+        resetQuantity();
+        
+        // Reset weight selection
+        $('input[name="hpo_weight"]').prop('checked', false);
+        $('.hpo-weight-item').removeClass('selected');
+        
+        // Reset grinding selection to whole beans
+        const $input = $('input[name="hpo_grinding"]');
+        $input.val('whole');
+        
+        // Reset the grinding toggle UI
+        const $toggleContainer = $('.hpo-toggle-container');
+        $toggleContainer.attr('data-active', 'whole');
+       
+        $('.hpo-toggle-option.whole').addClass('active');
+        
+        // Hide the grinding machines dropdown - use slideUp for consistency
+        // $('.hpo-grinding-machines').slideUp(200);
 
+        $('.hpo-grinding-machines').removeClass('show');
+        $('select[name="hpo_grinding_machine"]').val('');
+        
+        // Reset customer notes
+        $('textarea[name="hpo_customer_notes"]').val('');
+        
+        // Update price and validate selections
+        updateTotalPrice();
+        validateSelections();
+    }
     // Initialize grinding toggle
     function initGrindingToggle() {
         // Ensure grinding machine select changes trigger price updates
@@ -655,7 +686,6 @@ jQuery(document).ready(function($) {
             const $options = $toggleContainer.find('.hpo-toggle-option');
             const $grindingMachines = $(this).closest('.hpo-grinding-options').find('.hpo-grinding-machines');
             const currentValue = $input.val();
-            
             // Set initial toggle container state
             $toggleContainer.attr('data-active', currentValue);
             
@@ -717,6 +747,7 @@ jQuery(document).ready(function($) {
             
             // Add selected class to this option
             $(this).addClass('selected');
+            resetAllFields();
         }
     });
 
