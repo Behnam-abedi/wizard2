@@ -130,7 +130,6 @@ class HPO_Shortcodes {
                         echo '<img src="' . esc_url($logo_url) . '" alt="Site Logo" class="hpo-logo">';
                     }
                     ?>
-
                     <span class="hpo-popup-close" id="hpo-popup-close">&times;</span>
                     <div class="hpo-header-price">
                         <i class="hpo-cart-icon"></i>
@@ -139,6 +138,7 @@ class HPO_Shortcodes {
                 </div>
                 <div class="hpo-popup-content">
                     <div class="hpo-product-list" id="hpo-product-list">
+                        <span class="hpo-product-list-title">محصولات</span>
                         <!-- Products will be loaded here via AJAX -->
                         <div class="hpo-loading">در حال بارگذاری...</div>
                     </div>
@@ -178,6 +178,10 @@ class HPO_Shortcodes {
         if (empty($product_ids)) {
             echo '<p>هیچ محصولی با گزینه‌های سلسله مراتبی یافت نشد.</p>';
         } else {
+            // اضافه کردن متن راهنما با استایل خاص در بالای صفحه محصولات
+            echo '<div class="hpo-product-intro-message">
+<p>یک دسته قهوه را انتخاب کنید و برای دیدن گزینه‌های بیشتر، «مرحله بعد» را بزنید.</p>            </div>';
+            
             echo '<div class="hpo-products-grid">';
             
             foreach ($product_ids as $product_id) {
@@ -286,7 +290,7 @@ class HPO_Shortcodes {
                 <input type="hidden" name="hpo_base_price" value="<?php echo esc_attr($product->get_price()); ?>">
                 <div class="description-title">
                     <span>در لیست زیر می‌توانید محصول موردنظر خود را از دسته قهوه‌های <?php echo esc_attr($product_name) ?> انتخاب کرده و سپس وزن و وضعیت آسیاب موردنظر را برای ثبت سفارش تعیین کنید.</span>
-            </div>
+                </div>
                 <?php if (!empty($parent_categories)): ?>
                 <div class="hpo-option-section">
                     <!-- <h3>گزینه‌های محصول</h3> -->
@@ -592,10 +596,33 @@ class HPO_Shortcodes {
             // Force WooCommerce to recalculate totals
             WC()->cart->calculate_totals();
             
+            // Generate HTML for success popup
+            ob_start();
+            ?>
+            <div class="hpo-success-popup-overlay">
+                <div class="hpo-success-popup">
+                    <div class="hpo-success-icon">
+                        <svg viewBox="0 0 24 24" width="50" height="50" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M22 11.0857V12.0057C21.9988 14.1621 21.3005 16.2604 20.0093 17.9875C18.7182 19.7147 16.9033 20.9782 14.8354 21.5896C12.7674 22.201 10.5573 22.1276 8.53447 21.3803C6.51168 20.633 4.78465 19.2518 3.61096 17.4428C2.43727 15.6338 1.87979 13.4938 2.02168 11.342C2.16356 9.19029 2.99721 7.14205 4.39828 5.5028C5.79935 3.86354 7.69279 2.72111 9.79619 2.24587C11.8996 1.77063 14.1003 1.98806 16.07 2.86572" stroke="#25AE88" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M22 4L12 14.01L9 11.01" stroke="#25AE88" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </div>
+                    <h3>سفارش با موفقیت به سبد خرید اضافه شد</h3>
+                    <div class="hpo-success-actions">
+                        <button class="hpo-repeat-order-btn">سفارش جدید</button>
+                        <button class="hpo-checkout-btn">پرداخت سفارش</button>
+                        <button class="hpo-close-success-btn">بستن</button>
+                    </div>
+                </div>
+            </div>
+            <?php
+            $success_popup_html = ob_get_clean();
+            
             wp_send_json_success(array(
                 'message' => 'محصول با موفقیت به سبد خرید اضافه شد.',
                 'cart_item_key' => $cart_item_key,
-                'price' => $total_price
+                'price' => $total_price,
+                'success_popup_html' => $success_popup_html
             ));
         } else {
             wp_send_json_error(array('message' => 'خطا در افزودن محصول به سبد خرید.'));
@@ -1121,17 +1148,7 @@ class HPO_Shortcodes {
                     });
                     
                     // Update the price in the product form
-                    $('.hpo-product-price').html('<span class="woocommerce-Price-amount amount"><bdi>' + 
-                        numberWithCommas(totalPrice) + 
-                        '&nbsp;<span class="woocommerce-Price-currencySymbol">تومان</span></bdi></span>');
-                    
-                    // Make sure the updated price is saved to the product
-                    var priceField = $('.hpo-product-options-form input[name="hpo_calculated_price"]');
-                    if (priceField.length === 0) {
-                        $('.hpo-product-options-form').append('<input type="hidden" name="hpo_calculated_price" value="' + totalPrice + '">');
-                    } else {
-                        priceField.val(totalPrice);
-                    }
+                    $('.hpo-product-options-form input[name="hpo_calculated_price"]').val(totalPrice);
                     
                     console.log("Price updated to: " + totalPrice);
                 }

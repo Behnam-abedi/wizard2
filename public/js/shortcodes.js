@@ -242,7 +242,7 @@ jQuery(document).ready(function($) {
         // Initially disable weight and grinding sections
         $weightSection.addClass('disabled-section');
         $grindingSection.addClass('disabled-section');
-        
+
         // Toggle grinding options
         $('input[name="hpo_grinding"]').on('change', function() {
             // Reset quantity to 1 when grinding option changes
@@ -465,130 +465,21 @@ jQuery(document).ready(function($) {
                 data: serializedData,
                 success: function(response) {
                     if (response.success) {
-                        // Create success popup with three buttons
-                        const successPopup = `
-                            <div class="hpo-success-popup-overlay">
-                                <div class="hpo-success-popup">
-                                    <div class="hpo-success-icon">
-                                        <svg viewBox="0 0 24 24" width="50" height="50" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                            <path d="M22 11.0857V12.0057C21.9988 14.1621 21.3005 16.2604 20.0093 17.9875C18.7182 19.7147 16.9033 20.9782 14.8354 21.5896C12.7674 22.201 10.5573 22.1276 8.53447 21.3803C6.51168 20.633 4.78465 19.2518 3.61096 17.4428C2.43727 15.6338 1.87979 13.4938 2.02168 11.342C2.16356 9.19029 2.99721 7.14205 4.39828 5.5028C5.79935 3.86354 7.69279 2.72111 9.79619 2.24587C11.8996 1.77063 14.1003 1.98806 16.07 2.86572" stroke="#25AE88" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                            <path d="M22 4L12 14.01L9 11.01" stroke="#25AE88" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                        </svg>
-                                    </div>
-                                    <h3>محصول با موفقیت به سبد خرید اضافه شد</h3>
-                                    <div class="hpo-success-actions">
-                                        <button class="hpo-repeat-order-btn">تکرار سفارش</button>
-                                        <button class="hpo-checkout-btn">پرداخت سفارش</button>
-                                        <button class="hpo-close-success-btn">بستن</button>
-                                    </div>
-                                </div>
-                            </div>
-                        `;
+                        // استفاده از HTML پاپ‌آپ موفقیت که از سرور ارسال شده
+                        $('body').append(response.data.success_popup_html);
                         
-                        // Add popup to body
-                        $('body').append(successPopup);
+                        // نمایش پاپ‌آپ
+                        $('.hpo-success-popup-overlay').show();
                         
-                        // Add CSS for the success popup
-                        if (!$('#hpo-success-popup-styles').length) {
-                            const styles = `
-                                <style id="hpo-success-popup-styles">
-                                    .hpo-success-popup-overlay {
-                                        position: fixed;
-                                        top: 0;
-                                        left: 0;
-                                        right: 0;
-                                        bottom: 0;
-                                        background-color: rgba(0, 0, 0, 0.7);
-                                        z-index: 100000;
-                                        display: flex;
-                                        align-items: center;
-                                        justify-content: center;
-                                        direction: rtl;
-                                        z-index: 1600;
-                                    }
-                                    .hpo-success-popup {
-                                        background-color: #fff;
-                                        border-radius: 8px;
-                                        padding: 30px;
-                                        max-width: 400px;
-                                        width: 90%;
-                                        text-align: center;
-                                        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-                                    }
-                                    .hpo-success-popup h3 {
-                                        color: #333;
-                                        font-size: 18px;
-                                        margin: 15px 0 20px;
-                                    }
-                                    .hpo-success-icon {
-                                        margin: 0 auto 15px;
-                                        width: 70px;
-                                        height: 70px;
-                                        background-color: rgba(37, 174, 136, 0.1);
-                                        border-radius: 50%;
-                                        display: flex;
-                                        align-items: center;
-                                        justify-content: center;
-                                        animation: pulse 1.5s infinite;
-                                    }
-                                    @keyframes pulse {
-                                        0% { transform: scale(1); }
-                                        50% { transform: scale(1.05); }
-                                        100% { transform: scale(1); }
-                                    }
-                                    .hpo-success-actions {
-                                        display: flex;
-                                        flex-direction: column;
-                                        gap: 10px;
-                                    }
-                                    .hpo-success-actions button {
-                                        padding: 12px 20px;
-                                        border-radius: 6px;
-                                        border: none;
-                                        cursor: pointer;
-                                        font-size: 14px;
-                                        font-weight: bold;
-                                        transition: all 0.3s ease;
-                                    }
-                                    .hpo-repeat-order-btn {
-                                        background-color: #25ae88;
-                                        color: white;
-                                    }
-                                    .hpo-repeat-order-btn:hover {
-                                        background-color: #1d9974;
-                                    }
-                                    .hpo-checkout-btn {
-                                        background-color: #4d7bf3;
-                                        color: white;
-                                    }
-                                    .hpo-checkout-btn:hover {
-                                        background-color: #3a68d9;
-                                    }
-                                    .hpo-close-success-btn {
-                                        background-color: #f0f0f0;
-                                        color: #666;
-                                    }
-                                    .hpo-close-success-btn:hover {
-                                        background-color: #e0e0e0;
-                                    }
-                                </style>
-                            `;
-                            $('head').append(styles);
-                        }
-                        
-                        // Handle button clicks
-                        
-                        // 1. Repeat Order - return to product selection
+                        // رویداد کلیک دکمه "تکرار سفارش"
                         $('.hpo-repeat-order-btn').on('click', function() {
-                            // Close success popup
+                            // بستن پاپ‌آپ موفقیت
                             $('.hpo-success-popup-overlay').remove();
                             resetAllFields(); 
                             resetPrice();
                             $('.hpo-back-button').remove();
-                            // Close product detail updateTotalPrice();s popup
-                            $('#hpo-product-details-popup').hide();
                             
-                            // Reload products list
+                            // بارگذاری مجدد لیست محصولات
                             $.ajax({
                                 url: hpoAjax.ajaxUrl,
                                 type: 'POST',
@@ -613,32 +504,34 @@ jQuery(document).ready(function($) {
                             });
                         });
                         
-                        // 2. Checkout - go to WooCommerce checkout page
+                        // رویداد کلیک دکمه "پرداخت سفارش"
                         $('.hpo-checkout-btn').on('click', function() {
-                            // Close success popup
+                            // بستن پاپ‌آپ موفقیت
                             $('.hpo-success-popup-overlay').remove();
-                            
-                            // Close product details popup
+                            resetAllFields(); 
+                            resetPrice();
+                            // بستن پاپ‌آپ جزئیات محصول
                             $('#hpo-product-details-popup').fadeOut(300);
                             $('#hpo-popup-overlay').fadeOut(300);
                             unlockBodyScroll();
                             
-                            // Redirect to checkout page
+                            // انتقال به صفحه پرداخت
                             window.location.href = '/checkout/';
                         });
                         
-                        // 3. Close - just close the popups
+                        // رویداد کلیک دکمه "بستن"
                         $('.hpo-close-success-btn').on('click', function() {
-                            // Close success popup
+                            // بستن پاپ‌آپ موفقیت
                             $('.hpo-success-popup-overlay').remove();
-                            
-                            // Close product details popup
+                            resetAllFields(); 
+                            resetPrice();
+                            // بستن پاپ‌آپ جزئیات محصول
                             $('#hpo-product-details-popup').fadeOut(300);
                             $('#hpo-popup-overlay').fadeOut(300);
                             unlockBodyScroll();
                         });
                         
-                        // Update mini cart
+                        // بروزرسانی سبد خرید کوچک
                         $(document.body).trigger('wc_fragment_refresh');
                     } else {
                         alert(response.data.message || 'خطا در افزودن محصول به سبد خرید.');
@@ -837,7 +730,7 @@ jQuery(document).ready(function($) {
             setTimeout(updateTotalPrice, 100);
             
             // Validate to enable/disable notes and other sections
-            setTimeout(validateSelections, 150);
+                setTimeout(validateSelections, 150);
         });
 
         // Initialize the toggle state on page load
