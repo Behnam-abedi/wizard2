@@ -176,38 +176,38 @@
 
 /* Next Step Button */
 .hpo-next-step {
-    display: block;
-    width: 200px;
-    margin: 20px auto 0;
-    padding: 12px 24px;
-    background-color: #dadada;
-    color: #ffffff;
+    display: block!important;
+    width: 200px!important;
+    margin: 20px auto 0!important;
+    padding: 12px 24px!important;
+    background-color: #dadada!important;
+    color: #ffffff!important;
     /* border: 1px solid #0000001a; */
     border-radius: 35px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    text-align: center;
-    background-image: linear-gradient(56deg, #210280 0%, #3230D2 100%);
+    cursor: pointer!important;
+    transition: all 0.3s ease!important;
+    text-align: center!important;
+    background-image: linear-gradient(56deg, #210280 0%, #3230D2 100%)!important;
 }
 
 .hpo-next-step:hover {
-    background-color: #cecece;
-    border: none;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    background-color: #cecece!important;
+    border: none!important;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1)!important;
 }
 
 /* Disabled Next Step Button */
 .hpo-next-step.disabled {
-    background-color: #f0f0f0;
-    color: #aaaaaa;
-    cursor: not-allowed;
-    opacity: 0.7;
-    pointer-events: none;
+    background-color: #f0f0f0!important;
+    color: #aaaaaa!important;
+    cursor: not-allowed!important;
+    opacity: 0.7!important;
+    pointer-events: none!important;
 }
 
 .hpo-next-step.disabled:hover {
-    background-color: #f0f0f0;
-    box-shadow: none;
+    background-color: #f0f0f0!important;
+    box-shadow: none!important;
 }
 
 /* Product Details */
@@ -545,42 +545,42 @@
 
 /* Quantity Input */
 .hpo-quantity-input {
-    display: flex;
-    align-items: center;
-    flex-direction: row-reverse;
+    display: flex!important;
+    align-items: center!important;
+    flex-direction: row-reverse!important;
 
 }
 
 .hpo-quantity-input input {
-    width: 60px;
-    text-align: center;
-    padding: 8px;
-    border: 0px solid #ddd;
-    border-radius: 0;
+    width: 60px!important;
+    text-align: center!important;
+    padding: 8px!important;
+    border: 0px solid #ddd!important;
+    border-radius: 0!important;
     background-color: #e6edff!important;
 }
 .hpo-quantity-input input:focus {
-    border:none;
+    border:none!important;
 
 }
 .hpo-quantity-input input::-webkit-outer-spin-button,
 .hpo-quantity-input input::-webkit-inner-spin-button {
-  -webkit-appearance: none;
-  margin: 0;
+  -webkit-appearance: none!important;
+  margin: 0!important;
 }
 
 /* Firefox */
 .hpo-quantity-input input[type=number] {
-  -moz-appearance: textfield;
+  -moz-appearance: textfield!important;
 }
 .hpo-quantity-minus,
 .hpo-quantity-plus {
-    border: 1px solid #ddd;
-    cursor: pointer;
-    font-size: 18px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    border: 1px solid #ddd!important;
+    cursor: pointer!important;
+    font-size: 18px!important;
+    display: flex!important;
+    align-items: center!important;
+    justify-content: center!important;
 }
 
 .hpo-quantity-minus {
@@ -1093,7 +1093,7 @@
     
     /* Fix back button positioning */
     .hpo-back-button {
-        padding: 6px 12px!important;
+        padding: 4px 10px!important;
         font-size: 13px!important;
         z-index: 10;
         max-width: 90px!important;
@@ -1169,7 +1169,7 @@
     }
     
     .hpo-back-button {
-        padding: 5px 10px!important;
+        padding: 4px 10px!important;
         font-size: 12px!important;
         min-width: 80px!important;
         padding-left: 15px!important;
