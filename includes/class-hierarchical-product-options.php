@@ -869,6 +869,7 @@ class Hierarchical_Product_Options {
                 vertical-align: top;
                 direction: rtl;  /* یا ltr، ولی بهتر است پیش‌فرض rtl باشد */
                 unicode-bidi: plaintext;
+                text-align: right;
             }
             .hpo-order-details tr:hover {
                 background: #f8f9fa;
