@@ -607,67 +607,116 @@ class Hierarchical_Product_Options {
      * @param WC_Order $order
      */
     public function save_order_item_meta($item, $cart_item_key, $values, $order) {
-        // Save selected categories
-        if (!empty($values['hpo_categories'])) {
-            $categories_data = array();
-            foreach ($values['hpo_categories'] as $category) {
-                if (isset($category['name'])) {
-                    $categories_data[] = array(
-                        'name' => $category['name'],
-                        'price' => isset($category['price']) ? $category['price'] : 0
-                    );
-                }
-            }
-            $item->add_meta_data('_hpo_categories', $categories_data);
-        }
-
-        // Save selected products
-        if (!empty($values['hpo_products'])) {
-            $products_data = array();
-            foreach ($values['hpo_products'] as $product) {
-                if (isset($product['name'])) {
-                    $products_data[] = array(
-                        'name' => $product['name'],
-                        'price' => isset($product['price']) ? $product['price'] : 0
-                    );
-                }
-            }
-            $item->add_meta_data('_hpo_products', $products_data);
-        }
-
-        // Save weight option
-        if (!empty($values['hpo_weight'])) {
-            $weight_data = array(
-                'name' => $values['hpo_weight']['name'],
-                'coefficient' => $values['hpo_weight']['coefficient']
-            );
-            $item->add_meta_data('_hpo_weight', $weight_data);
-        }
-
-        // Save grinding option
-        if (isset($values['hpo_grinding'])) {
-            $grinding_data = array(
-                'type' => $values['hpo_grinding']
-            );
+        // Check if this is from our custom shortcode with hpo_custom_data
+        if (isset($values['hpo_custom_data'])) {
+            $custom_data = $values['hpo_custom_data'];
             
-            if ($values['hpo_grinding'] === 'ground' && !empty($values['hpo_grinding_machine'])) {
-                $grinding_data['machine'] = array(
-                    'name' => $values['hpo_grinding_machine']['name'],
-                    'price' => $values['hpo_grinding_machine']['price']
+            // Save selected product options (from shortcode)
+            if (!empty($custom_data['options'])) {
+                $item->add_meta_data('_hpo_products', $custom_data['options']);
+            }
+            
+            // Save weight option
+            if (!empty($custom_data['weight'])) {
+                $weight_data = array(
+                    'name' => $custom_data['weight']['name'],
+                    'coefficient' => isset($custom_data['weight']['coefficient']) ? $custom_data['weight']['coefficient'] : 1
                 );
+                $item->add_meta_data('_hpo_weight', $weight_data);
             }
             
-            $item->add_meta_data('_hpo_grinder', $grinding_data);
-        }
+            // Save grinding option
+            if (!empty($custom_data['grinding'])) {
+                $grinding_data = array(
+                    'type' => $custom_data['grinding']
+                );
+                
+                if ($custom_data['grinding'] === 'ground' && !empty($custom_data['grinding_machine'])) {
+                    $grinding_data['machine'] = array(
+                        'name' => $custom_data['grinding_machine']['name'],
+                        'price' => $custom_data['grinding_machine']['price']
+                    );
+                }
+                
+                $item->add_meta_data('_hpo_grinder', $grinding_data);
+            }
+            
+            // Save customer notes
+            if (!empty($custom_data['customer_notes'])) {
+                $item->add_meta_data('_hpo_customer_notes', $custom_data['customer_notes']);
+            }
+            
+            // Save calculated price
+            if (isset($custom_data['calculated_price'])) {
+                $item->add_meta_data('_hpo_calculated_price', $custom_data['calculated_price']);
+            } else if (isset($custom_data['price_per_unit'])) {
+                $item->add_meta_data('_hpo_calculated_price', $custom_data['price_per_unit']);
+            }
+        } 
+        // Original code for the standard product options meta data
+        else if (isset($values['hpo_categories'])) {
+            // Save selected categories
+            if (!empty($values['hpo_categories'])) {
+                $categories_data = array();
+                foreach ($values['hpo_categories'] as $category) {
+                    if (isset($category['name'])) {
+                        $categories_data[] = array(
+                            'name' => $category['name'],
+                            'price' => isset($category['price']) ? $category['price'] : 0
+                        );
+                    }
+                }
+                $item->add_meta_data('_hpo_categories', $categories_data);
+            }
 
-        // Save customer notes
-        if (!empty($values['hpo_customer_notes'])) {
-            $item->add_meta_data('_hpo_customer_notes', $values['hpo_customer_notes']);
-        }
+            // Save selected products
+            if (!empty($values['hpo_products'])) {
+                $products_data = array();
+                foreach ($values['hpo_products'] as $product) {
+                    if (isset($product['name'])) {
+                        $products_data[] = array(
+                            'name' => $product['name'],
+                            'price' => isset($product['price']) ? $product['price'] : 0
+                        );
+                    }
+                }
+                $item->add_meta_data('_hpo_products', $products_data);
+            }
 
-        // Save calculated price
-        if (isset($values['hpo_calculated_price'])) {
-            $item->add_meta_data('_hpo_calculated_price', $values['hpo_calculated_price']);
+            // Save weight option
+            if (!empty($values['hpo_weight'])) {
+                $weight_data = array(
+                    'name' => $values['hpo_weight']['name'],
+                    'coefficient' => $values['hpo_weight']['coefficient']
+                );
+                $item->add_meta_data('_hpo_weight', $weight_data);
+            }
+
+            // Save grinding option
+            if (isset($values['hpo_grinding'])) {
+                $grinding_data = array(
+                    'type' => $values['hpo_grinding']
+                );
+                
+                if ($values['hpo_grinding'] === 'ground' && !empty($values['hpo_grinding_machine'])) {
+                    $grinding_data['machine'] = array(
+                        'name' => $values['hpo_grinding_machine']['name'],
+                        'price' => $values['hpo_grinding_machine']['price']
+                    );
+                }
+                
+                $item->add_meta_data('_hpo_grinder', $grinding_data);
+            }
+
+            // Save customer notes
+            if (!empty($values['hpo_customer_notes'])) {
+                $item->add_meta_data('_hpo_customer_notes', $values['hpo_customer_notes']);
+            }
+
+            // Save calculated price
+            if (isset($values['hpo_calculated_price'])) {
+                $item->add_meta_data('_hpo_calculated_price', $values['hpo_calculated_price']);
+            }
         }
     }
 
@@ -719,9 +768,18 @@ class Hierarchical_Product_Options {
                             if (!empty($products)) {
                                 $product_names = array();
                                 foreach ($products as $product) {
-                                    $product_names[] = $product['name'] . 
-                                        (isset($product['price']) && $product['price'] > 0 ? 
-                                        ' <span class="price-tag">(' . wc_price($product['price']) . ')</span>' : '');
+                                    // Check if this is from the shortcode format
+                                    if (isset($product['category_id'])) {
+                                        $product_names[] = $product['name'] . 
+                                            (isset($product['price']) && $product['price'] > 0 ? 
+                                            ' <span class="price-tag">(' . wc_price($product['price']) . ')</span>' : '');
+                                    } 
+                                    // Standard format
+                                    else if (isset($product['name'])) {
+                                        $product_names[] = $product['name'] . 
+                                            (isset($product['price']) && $product['price'] > 0 ? 
+                                            ' <span class="price-tag">(' . wc_price($product['price']) . ')</span>' : '');
+                                    }
                                 }
                                 echo implode(' + ', $product_names);
                             } else {
@@ -733,9 +791,11 @@ class Hierarchical_Product_Options {
                             <?php
                             $weight = $item->get_meta('_hpo_weight');
                             if (!empty($weight)) {
-                                echo esc_html($weight['name']);
-                                if (isset($weight['coefficient']) && $weight['coefficient'] != 1) {
-                                    echo ' <span class="coefficient">(×' . $weight['coefficient'] . ')</span>';
+                                if (isset($weight['name'])) {
+                                    echo esc_html($weight['name']);
+                                    if (isset($weight['coefficient']) && $weight['coefficient'] != 1) {
+                                        echo ' <span class="coefficient">(×' . $weight['coefficient'] . ')</span>';
+                                    }
                                 }
                             } else {
                                 echo '-';
@@ -746,11 +806,11 @@ class Hierarchical_Product_Options {
                             <?php
                             $grinder = $item->get_meta('_hpo_grinder');
                             if (!empty($grinder)) {
-                                if ($grinder['type'] === 'ground') {
+                                if (isset($grinder['type']) && $grinder['type'] === 'ground') {
                                     echo '<span class="grinding-status ground">آسیاب شده</span>';
                                     if (!empty($grinder['machine'])) {
                                         echo '<br><span class="machine-name">دستگاه: ' . esc_html($grinder['machine']['name']) . '</span>';
-                                        if ($grinder['machine']['price'] > 0) {
+                                        if (isset($grinder['machine']['price']) && $grinder['machine']['price'] > 0) {
                                             echo ' <span class="price-tag">(' . wc_price($grinder['machine']['price']) . ')</span>';
                                         }
                                     }

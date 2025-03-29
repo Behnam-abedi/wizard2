@@ -58,6 +58,9 @@ class HPO_Shortcodes {
         
         // Add custom CSS for cart display
         add_action('wp_head', array($this, 'add_custom_cart_css'));
+        
+        // Save order item meta from shortcode
+        add_action('woocommerce_checkout_create_order_line_item', array($this, 'save_order_item_meta'), 10, 4);
     }
     
     /**
@@ -1369,6 +1372,62 @@ class HPO_Shortcodes {
         
         // Always return a valid price
         return floatval($price);
+    }
+
+    /**
+     * Save order item meta for the shortcode cart items
+     *
+     * @param object $item The order item
+     * @param string $cart_item_key The cart item key
+     * @param array $values The cart item values
+     * @param WC_Order $order The order object
+     */
+    public function save_order_item_meta($item, $cart_item_key, $values, $order) {
+        if (isset($values['hpo_custom_data'])) {
+            $custom_data = $values['hpo_custom_data'];
+            
+            // Save selected product options in the same format as the main plugin
+            if (!empty($custom_data['options'])) {
+                $item->add_meta_data('_hpo_products', $custom_data['options']);
+            }
+            
+            // Save weight option
+            if (!empty($custom_data['weight'])) {
+                $weight_data = array(
+                    'name' => $custom_data['weight']['name'],
+                    'coefficient' => isset($custom_data['weight']['coefficient']) ? $custom_data['weight']['coefficient'] : 1
+                );
+                $item->add_meta_data('_hpo_weight', $weight_data);
+            }
+            
+            // Save grinding option
+            if (!empty($custom_data['grinding'])) {
+                $grinding_data = array(
+                    'type' => $custom_data['grinding']
+                );
+                
+                if ($custom_data['grinding'] === 'ground' && !empty($custom_data['grinding_machine'])) {
+                    $grinding_data['machine'] = array(
+                        'name' => $custom_data['grinding_machine']['name'],
+                        'price' => $custom_data['grinding_machine']['price']
+                    );
+                }
+                
+                $item->add_meta_data('_hpo_grinder', $grinding_data);
+            }
+            
+            // Save customer notes
+            if (!empty($custom_data['customer_notes'])) {
+                $item->add_meta_data('_hpo_customer_notes', $custom_data['customer_notes']);
+            }
+            
+            // Save calculated price
+            if (isset($custom_data['calculated_price'])) {
+                $item->add_meta_data('_hpo_calculated_price', $custom_data['calculated_price']);
+            } else if (isset($custom_data['price_per_unit'])) {
+                $item->add_meta_data('_hpo_calculated_price', $custom_data['price_per_unit']);
+            }
+        }
     }
 }
 
