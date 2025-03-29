@@ -122,15 +122,10 @@ class HPO_Shortcodes {
         
             <div class="hpo-popup-container">
                 <div class="hpo-popup-header">
-                <button class="hpo-back-button" id="hpo-popup-close">بستن</button>
-                <?php 
-                    $custom_logo_id = get_theme_mod('custom_logo');
-                    $logo_url = wp_get_attachment_image_url($custom_logo_id, 'full'); 
+                <div class="hpo-back-button" id="hpo-popup-close">
+                    <span>بستن</span>
+                </div>
 
-                    if ($logo_url) {
-                        echo '<img src="' . esc_url($logo_url) . '" alt="Site Logo" class="hpo-logo">';
-                    }
-                    ?>
                     
                     <div class="hpo-header-price">
                         <i class="hpo-cart-icon"></i>

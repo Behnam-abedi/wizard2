@@ -110,7 +110,7 @@ jQuery(document).ready(function($) {
         let selectedProductId = null;
         
         // Update back button text and functionality for product selection step
-        $('.hpo-back-button').text('بستن');
+        $('.hpo-back-button span').text('بستن');
         $('.hpo-back-button').off('click').on('click', function() {
             $('#hpo-popup-overlay').fadeOut(300);
             unlockBodyScroll();
@@ -170,7 +170,7 @@ jQuery(document).ready(function($) {
                     $('.hpo-popup-header h3').text(response.data.product_title);
                     
                     // Update back button text and functionality for product details step
-                    $('.hpo-back-button').text('بازگشت');
+                    $('.hpo-back-button span').text('بازگشت');
                     $('.hpo-back-button').off('click').on('click', function() {
                         // Handle back button click
                         $('#hpo-product-list').html('<div class="hpo-loading">در حال بارگذاری...</div>');

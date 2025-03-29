@@ -51,9 +51,8 @@
     padding: 15px 20px;
     background-color: #ffffff;
     border-bottom: 1px solid #ddd;
-    display: grid;
-    grid-template-columns: 2fr 1fr 2fr;
-    justify-content: end;
+    display: flex;
+    justify-content: space-between;
     align-items: center;
     position: relative;
     box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1)
@@ -559,6 +558,11 @@
     border-radius: 0!important;
     background-color: #e6edff!important;
 }
+@media (max-width: 768px) {
+    .hpo-quantity-input input {
+        width: 32px!important;
+    }
+}
 .hpo-quantity-input input:focus {
     border:none!important;
 
@@ -769,48 +773,49 @@
 
 /* Back Button */
 .hpo-back-button {
-    
-    padding: 7px 21px!important;
-    background-color: #cecdcd!important;
-    border-radius: 20px!important;
-    cursor: pointer!important;
-    font-size: 14px!important;
-    color: #ffffff!important;
-    transition: all 0.3s ease!important;
-    line-height: 1!important;
-    display: flex!important;
+    display: inline-flex!important;
     align-items: center!important;
-    justify-content: space-between!important;
-    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1)!important;
-    max-width: 110px!important;
-    border: none!important;
+    background-color: #f1f1f1!important;
+    border-radius: 30px!important;
+    padding: 5px 6px 5px 15px!important; /* افزایش پدینگ برای متن */
+    white-space: nowrap!important; /* جلوگیری از شکستن متن */
+    min-width: 105px!important; /* حداقل عرض */
+    cursor: pointer!important;
+    transition: all 0.3s ease!important;
+}
+.hpo-back-button:hover{
+    background-color: #e6e6e6!important;
+}
+.hpo-back-button::before {
+    content: "➦";
+    color: #000000!important;
+    background-color: #ffffff!important;
+    border-radius: 50%!important;
+    width: 30px!important;
+    height: 30px!important;
+    display: flex!important;
+    justify-content: center!important;
+    align-items: center!important;
+    flex-shrink: 0!important; /* جلوگیری از کوچک شدن آیکون */
 }
 
-.hpo-back-button:before {
-    content: "➦";
-    margin-left: 10px!important;
-    font-size: 16px!important;
-    background-color: #ffffff!important;
-    border-radius: 15px!important;
-    padding: 5px 5px!important;
-    font-size: 16px!important;
-    /* width: 10px; */
-    color: #cecdcd!important;
-    margin-right: -14px!important;
-    box-shadow: -2px 0px 5px #0000001f!important;
- 
+.hpo-back-button span {
+    font-size: 14px!important;
+    font-weight: 500!important;
+    text-align: center!important;
+    overflow: hidden!important;
+    text-overflow: ellipsis!important; /* در صورتی که متن طولانی شد، سه‌نقطه بگذارد */
+    display: block!important;
+    flex: auto!important;
 }
-.hpo-back-button:hover {
-    background-color: #e0e0e1!important;
-    color: #3d3d3d!important;
-}
+
+
 
 .hpo-weight-options {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
     gap: 10px;
 }
-
 .hpo-weight-option {
     padding: 8px 12px;
     background: #fff;
@@ -1093,15 +1098,7 @@
     }
     
     /* Fix back button positioning */
-    .hpo-back-button {
-        padding: 3px 10px!important;
-        font-size: 13px!important;
-        z-index: 10;
-        max-width: 90px!important;
-    }
-    .hpo-back-button:before{
-        margin-right: -5px!important;
-    }
+
     
     /* Adjust header for mobile */
     .hpo-popup-header {
@@ -1169,12 +1166,6 @@
         padding: 0 60px!important   ;
     }
     
-    .hpo-back-button {
-        padding: 3px 10px!important;
-        font-size: 12px!important;
-        min-width: 80px!important;
-        padding-left: 15px!important;
-    }
     
     .hpo-weight-grid {
         grid-template-columns: repeat(2, 1fr);
@@ -1291,14 +1282,12 @@ body.hpo-popup-open {
     border-radius: 20px;
     z-index: 5;
     transition: all 0.3s ease;
-    border: 1px solid #ececec;
     min-width: 180px;
     justify-content: center;
-    background-color: #cecdcd;
-    color: #ffffff;
+    background-color: #f1f1f1;
+    color: #000000;
     justify-content: space-between;
     padding-left: 10px;
-    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
     justify-self: end;
 
 }
@@ -1311,7 +1300,7 @@ body.hpo-popup-open {
     display: inline-block;
     width: 30px;
     height: 28px;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23cecdcd'%3E%3Cpath d='M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96 0 1.1.9 2 2 2h12v-2H7.42c-.14 0-.25-.11-.25-.25l.03-.12.9-1.63h7.45c.75 0 1.41-.41 1.75-1.03l3.58-6.49c.08-.14.12-.31.12-.48 0-.55-.45-1-1-1H5.21l-.94-2H1zm16 16c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2z'/%3E%3C/svg%3E");
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23000000'%3E%3Cpath d='M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96 0 1.1.9 2 2 2h12v-2H7.42c-.14 0-.25-.11-.25-.25l.03-.12.9-1.63h7.45c.75 0 1.41-.41 1.75-1.03l3.58-6.49c.08-.14.12-.31.12-.48 0-.55-.45-1-1-1H5.21l-.94-2H1zm16 16c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2z'/%3E%3C/svg%3E");
     background-repeat: no-repeat;
     background-position: center;
     background-size: contain;
@@ -1319,13 +1308,13 @@ body.hpo-popup-open {
     background-color: #ffffff;
     border-radius: 50%;
     margin-right: -3px;
-    box-shadow: -2px 0px 5px #0000001f;
+
 }
 
 .hpo-header-price .hpo-total-value {
     font-size: 14px;
     font-weight: 600;
-    color: #ffffff;
+    color: #000000;
     width: 80%;
     text-align: center;
 }
@@ -1334,7 +1323,7 @@ body.hpo-popup-open {
     .hpo-header-price {
         left: 0px;
         padding: 4px 8px;
-        min-width:135px;
+        min-width:145px;
     }
     
     .hpo-header-price .hpo-total-value {
@@ -1345,14 +1334,14 @@ body.hpo-popup-open {
 /* Animation for price update */
 @keyframes priceUpdate {
     0% {
-        transform: translateY(-50%) scale(1);
+        /* transform: translateY(-50%) scale(1); */
     }
     50% {
-        transform: translateY(-50%) scale(1.1);
+        /* transform: translateY(-50%) scale(1.1); */
         background-color: #d6e9ff;
     }
     100% {
-        transform: translateY(-50%) scale(1);
+        /* transform: translateY(-50%) scale(1); */
     }
 }
 
