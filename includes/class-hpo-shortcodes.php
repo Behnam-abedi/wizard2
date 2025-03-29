@@ -530,8 +530,6 @@ class HPO_Shortcodes {
                 'calculated_price' => $total_price,
                 'price_per_unit' => $total_price // Set both price fields to the same value
             ),
-            // Generate a unique key to prevent merging
-            'unique_key' => md5(microtime() . rand())
         );
         
         // Add options data if available
@@ -573,13 +571,15 @@ class HPO_Shortcodes {
             $cart_item_data['hpo_custom_data']['customer_notes'] = sanitize_textarea_field($data['hpo_customer_notes']);
         }
         
-        // Remove any existing items with the same product ID and options before adding
-        $cart = WC()->cart->get_cart();
-        foreach ($cart as $cart_item_key => $cart_item) {
-            if (isset($cart_item['product_id']) && $cart_item['product_id'] == $product_id && isset($cart_item['hpo_custom_data'])) {
-                WC()->cart->remove_cart_item($cart_item_key);
-            }
-        }
+        // Create a unique key for this specific product configuration
+        $unique_key = md5(
+            $product_id . '_' . 
+            json_encode(isset($data['hpo_options']) ? $data['hpo_options'] : []) . '_' . 
+            json_encode(isset($data['hpo_weight']) ? $data['hpo_weight'] : []) . '_' . 
+            $data['hpo_grinding'] . '_' . 
+            json_encode(isset($data['hpo_grinding_machine']) ? $data['hpo_grinding_machine'] : [])
+        );
+        $cart_item_data['unique_key'] = $unique_key;
         
         // Important: Set the product price to our calculated price before adding to cart
         // This ensures that WooCommerce will use this price for the item
@@ -869,7 +869,21 @@ class HPO_Shortcodes {
      */
     public function prevent_cart_merging($cart_item_data, $product_id) {
         if (isset($cart_item_data['hpo_custom_data'])) {
-            $cart_item_data['unique_key'] = md5(json_encode($cart_item_data) . microtime());
+            // Create a unique key based on product ID and selected options
+            $options = isset($cart_item_data['hpo_custom_data']['options']) ? $cart_item_data['hpo_custom_data']['options'] : [];
+            $weight = isset($cart_item_data['hpo_custom_data']['weight']) ? $cart_item_data['hpo_custom_data']['weight'] : [];
+            $grinding = isset($cart_item_data['hpo_custom_data']['grinding']) ? $cart_item_data['hpo_custom_data']['grinding'] : 'whole';
+            $grinding_machine = isset($cart_item_data['hpo_custom_data']['grinding_machine']) ? $cart_item_data['hpo_custom_data']['grinding_machine'] : [];
+            
+            $unique_key = md5(
+                $product_id . '_' . 
+                json_encode($options) . '_' . 
+                json_encode($weight) . '_' . 
+                $grinding . '_' . 
+                json_encode($grinding_machine)
+            );
+            
+            $cart_item_data['unique_key'] = $unique_key;
         }
         return $cart_item_data;
     }
