@@ -809,7 +809,18 @@
     flex: auto!important;
 }
 
-
+@media (max-width: 768px) {
+    .hpo-back-button {
+     /* padding: 3px 6px 3px 15px!important; */
+    }
+    .hpo-back-button::before {
+        width: 25px!important;
+        height: 25px!important;
+    }
+    .hpo-back-button span {
+        font-size: 12px!important;
+    }
+}
 
 .hpo-weight-options {
     display: grid;
