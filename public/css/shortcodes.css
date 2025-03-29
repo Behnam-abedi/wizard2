@@ -769,39 +769,39 @@
 /* Back Button */
 .hpo-back-button {
     
-    padding: 7px 21px;
+    padding: 7px 21px!important;
     background-color: #cecdcd!important;
-    border-radius: 20px;
-    cursor: pointer;
-    font-size: 14px;
-    color: #ffffff;
-    transition: all 0.3s ease;
-    line-height: 1;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
-    max-width: 110px;
+    border-radius: 20px!important;
+    cursor: pointer!important;
+    font-size: 14px!important;
+    color: #ffffff!important;
+    transition: all 0.3s ease!important;
+    line-height: 1!important;
+    display: flex!important;
+    align-items: center!important;
+    justify-content: space-between!important;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1)!important;
+    max-width: 110px!important;
     border: none!important;
 }
 
 .hpo-back-button:before {
     content: "➦";
-    margin-left: 10px;
-    font-size: 16px;
-    background-color: #ffffff;
-    border-radius: 15px;
-    padding: 5px 5px;
-    font-size: 16px;
+    margin-left: 10px!important;
+    font-size: 16px!important;
+    background-color: #ffffff!important;
+    border-radius: 15px!important;
+    padding: 5px 5px!important;
+    font-size: 16px!important;
     /* width: 10px; */
-    color: #cecdcd;
-    margin-right: -14px;
-    box-shadow: -2px 0px 5px #0000001f;
+    color: #cecdcd!important;
+    margin-right: -14px!important;
+    box-shadow: -2px 0px 5px #0000001f!important;
  
 }
 .hpo-back-button:hover {
-    background-color: #e0e0e1;
-    color: #3d3d3d;
+    background-color: #e0e0e1!important;
+    color: #3d3d3d!important;
 }
 
 .hpo-weight-options {
@@ -1093,13 +1093,13 @@
     
     /* Fix back button positioning */
     .hpo-back-button {
-        padding: 6px 12px;
-        font-size: 13px;
+        padding: 6px 12px!important;
+        font-size: 13px!important;
         z-index: 10;
-        max-width: 90px;
+        max-width: 90px!important;
     }
     .hpo-back-button:before{
-        margin-right: -5px;
+        margin-right: -5px!important;
     }
     
     /* Adjust header for mobile */
@@ -1164,14 +1164,14 @@
 /* Support for very small screens */
 @media (max-width: 480px) {
     .hpo-popup-header h3 {
-        font-size: 14px;
-        padding: 0 60px;
+        font-size: 14px!important;
+        padding: 0 60px!important   ;
     }
     
     .hpo-back-button {
-        padding: 5px 10px;
-        font-size: 12px;
-        min-width: 80px;
+        padding: 5px 10px!important;
+        font-size: 12px!important;
+        min-width: 80px!important;
         padding-left: 15px!important;
     }
     
