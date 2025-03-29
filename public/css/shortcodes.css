@@ -807,6 +807,7 @@
     text-overflow: ellipsis!important; /* در صورتی که متن طولانی شد، سه‌نقطه بگذارد */
     display: block!important;
     flex: auto!important;
+    color: #000000!important;
 }
 
 @media (max-width: 768px) {
@@ -1440,46 +1441,46 @@ body.hpo-popup-open {
 }
 
 .hpo-success-actions {
-    display: flex;
-    flex-direction: row;
-    gap: 10px;
+    display: flex!important;
+    flex-direction: row!important;
+    gap: 10px!important;
 }
 
 .hpo-success-actions button {
-    padding: 12px 20px;
-    border-radius: 6px;
-    border: none;
-    cursor: pointer;
-    font-size: 14px;
-    font-weight: bold;
-    transition: all 0.3s ease;
+    padding: 12px 20px!important;
+    border-radius: 6px!important;
+    border: none!important;
+    cursor: pointer!important;
+    font-size: 14px!important;
+    font-weight: bold!important;
+    transition: all 0.3s ease!important;
 }
 
 .hpo-repeat-order-btn {
-    background-color: #25ae88;
-    color: white;
+    background-color: #25ae88   !important;
+    color: white!important;
 }
 
 .hpo-repeat-order-btn:hover {
-    background-color: #1d9974;
+    background-color: #1d9974!important;
 }
 
 .hpo-checkout-btn {
-    background-color: #4d7bf3;
-    color: white;
+    background-color: #4d7bf3!important;
+    color: white!important;
 }
 
 .hpo-checkout-btn:hover {
-    background-color: #3a68d9;
+    background-color: #3a68d9!important;
 }
 
 .hpo-close-success-btn {
-    background-color: #f0f0f0;
-    color: #666;
+    background-color: #f0f0f0!important;
+    color: #666!important;
 }
 
 .hpo-close-success-btn:hover {
-    background-color: #e0e0e0;
+    background-color: #e0e0e0!important ;
 }
 
 /* متن راهنمای انتخاب محصول */
