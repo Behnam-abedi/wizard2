@@ -752,6 +752,7 @@ class Hierarchical_Product_Options {
                         <th>نوع قهوه</th>
                         <th>مقدار</th>
                         <th>وضعیت آسیاب</th>
+                        <th>تعداد</th>
                         <th>توضیحات مشتری</th>
                         <th>قیمت نهایی (هر واحد)</th>
                     </tr>
@@ -770,15 +771,11 @@ class Hierarchical_Product_Options {
                                 foreach ($products as $product) {
                                     // Check if this is from the shortcode format
                                     if (isset($product['category_id'])) {
-                                        $product_names[] = $product['name'] . 
-                                            (isset($product['price']) && $product['price'] > 0 ? 
-                                            ' <span class="price-tag">(' . wc_price($product['price']) . ')</span>' : '');
+                                        $product_names[] = $product['name'];
                                     } 
                                     // Standard format
                                     else if (isset($product['name'])) {
-                                        $product_names[] = $product['name'] . 
-                                            (isset($product['price']) && $product['price'] > 0 ? 
-                                            ' <span class="price-tag">(' . wc_price($product['price']) . ')</span>' : '');
+                                        $product_names[] = $product['name'];
                                     }
                                 }
                                 echo implode(' + ', $product_names);
@@ -793,9 +790,6 @@ class Hierarchical_Product_Options {
                             if (!empty($weight)) {
                                 if (isset($weight['name'])) {
                                     echo esc_html($weight['name']);
-                                    if (isset($weight['coefficient']) && $weight['coefficient'] != 1) {
-                                        echo ' <span class="coefficient">(×' . $weight['coefficient'] . ')</span>';
-                                    }
                                 }
                             } else {
                                 echo '-';
@@ -810,9 +804,6 @@ class Hierarchical_Product_Options {
                                     echo '<span class="grinding-status ground">آسیاب شده</span>';
                                     if (!empty($grinder['machine'])) {
                                         echo '<br><span class="machine-name">دستگاه: ' . esc_html($grinder['machine']['name']) . '</span>';
-                                        if (isset($grinder['machine']['price']) && $grinder['machine']['price'] > 0) {
-                                            echo ' <span class="price-tag">(' . wc_price($grinder['machine']['price']) . ')</span>';
-                                        }
                                     }
                                 } else {
                                     echo '<span class="grinding-status whole">آسیاب نشده</span>';
@@ -820,6 +811,12 @@ class Hierarchical_Product_Options {
                             } else {
                                 echo '-';
                             }
+                            ?>
+                        </td>
+                        <td>
+                            <?php
+                            $quantity = $item->get_quantity();
+                            echo esc_html($quantity);
                             ?>
                         </td>
                         <td>
@@ -838,7 +835,7 @@ class Hierarchical_Product_Options {
                             if (!empty($calculated_price)) {
                                 echo '<strong class="final-price">' . wc_price($calculated_price) . '</strong>';
                             } else {
-                                echo '-';
+                                echo wc_price($item->get_subtotal() / $quantity);
                             }
                             ?>
                         </td>
@@ -877,15 +874,6 @@ class Hierarchical_Product_Options {
             .hpo-order-details .row-title {
                 font-weight: 600;
                 color: #2271b1;
-            }
-            .price-tag {
-                color: #666;
-                font-size: 0.9em;
-            }
-            .coefficient {
-                color: #666;
-                font-size: 0.9em;
-                font-style: italic;
             }
             .grinding-status {
                 display: inline-block;
