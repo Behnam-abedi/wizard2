@@ -75,18 +75,18 @@ jQuery(document).ready(function($) {
                 nonce: hpoAjax.nonce
             },
             beforeSend: function() {
-                $('#hpo-product-list').html('<div class="hpo-loading">در حال بارگذاری...</div>');
+                $('#hpo-product-list').html('<div class="hpo-loading"><div class="hpo-spinner"></div><span>در حال بارگذاری...</span></div>');
             },
             success: function(response) {
                 if (response.success) {
                     $('#hpo-product-list').html(response.data.html);
                     initProductSelection();
                 } else {
-                    $('#hpo-product-list').html('<p>خطا در بارگذاری محصولات.</p>');
+                    $('#hpo-product-list').html('<div class="hpo-error-message">خطا در بارگذاری محصولات.</div>');
                 }
             },
             error: function() {
-                $('#hpo-product-list').html('<p>خطا در ارتباط با سرور.</p>');
+                $('#hpo-product-list').html('<div class="hpo-error-message">خطا در ارتباط با سرور.</div>');
             }
         });
     });
@@ -167,7 +167,7 @@ jQuery(document).ready(function($) {
             },
             beforeSend: function() {
                 // Show loading in the same popup
-                $('#hpo-product-list').html('<div class="hpo-loading">در حال بارگذاری...</div>');
+                $('#hpo-product-list').html('<div class="hpo-loading"><div class="hpo-spinner"></div><span>در حال بارگذاری...</span></div>');
                 $('.hpo-popup-header h3').text('جزئیات محصول');
             },
             success: function(response) {
@@ -182,7 +182,7 @@ jQuery(document).ready(function($) {
                         $('.hpo-back-button span').text('بازگشت');
                         $('.hpo-back-button').off('click').on('click', function() {
                             // Handle back button click
-                            $('#hpo-product-list').html('<div class="hpo-loading">در حال بارگذاری...</div>');
+                            $('#hpo-product-list').html('<div class="hpo-loading"><div class="hpo-spinner"></div><span>در حال بارگذاری...</span></div>');
                             resetPrice();
                             resetAllFields();
                             
@@ -198,7 +198,7 @@ jQuery(document).ready(function($) {
                                     nonce: hpoAjax.nonce
                                 },
                                 beforeSend: function() {
-                                    $('#hpo-product-list').html('<div class="hpo-loading">در حال بارگذاری...</div>');
+                                    $('#hpo-product-list').html('<div class="hpo-loading"><div class="hpo-spinner"></div><span>در حال بارگذاری...</span></div>');
                                 },
                                 success: function(response) {
                                     if (response.success) {
@@ -207,11 +207,11 @@ jQuery(document).ready(function($) {
                                         // Reinitialize product selection with clean state
                                         initProductSelection();
                                     } else {
-                                        $('#hpo-product-list').html('<p>خطا در بارگذاری محصولات.</p>');
+                                        $('#hpo-product-list').html('<div class="hpo-error-message">خطا در بارگذاری محصولات.</div>');
                                     }
                                 },
                                 error: function() {
-                                    $('#hpo-product-list').html('<p>خطا در ارتباط با سرور.</p>');
+                                    $('#hpo-product-list').html('<div class="hpo-error-message">خطا در ارتباط با سرور.</div>');
                                 }
                             });
                         });
@@ -219,7 +219,7 @@ jQuery(document).ready(function($) {
                         $('.hpo-popup-header').prepend('<div class="hpo-back-button"><span>بازگشت</span></div>');
                         $('.hpo-back-button').on('click', function() {
                             // Handle back button click
-                            $('#hpo-product-list').html('<div class="hpo-loading">در حال بارگذاری...</div>');
+                            $('#hpo-product-list').html('<div class="hpo-loading"><div class="hpo-spinner"></div><span>در حال بارگذاری...</span></div>');
                             resetPrice();
                             resetAllFields();
                             
@@ -235,7 +235,7 @@ jQuery(document).ready(function($) {
                                     nonce: hpoAjax.nonce
                                 },
                                 beforeSend: function() {
-                                    $('#hpo-product-list').html('<div class="hpo-loading">در حال بارگذاری...</div>');
+                                    $('#hpo-product-list').html('<div class="hpo-loading"><div class="hpo-spinner"></div><span>در حال بارگذاری...</span></div>');
                                 },
                                 success: function(response) {
                                     if (response.success) {
@@ -244,11 +244,11 @@ jQuery(document).ready(function($) {
                                         // Reinitialize product selection with clean state
                                         initProductSelection();
                                     } else {
-                                        $('#hpo-product-list').html('<p>خطا در بارگذاری محصولات.</p>');
+                                        $('#hpo-product-list').html('<div class="hpo-error-message">خطا در بارگذاری محصولات.</div>');
                                     }
                                 },
                                 error: function() {
-                                    $('#hpo-product-list').html('<p>خطا در ارتباط با سرور.</p>');
+                                    $('#hpo-product-list').html('<div class="hpo-error-message">خطا در ارتباط با سرور.</div>');
                                 }
                             });
                         });
@@ -260,11 +260,11 @@ jQuery(document).ready(function($) {
                     // Initialize product options form
                     initProductOptionsForm();
                 } else {
-                    $('#hpo-product-list').html('<p>' + response.data.message + '</p>');
+                    $('#hpo-product-list').html('<div class="hpo-error-message">' + response.data.message + '</div>');
                 }
             },
             error: function() {
-                $('#hpo-product-list').html('<p>خطا در ارتباط با سرور.</p>');
+                $('#hpo-product-list').html('<div class="hpo-error-message">خطا در ارتباط با سرور.</div>');
             }
         });
     }
@@ -505,12 +505,18 @@ jQuery(document).ready(function($) {
                 'hpo_data': JSON.stringify(formData)
             });
             
+            // Create and show loading overlay
+            $('body').append('<div class="hpo-loading-overlay"><div class="hpo-spinner"></div><div class="hpo-loading-message">در حال افزودن به سبد خرید...</div></div>');
+            
             // Add to cart via AJAX
             $.ajax({
                 url: hpoAjax.ajaxUrl,
                 type: 'POST',
                 data: serializedData,
                 success: function(response) {
+                    // Remove loading overlay
+                    $('.hpo-loading-overlay').remove();
+                    
                     if (response.success) {
                         // استفاده از HTML پاپ‌آپ موفقیت که از سرور ارسال شده
                         $('body').append(response.data.success_popup_html);
@@ -549,18 +555,18 @@ jQuery(document).ready(function($) {
                                     nonce: hpoAjax.nonce
                                 },
                                 beforeSend: function() {
-                                    $('#hpo-product-list').html('<div class="hpo-loading">در حال بارگذاری...</div>');
+                                    $('#hpo-product-list').html('<div class="hpo-loading"><div class="hpo-spinner"></div><span>در حال بارگذاری...</span></div>');
                                 },
                                 success: function(response) {
                                     if (response.success) {
                                         $('#hpo-product-list').html(response.data.html);
                                         initProductSelection();
                                     } else {
-                                        $('#hpo-product-list').html('<p>خطا در بارگذاری محصولات.</p>');
+                                        $('#hpo-product-list').html('<div class="hpo-error-message">خطا در بارگذاری محصولات.</div>');
                                     }
                                 },
                                 error: function() {
-                                    $('#hpo-product-list').html('<p>خطا در ارتباط با سرور.</p>');
+                                    $('#hpo-product-list').html('<div class="hpo-error-message">خطا در ارتباط با سرور.</div>');
                                 }
                             });
                         });
@@ -595,11 +601,30 @@ jQuery(document).ready(function($) {
                         // بروزرسانی سبد خرید کوچک
                         $(document.body).trigger('wc_fragment_refresh');
                     } else {
-                        alert(response.data.message || 'خطا در افزودن محصول به سبد خرید.');
+                        // Show error message in a proper error box
+                        $('body').append('<div class="hpo-loading-overlay" style="background-color: rgba(0,0,0,0.8);"><div class="hpo-error-message" style="width: 80%; max-width: 400px;">' + 
+                            (response.data.message || 'خطا در افزودن محصول به سبد خرید.') + 
+                            '<br><br><button class="hpo-close-error-btn" style="padding: 8px 15px; background: #721c24; color: white; border: none; border-radius: 4px; cursor: pointer;">بستن</button></div></div>');
+                        
+                        // Add event listener to close button
+                        $('.hpo-close-error-btn').on('click', function() {
+                            $('.hpo-loading-overlay').remove();
+                        });
                     }
                 },
                 error: function() {
-                    alert('خطا در ارتباط با سرور.');
+                    // Remove loading overlay
+                    $('.hpo-loading-overlay').remove();
+                    
+                    // Show error message in a proper error box
+                    $('body').append('<div class="hpo-loading-overlay" style="background-color: rgba(0,0,0,0.8);"><div class="hpo-error-message" style="width: 80%; max-width: 400px;">' +
+                        'خطا در ارتباط با سرور.' +
+                        '<br><br><button class="hpo-close-error-btn" style="padding: 8px 15px; background: #721c24; color: white; border: none; border-radius: 4px; cursor: pointer;">بستن</button></div></div>');
+                    
+                    // Add event listener to close button
+                    $('.hpo-close-error-btn').on('click', function() {
+                        $('.hpo-loading-overlay').remove();
+                    });
                 }
             });
         });

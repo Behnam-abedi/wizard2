@@ -1537,3 +1537,74 @@ body.hpo-popup-open {
         line-height: 1.6;
     }
 }
+
+/* Spinner Loading Animation */
+.hpo-spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid rgba(0, 0, 0, 0.1);
+    border-radius: 50%;
+    border-left-color: #3498db;
+    animation: hpo-spin 1s linear infinite;
+    margin: 20px auto;
+    display: inline-block;
+}
+
+@keyframes hpo-spin {
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+/* Loading overlay for Add to Cart */
+.hpo-loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.7);
+    z-index: 10000;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+.hpo-loading-overlay .hpo-loading-message {
+    color: white;
+    font-size: 16px;
+    margin-top: 15px;
+    text-align: center;
+}
+
+.hpo-loading-overlay .hpo-spinner {
+    border-left-color: white;
+    width: 50px;
+    height: 50px;
+}
+
+/* Style for the existing loading text */
+.hpo-loading {
+    text-align: center;
+    padding: 40px 20px;
+    font-size: 16px;
+    color: #666;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+/* Error message styling */
+.hpo-error-message {
+    background-color: #f8d7da;
+    color: #721c24;
+    padding: 12px 20px;
+    border-radius: 5px;
+    margin: 15px 0;
+    text-align: center;
+    border: 1px solid #f5c6cb;
+}
