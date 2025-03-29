@@ -51,7 +51,8 @@
     padding: 15px 20px;
     background-color: #ffffff;
     border-bottom: 1px solid #ddd;
-    display: flex;
+    display: grid;
+    grid-template-columns: 2fr 1fr 2fr;
     justify-content: end;
     align-items: center;
     position: relative;
@@ -69,7 +70,6 @@
 }
 
 .hpo-popup-close {
-
     cursor: pointer;
     color: #ffffff;
     background-color: #cecdcd;
@@ -768,12 +768,9 @@
 
 /* Back Button */
 .hpo-back-button {
-    position: absolute;
-    right: 20px;
-    top: 50%;
-    transform: translateY(-50%);
+    
     padding: 7px 21px;
-    background-color: #cecdcd;
+    background-color: #cecdcd!important;
     border-radius: 20px;
     cursor: pointer;
     font-size: 14px;
@@ -782,8 +779,10 @@
     line-height: 1;
     display: flex;
     align-items: center;
-    justify-content: center;
+    justify-content: space-between;
     box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+    max-width: 110px;
+    border: none!important;
 }
 
 .hpo-back-button:before {
@@ -800,7 +799,6 @@
     box-shadow: -2px 0px 5px #0000001f;
  
 }
-
 .hpo-back-button:hover {
     background-color: #e0e0e1;
     color: #3d3d3d;
@@ -1095,13 +1093,13 @@
     
     /* Fix back button positioning */
     .hpo-back-button {
-        position: absolute;
-        right: 15px;
-        top: 50%;
-        transform: translateY(-50%);
         padding: 6px 12px;
         font-size: 13px;
         z-index: 10;
+        max-width: 90px;
+    }
+    .hpo-back-button:before{
+        margin-right: -5px;
     }
     
     /* Adjust header for mobile */
@@ -1170,10 +1168,11 @@
         padding: 0 60px;
     }
     
-    .hpo-back-button,
-    .hpo-popup-close {
+    .hpo-back-button {
         padding: 5px 10px;
         font-size: 12px;
+        min-width: 80px;
+        padding-left: 15px!important;
     }
     
     .hpo-weight-grid {
@@ -1184,6 +1183,7 @@
         width: 100%;
         max-width: 240px;
     }
+
 }
 
 /* Body lock when popup is open */
@@ -1283,10 +1283,7 @@ body.hpo-popup-open {
 
 /* Header Price Styling */
 .hpo-header-price {
-    position: absolute;
-    left: 50px;
-    top: 50%;
-    transform: translateY(-50%);
+
     display: flex;
     align-items: center;
     padding: 6px 10px;
@@ -1300,8 +1297,8 @@ body.hpo-popup-open {
     color: #ffffff;
     justify-content: space-between;
     padding-left: 10px;
-    margin-left: 10px;
     box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+    justify-self: end;
 
 }
 
@@ -1334,8 +1331,9 @@ body.hpo-popup-open {
 
 @media (max-width: 768px) {
     .hpo-header-price {
-        left: 15px;
+        left: 0px;
         padding: 4px 8px;
+        min-width:135px;
     }
     
     .hpo-header-price .hpo-total-value {
