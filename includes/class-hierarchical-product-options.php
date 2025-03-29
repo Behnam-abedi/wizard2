@@ -89,6 +89,18 @@ class Hierarchical_Product_Options {
 
         // Display order item meta in admin
         add_action('add_meta_boxes', array($this, 'add_order_meta_box'));
+        
+        // Hide products with hierarchical options from shop and other archives
+        add_filter('woocommerce_product_query_tax_query', array($this, 'hide_hierarchical_products_from_shop'), 20, 1);
+        
+        // Exclude products from search results
+        add_filter('pre_get_posts', array($this, 'exclude_products_from_search'), 10);
+        
+        // Hide products from related products
+        add_filter('woocommerce_related_products', array($this, 'exclude_from_related_products'), 10, 3);
+        
+        // Redirect single product pages of hierarchical products to home
+        add_action('template_redirect', array($this, 'redirect_hierarchical_product_pages'));
     }
 
     /**
@@ -1250,5 +1262,114 @@ class Hierarchical_Product_Options {
             ';
             wp_add_inline_style('hierarchical-product-options-public', $additional_css);
         }
+    }
+
+    /**
+     * Hide products with hierarchical options from shop and other archives
+     *
+     * @param array $tax_query
+     * @return array
+     */
+    public function hide_hierarchical_products_from_shop($tax_query) {
+        if (is_admin()) {
+            return $tax_query;
+        }
+
+        // Get all products that have hierarchical options
+        $product_ids = $this->get_hierarchical_product_ids();
+        
+        if (!empty($product_ids)) {
+            // Exclude these products from the query
+            $tax_query[] = array(
+                'taxonomy' => 'product_visibility',
+                'field' => 'name',
+                'terms' => 'exclude-from-catalog',
+                'operator' => 'IN'
+            );
+            
+            // Use post__not_in for direct ID exclusion
+            add_filter('woocommerce_product_query_post_not_in', function($ids) use ($product_ids) {
+                return array_merge($ids, $product_ids);
+            }, 10);
+        }
+
+        return $tax_query;
+    }
+
+    /**
+     * Redirect single product pages of hierarchical products to home
+     */
+    public function redirect_hierarchical_product_pages() {
+        if (is_product()) {
+            global $post;
+            $product_id = $post->ID;
+            
+            // Get all hierarchical product IDs
+            $hierarchical_product_ids = $this->get_hierarchical_product_ids();
+            
+            // Check if the current product has hierarchical options
+            if (in_array($product_id, $hierarchical_product_ids)) {
+                wp_redirect(home_url());
+                exit;
+            }
+        }
+    }
+
+    /**
+     * Exclude products from search results
+     *
+     * @param WP_Query $query
+     */
+    public function exclude_products_from_search($query) {
+        if (is_admin() || !is_search()) {
+            return;
+        }
+
+        $product_ids = array();
+        $assignments = $this->get_hierarchical_product_ids();
+        if (!empty($assignments)) {
+            $product_ids = array_merge($product_ids, $assignments);
+        }
+
+        if (!empty($product_ids)) {
+            $query->set('post__not_in', $product_ids);
+        }
+    }
+
+    /**
+     * Exclude products from related products
+     *
+     * @param array $related_products
+     * @param int $product_id
+     * @param int $limit
+     * @return array
+     */
+    public function exclude_from_related_products($related_products, $product_id, $limit) {
+        $product_ids = array();
+        $assignments = $this->get_hierarchical_product_ids();
+        if (!empty($assignments)) {
+            $product_ids = array_merge($product_ids, $assignments);
+        }
+
+        if (!empty($product_ids)) {
+            $related_products = array_diff($related_products, $product_ids);
+        }
+
+        return $related_products;
+    }
+
+    /**
+     * Get hierarchical product IDs
+     *
+     * @return array
+     */
+    private function get_hierarchical_product_ids() {
+        $db = new Hierarchical_Product_Options_DB();
+        $assignments = $db->get_category_product_assignments();
+        $product_ids = array();
+        foreach ($assignments as $assignment) {
+            $product_ids[] = $assignment->wc_product_id;
+        }
+        return $product_ids;
     }
 } 
