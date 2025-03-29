@@ -110,11 +110,19 @@ jQuery(document).ready(function($) {
         let selectedProductId = null;
         
         // Update back button text and functionality for product selection step
-        $('.hpo-back-button span').text('بستن');
-        $('.hpo-back-button').off('click').on('click', function() {
-            $('#hpo-popup-overlay').fadeOut(300);
-            unlockBodyScroll();
-        });
+        if($('.hpo-back-button').length) {
+            $('.hpo-back-button span').text('بستن');
+            $('.hpo-back-button').off('click').on('click', function() {
+                $('#hpo-popup-overlay').fadeOut(300);
+                unlockBodyScroll();
+            });
+        } else {
+            $('.hpo-popup-header').prepend('<div class="hpo-back-button" id="hpo-popup-close"><span>بستن</span></div>');
+            $('.hpo-back-button').on('click', function() {
+                $('#hpo-popup-overlay').fadeOut(300);
+                unlockBodyScroll();
+            });
+        }
         
         // Add the next step button in disabled state
         if (!$('.hpo-next-step').length) {
@@ -170,42 +178,81 @@ jQuery(document).ready(function($) {
                     $('.hpo-popup-header h3').text(response.data.product_title);
                     
                     // Update back button text and functionality for product details step
-                    $('.hpo-back-button span').text('بازگشت');
-                    $('.hpo-back-button').off('click').on('click', function() {
-                        // Handle back button click
-                        $('#hpo-product-list').html('<div class="hpo-loading">در حال بارگذاری...</div>');
-                        resetPrice();
-                        resetAllFields();
-                        
-                        // Update header before AJAX request
-                        $('.hpo-popup-header h3').text('انتخاب محصول');
-                        
-                        // Reload the products list
-                        $.ajax({
-                            url: hpoAjax.ajaxUrl,
-                            type: 'POST',
-                            data: {
-                                action: 'hpo_load_products',
-                                nonce: hpoAjax.nonce
-                            },
-                            beforeSend: function() {
-                                $('#hpo-product-list').html('<div class="hpo-loading">در حال بارگذاری...</div>');
-                            },
-                            success: function(response) {
-                                if (response.success) {
-                                    $('#hpo-product-list').html(response.data.html);
-                                    
-                                    // Reinitialize product selection with clean state
-                                    initProductSelection();
-                                } else {
-                                    $('#hpo-product-list').html('<p>خطا در بارگذاری محصولات.</p>');
+                    if($('.hpo-back-button').length) {
+                        $('.hpo-back-button span').text('بازگشت');
+                        $('.hpo-back-button').off('click').on('click', function() {
+                            // Handle back button click
+                            $('#hpo-product-list').html('<div class="hpo-loading">در حال بارگذاری...</div>');
+                            resetPrice();
+                            resetAllFields();
+                            
+                            // Update header before AJAX request
+                            $('.hpo-popup-header h3').text('انتخاب محصول');
+                            
+                            // Reload the products list
+                            $.ajax({
+                                url: hpoAjax.ajaxUrl,
+                                type: 'POST',
+                                data: {
+                                    action: 'hpo_load_products',
+                                    nonce: hpoAjax.nonce
+                                },
+                                beforeSend: function() {
+                                    $('#hpo-product-list').html('<div class="hpo-loading">در حال بارگذاری...</div>');
+                                },
+                                success: function(response) {
+                                    if (response.success) {
+                                        $('#hpo-product-list').html(response.data.html);
+                                        
+                                        // Reinitialize product selection with clean state
+                                        initProductSelection();
+                                    } else {
+                                        $('#hpo-product-list').html('<p>خطا در بارگذاری محصولات.</p>');
+                                    }
+                                },
+                                error: function() {
+                                    $('#hpo-product-list').html('<p>خطا در ارتباط با سرور.</p>');
                                 }
-                            },
-                            error: function() {
-                                $('#hpo-product-list').html('<p>خطا در ارتباط با سرور.</p>');
-                            }
+                            });
                         });
-                    });
+                    } else {
+                        $('.hpo-popup-header').prepend('<div class="hpo-back-button"><span>بازگشت</span></div>');
+                        $('.hpo-back-button').on('click', function() {
+                            // Handle back button click
+                            $('#hpo-product-list').html('<div class="hpo-loading">در حال بارگذاری...</div>');
+                            resetPrice();
+                            resetAllFields();
+                            
+                            // Update header before AJAX request
+                            $('.hpo-popup-header h3').text('انتخاب محصول');
+                            
+                            // Reload the products list
+                            $.ajax({
+                                url: hpoAjax.ajaxUrl,
+                                type: 'POST',
+                                data: {
+                                    action: 'hpo_load_products',
+                                    nonce: hpoAjax.nonce
+                                },
+                                beforeSend: function() {
+                                    $('#hpo-product-list').html('<div class="hpo-loading">در حال بارگذاری...</div>');
+                                },
+                                success: function(response) {
+                                    if (response.success) {
+                                        $('#hpo-product-list').html(response.data.html);
+                                        
+                                        // Reinitialize product selection with clean state
+                                        initProductSelection();
+                                    } else {
+                                        $('#hpo-product-list').html('<p>خطا در بارگذاری محصولات.</p>');
+                                    }
+                                },
+                                error: function() {
+                                    $('#hpo-product-list').html('<p>خطا در ارتباط با سرور.</p>');
+                                }
+                            });
+                        });
+                    }
                     
                     // Reset scroll position to top after content change
                     $('.hpo-popup-content').scrollTop(0);
@@ -477,7 +524,21 @@ jQuery(document).ready(function($) {
                             $('.hpo-success-popup-overlay').remove();
                             resetAllFields(); 
                             resetPrice();
-                            $('.hpo-back-button').remove();
+                            
+                            // تغییر متن دکمه back-button به "بستن" و اطمینان از وجود آن در هدر
+                            if($('.hpo-back-button').length) {
+                                $('.hpo-back-button span').text('بستن');
+                                $('.hpo-back-button').off('click').on('click', function() {
+                                    $('#hpo-popup-overlay').fadeOut(300);
+                                    unlockBodyScroll();
+                                });
+                            } else {
+                                $('.hpo-popup-header').prepend('<div class="hpo-back-button" id="hpo-popup-close"><span>بستن</span></div>');
+                                $('.hpo-back-button').on('click', function() {
+                                    $('#hpo-popup-overlay').fadeOut(300);
+                                    unlockBodyScroll();
+                                });
+                            }
                             
                             // بارگذاری مجدد لیست محصولات
                             $.ajax({
