@@ -1316,7 +1316,6 @@ class Hierarchical_Product_Options {
                 array(),
                 HPO_VERSION
             );
-            
             // Add some inline CSS to ensure our styles are applied
             $additional_css = '
                 .hpo-order-item-options {
