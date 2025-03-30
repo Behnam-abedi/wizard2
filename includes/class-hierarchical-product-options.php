@@ -1439,7 +1439,7 @@ class Hierarchical_Product_Options {
                 
                 /* Improve options display */
                 .hpo-option-section {
-                    margin-bottom: 15px;
+                    margin-bottom: 0px;
                 }
                 
                 .hpo-option-section h4 {
