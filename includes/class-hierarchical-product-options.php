@@ -903,7 +903,7 @@ class Hierarchical_Product_Options {
                 font-size: 1.1em;
             }
             .customer-notes {
-                background: #f8f9fa;
+                background-color: #f8f9fa;
                 padding: 8px;
                 border-radius: 4px;
                 font-size: 0.9em;
@@ -955,7 +955,8 @@ class Hierarchical_Product_Options {
         
         // Display product options (categories)
         if (!empty($categories_data)) {
-            echo '<h4>' . esc_html__('Product Options', 'hierarchical-product-options') . '</h4>';
+            echo '<div class="hpo-option-section">';
+            echo '<h4>آپشن‌های محصول</h4>';
             echo '<ul class="hpo-order-options-list">';
             
             foreach ($categories_data as $category) {
@@ -970,11 +971,13 @@ class Hierarchical_Product_Options {
             }
             
             echo '</ul>';
+            echo '</div>';
         }
         
         // Display product options selected
         if (!empty($products_data)) {
-            echo '<h4>' . esc_html__('Selected Products', 'hierarchical-product-options') . '</h4>';
+            echo '<div class="hpo-option-section">';
+            echo '<h4>محصولات انتخاب شده</h4>';
             echo '<ul class="hpo-order-options-list">';
             
             foreach ($products_data as $product) {
@@ -989,32 +992,40 @@ class Hierarchical_Product_Options {
             }
             
             echo '</ul>';
+            echo '</div>';
         }
         
         // Display weight option
         if (!empty($weight_data)) {
-            echo '<h4>' . esc_html__('Weight Option', 'hierarchical-product-options') . '</h4>';
+            echo '<div class="hpo-option-section">';
+            echo '<h4>وزن انتخابی</h4>';
             echo '<ul class="hpo-order-options-list">';
-            echo '<li><span class="hpo-option-name">' . esc_html($weight_data['name']) . '</span>';
+            echo '<li>';
+            echo '<span class="hpo-option-name">' . esc_html($weight_data['name']) . '</span>';
             
             if (isset($weight_data['coefficient']) && $weight_data['coefficient'] != 1) {
-                echo ' <span class="hpo-option-coefficient">(' . esc_html__('Coefficient:', 'hierarchical-product-options') . ' ' . esc_html($weight_data['coefficient']) . ')</span>';
+                echo ' <span class="hpo-option-coefficient">(ضریب: ' . esc_html($weight_data['coefficient']) . ')</span>';
             }
             
             echo '</li>';
             echo '</ul>';
+            echo '</div>';
         }
         
         // Display grinder option
         if (!empty($grinder_data)) {
-            echo '<h4>' . esc_html__('Grinding Option', 'hierarchical-product-options') . '</h4>';
+            echo '<div class="hpo-option-section">';
+            echo '<h4>نوع آسیاب</h4>';
             echo '<ul class="hpo-order-options-list">';
             
             if ($grinder_data['type'] === 'ground') {
-                echo '<li><span class="hpo-option-name">' . esc_html__('Ground Coffee', 'hierarchical-product-options') . '</span>';
+                echo '<li>';
+                echo '<span class="grinding-status-badge ground">آسیاب شده</span>';
+                echo '</li>';
                 
                 if (!empty($grinder_data['machine'])) {
-                    echo '<li><span class="hpo-option-name">' . esc_html__('Grinding Machine:', 'hierarchical-product-options') . ' ' . esc_html($grinder_data['machine']['name']) . '</span>';
+                    echo '<li>';
+                    echo '<span class="hpo-option-name">دستگاه آسیاب: ' . esc_html($grinder_data['machine']['name']) . '</span>';
                     
                     if (!empty($grinder_data['machine']['price']) && $grinder_data['machine']['price'] > 0) {
                         echo ' <span class="hpo-option-price">(+' . wc_price($grinder_data['machine']['price']) . ')</span>';
@@ -1023,17 +1034,22 @@ class Hierarchical_Product_Options {
                     echo '</li>';
                 }
             } else {
-                echo '<li><span class="hpo-option-name">' . esc_html__('Whole Bean (Not Ground)', 'hierarchical-product-options') . '</span></li>';
+                echo '<li>';
+                echo '<span class="grinding-status-badge whole">دانه کامل (بدون آسیاب)</span>';
+                echo '</li>';
             }
             
             echo '</ul>';
+            echo '</div>';
         }
         
         // Display customer notes
         if (!empty($customer_notes)) {
-            echo '<h4>' . esc_html__('Customer Notes', 'hierarchical-product-options') . '</h4>';
+            echo '<div class="hpo-option-section">';
+            echo '<h4>توضیحات سفارش</h4>';
             echo '<div class="hpo-customer-notes">';
-            echo '<p>' . esc_html($customer_notes) . '</p>';
+            echo '<p>' . nl2br(esc_html($customer_notes)) . '</p>';
+            echo '</div>';
             echo '</div>';
         }
         
@@ -1306,9 +1322,232 @@ class Hierarchical_Product_Options {
                 .hpo-order-item-options {
                     display: block !important;
                     visibility: visible !important;
+                    margin-top: 15px;
+                    border: 1px solid #f0f0f0;
+                    padding: 15px;
+                    border-radius: 8px;
+                    background-color: #fcfcfc;
+                    font-family: Tahoma, Vazir, IRANSans, Arial;
+                    direction: rtl;
+                    text-align: right;
                 }
+                
                 .woocommerce-order-details {
                     position: relative;
+                }
+                
+                /* Order received page improvements */
+                .woocommerce-order-received .woocommerce-order {
+                    direction: rtl;
+                }
+                
+                /* Table styles for order details */
+                .woocommerce-table--order-details {
+                    direction: rtl;
+                    border-radius: 8px !important;
+                    overflow: hidden;
+                    border: none !important;
+                    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+                }
+                
+                .woocommerce-table--order-details thead {
+                    background-color: #f8f8f8;
+                }
+                
+                .woocommerce-table--order-details th,
+                .woocommerce-table--order-details td {
+                    padding: 12px 15px !important;
+                    border-top: none !important;
+                    border-right: none !important;
+                    border-left: none !important;
+                    border-bottom: 1px solid #f0f0f0 !important;
+                }
+                
+                .woocommerce-table--order-details tfoot {
+                    background-color: #fcfcfc;
+                }
+                
+                .woocommerce-table--order-details tfoot tr:last-child {
+                    background-color: #f7fdff;
+                    font-weight: bold;
+                    color: #2271b1;
+                }
+                
+                .woocommerce-table--order-details tfoot tr:last-child th,
+                .woocommerce-table--order-details tfoot tr:last-child td {
+                    border-bottom: none !important;
+                    font-size: 1.1em;
+                }
+                
+                /* Heading styles */
+                .woocommerce-order-received h2 {
+                    text-align: right;
+                    font-family: Tahoma, Vazir, IRANSans, Arial;
+                    border-right: 4px solid #2271b1;
+                    padding-right: 10px;
+                    margin: 30px 0 20px;
+                    color: #333;
+                    font-size: 18px;
+                }
+                
+                /* Order overview boxes */
+                .woocommerce-order-overview {
+                    direction: rtl;
+                    text-align: right;
+                    display: flex !important;
+                    flex-wrap: wrap;
+                    background: #fcfcfc;
+                    border-radius: 8px;
+                    padding: 0 !important;
+                    margin: 0 0 30px 0 !important;
+                    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+                    overflow: hidden;
+                }
+                
+                .woocommerce-order-overview li {
+                    flex: 1;
+                    padding: 15px !important;
+                    margin: 0 !important;
+                    border: none !important;
+                    border-left: 1px solid #f0f0f0 !important;
+                    border-bottom: 1px solid #f0f0f0 !important;
+                    min-width: 200px;
+                    box-sizing: border-box;
+                }
+                
+                .woocommerce-order-overview li:last-child {
+                    border-left: none !important;
+                }
+                
+                .woocommerce-order-overview li strong {
+                    display: block;
+                    margin-top: 5px;
+                    color: #2271b1;
+                }
+                
+                /* Thankyou message */
+                .woocommerce-thankyou-order-received {
+                    background-color: #edf7ed;
+                    color: #1e4620;
+                    padding: 15px 20px;
+                    border-radius: 8px;
+                    text-align: center;
+                    margin-bottom: 30px !important;
+                    font-size: 16px;
+                    direction: rtl;
+                }
+                
+                /* Improve options display */
+                .hpo-option-section {
+                    margin-bottom: 15px;
+                }
+                
+                .hpo-option-section h4 {
+                    color: #333;
+                    border-bottom: 1px solid #eee;
+                    padding-bottom: 8px;
+                    margin-bottom: 10px;
+                    font-size: 14px;
+                    font-weight: 600;
+                }
+                
+                .hpo-order-options-list {
+                    list-style: none;
+                    padding: 0;
+                    margin: 0 0 15px 0;
+                }
+                
+                .hpo-order-options-list li {
+                    margin-bottom: 5px;
+                    display: flex;
+                    justify-content: space-between;
+                }
+                
+                .hpo-option-name {
+                    font-weight: normal;
+                }
+                
+                .hpo-option-price {
+                    color: #777;
+                }
+                
+                .hpo-customer-notes {
+                    background-color: #f9f9f9;
+                    padding: 10px;
+                    border-radius: 6px;
+                    border-right: 3px solid #7fb85c;
+                    font-style: italic;
+                    color: #555;
+                }
+                
+                .hpo-customer-notes p {
+                    margin: 0;
+                }
+                
+                /* Status badges */
+                .grinding-status-badge {
+                    display: inline-block;
+                    padding: 3px 8px;
+                    border-radius: 4px;
+                    font-size: 13px;
+                }
+                
+                .grinding-status-badge.ground {
+                    background-color: #edf7ed;
+                    color: #1e4620;
+                }
+                
+                .grinding-status-badge.whole {
+                    background-color: #fff4e5;
+                    color: #663c00;
+                }
+                
+                /* RTL specific adjustments */
+                .woocommerce-table--order-details tfoot th,
+                .woocommerce-table--order-details tbody th,
+                .woocommerce-table--order-details thead th {
+                    text-align: right;
+                }
+                
+                .woocommerce-table--order-details td {
+                    text-align: left;
+                }
+                
+                /* Additional styles for product name */
+                .woocommerce-table--order-details .product-name {
+                    font-weight: 600;
+                }
+                
+                /* For quantity and price columns in the product table */
+                .woocommerce-table--order-details .product-total {
+                    font-weight: bold;
+                    color: #2271b1;
+                }
+                
+                /* Make it look nice on mobile */
+                @media (max-width: 768px) {
+                    .woocommerce-table--order-details td,
+                    .woocommerce-table--order-details th {
+                        text-align: right;
+                    }
+                    
+                    .hpo-order-options-list li {
+                        flex-direction: column;
+                    }
+                    
+                    .hpo-option-price {
+                        margin-top: 3px;
+                    }
+                    
+                    .woocommerce-order-overview li {
+                        width: 100%;
+                        flex: none;
+                        border-left: none !important;
+                    }
+                    
+                    .woocommerce-order-received h2 {
+                        font-size: 16px;
+                    }
                 }
             ';
             wp_add_inline_style('hierarchical-product-options-public', $additional_css);
