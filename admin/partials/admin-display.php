@@ -9,25 +9,25 @@
     <h1><?php echo esc_html(get_admin_page_title()); ?></h1>
     
     <nav class="nav-tab-wrapper">
-        <a href="#tab-categories" class="nav-tab nav-tab-active"><?php _e('Categories', 'hierarchical-product-options'); ?></a>
-        <a href="#tab-products" class="nav-tab"><?php _e('Products', 'hierarchical-product-options'); ?></a>
-        <a href="#tab-weights" class="nav-tab"><?php _e('Weights', 'hierarchical-product-options'); ?></a>
-        <a href="#tab-grinders" class="nav-tab"><?php _e('Grinders', 'hierarchical-product-options'); ?></a>
-        <a href="#tab-settings" class="nav-tab"><?php _e('Settings', 'hierarchical-product-options'); ?></a>
+        <a href="#tab-categories" class="nav-tab nav-tab-active"><?php _e('دسته‌بندی‌ها', 'hierarchical-product-options'); ?></a>
+        <a href="#tab-products" class="nav-tab"><?php _e('محصولات', 'hierarchical-product-options'); ?></a>
+        <a href="#tab-weights" class="nav-tab"><?php _e('وزن‌ها', 'hierarchical-product-options'); ?></a>
+        <a href="#tab-grinders" class="nav-tab"><?php _e('آسیاب‌ها', 'hierarchical-product-options'); ?></a>
+        <a href="#tab-settings" class="nav-tab"><?php _e('تنظیمات', 'hierarchical-product-options'); ?></a>
     </nav>
     
     <div id="tab-categories" class="tab-content">
         <div class="hpo-admin-container">
             <div class="hpo-admin-panel">
-                <h2><?php echo esc_html__('Categories', 'hierarchical-product-options'); ?></h2>
+                <h2><?php echo esc_html__('دسته‌بندی‌ها', 'hierarchical-product-options'); ?></h2>
                 
                 <div class="hpo-actions">
-                    <button class="button button-primary hpo-add-category"><?php echo esc_html__('Add Category', 'hierarchical-product-options'); ?></button>
+                    <button class="button button-primary hpo-add-category"><?php echo esc_html__('افزودن دسته‌بندی', 'hierarchical-product-options'); ?></button>
                 </div>
                 
                 <div class="hpo-items-container">
                     <?php if (empty($top_level_categories)): ?>
-                    <p><?php echo esc_html__('No categories found. Create your first category to get started.', 'hierarchical-product-options'); ?></p>
+                    <p><?php echo esc_html__('هیچ دسته‌بندی یافت نشد. اولین دسته‌بندی خود را ایجاد کنید.', 'hierarchical-product-options'); ?></p>
                     <?php else: ?>
                     <ul class="hpo-categories-list" id="hpo-sortable-categories">
                         <?php $this->render_categories_recursive($top_level_categories); ?>
@@ -37,20 +37,20 @@
             </div>
             
             <div class="hpo-admin-panel">
-                <h2><?php echo esc_html__('Product Assignment', 'hierarchical-product-options'); ?></h2>
+                <h2><?php echo esc_html__('تخصیص محصول', 'hierarchical-product-options'); ?></h2>
                 
-                <p><?php echo esc_html__('Assign categories to WooCommerce products.', 'hierarchical-product-options'); ?></p>
-                <p><strong><?php echo esc_html__('Notes:', 'hierarchical-product-options'); ?></strong></p>
+                <p><?php echo esc_html__('دسته‌بندی‌ها را به محصولات ووکامرس اختصاص دهید.', 'hierarchical-product-options'); ?></p>
+                <p><strong><?php echo esc_html__('توجه:', 'hierarchical-product-options'); ?></strong></p>
                 <ul>
-                    <li><?php echo esc_html__('When you select a parent category, all its child categories will be automatically assigned to the product.', 'hierarchical-product-options'); ?></li>
-                    <li><?php echo esc_html__('You can assign multiple categories to the same product as long as they are not in the same hierarchy.', 'hierarchical-product-options'); ?></li>
+                    <li><?php echo esc_html__('هنگامی که یک دسته‌بندی والد را انتخاب می‌کنید، تمام دسته‌بندی‌های فرزند آن به طور خودکار به محصول اختصاص داده می‌شوند.', 'hierarchical-product-options'); ?></li>
+                    <li><?php echo esc_html__('شما می‌توانید چندین دسته‌بندی را به یک محصول اختصاص دهید، به شرطی که در یک سلسله مراتب نباشند.', 'hierarchical-product-options'); ?></li>
                 </ul>
                 
                 <form id="hpo-assign-form">
                     <div class="hpo-form-row">
-                        <label for="hpo-wc-product"><?php echo esc_html__('WooCommerce Product', 'hierarchical-product-options'); ?></label>
+                        <label for="hpo-wc-product"><?php echo esc_html__('محصول ووکامرس', 'hierarchical-product-options'); ?></label>
                         <select id="hpo-wc-product" name="wc_product_id" required>
-                            <option value=""><?php echo esc_html__('Select a product...', 'hierarchical-product-options'); ?></option>
+                            <option value=""><?php echo esc_html__('یک محصول انتخاب کنید...', 'hierarchical-product-options'); ?></option>
                             <?php
                             $products = wc_get_products(array('limit' => -1));
                             foreach ($products as $product): ?>
@@ -60,36 +60,33 @@
                     </div>
                     
                     <div class="hpo-form-row">
-                        <label for="hpo-category-select"><?php echo esc_html__('Select a Category', 'hierarchical-product-options'); ?></label>
+                        <label for="hpo-category-select"><?php echo esc_html__('یک دسته‌بندی مادر انتخاب کنید', 'hierarchical-product-options'); ?></label>
+                        <p class="description"><?php echo esc_html__('فقط دسته‌بندی‌های مادر نمایش داده می‌شوند. انتخاب یک دسته‌بندی مادر به طور خودکار تمام زیردسته‌های آن را نیز شامل می‌شود.', 'hierarchical-product-options'); ?></p>
                         <select id="hpo-category-select" name="category_id" required>
-                            <option value=""><?php echo esc_html__('Select a category...', 'hierarchical-product-options'); ?></option>
+                            <option value=""><?php echo esc_html__('یک دسته‌بندی مادر انتخاب کنید...', 'hierarchical-product-options'); ?></option>
                             <?php foreach ($categories as $category): ?>
+                            <?php if ($category->parent_id == 0): ?>
                             <option value="<?php echo esc_attr($category->id); ?>"><?php echo esc_html($category->name); ?></option>
+                            <?php endif; ?>
                             <?php endforeach; ?>
                         </select>
                     </div>
                     
                     <div class="hpo-form-row">
-                        <label for="hpo-product-description"><?php echo esc_html__('Short Description', 'hierarchical-product-options'); ?></label>
-                        <textarea id="hpo-product-description" name="description" rows="2" maxlength="53" placeholder="<?php echo esc_attr__('Enter a short description (max 53 characters)', 'hierarchical-product-options'); ?>"></textarea>
-                        <div class="hpo-limit-info">حداکثر 53 کاراکتر مجاز است</div>
-                    </div>
-                    
-                    <div class="hpo-form-row">
-                        <button type="submit" class="button button-primary"><?php echo esc_html__('Assign to Product', 'hierarchical-product-options'); ?></button>
+                        <button type="submit" class="button button-primary"><?php echo esc_html__('اختصاص به محصول', 'hierarchical-product-options'); ?></button>
                     </div>
                 </form>
             </div>
 
             <div class="hpo-admin-panel">
-                <h2><?php echo esc_html__('Category Assignments', 'hierarchical-product-options'); ?></h2>
+                <h2><?php echo esc_html__('تخصیص‌های دسته‌بندی', 'hierarchical-product-options'); ?></h2>
                 <div class="hpo-assignments-container">
                     <table class="wp-list-table widefat fixed striped">
                         <thead>
                             <tr>
-                                <th><?php echo esc_html__('WooCommerce Product', 'hierarchical-product-options'); ?></th>
-                                <th><?php echo esc_html__('Assigned Categories', 'hierarchical-product-options'); ?></th>
-                                <th class="hpo-actions-column"><?php echo esc_html__('Actions', 'hierarchical-product-options'); ?></th>
+                                <th><?php echo esc_html__('محصول ووکامرس', 'hierarchical-product-options'); ?></th>
+                                <th><?php echo esc_html__('دسته‌بندی‌های اختصاص داده شده', 'hierarchical-product-options'); ?></th>
+                                <th class="hpo-actions-column"><?php echo esc_html__('اقدامات', 'hierarchical-product-options'); ?></th>
                             </tr>
                         </thead>
                         <tbody>
@@ -99,7 +96,7 @@
                             if (empty($assignments)): 
                             ?>
                             <tr>
-                                <td colspan="3"><?php echo esc_html__('No category assignments found.', 'hierarchical-product-options'); ?></td>
+                                <td colspan="3"><?php echo esc_html__('هیچ تخصیص دسته‌بندی یافت نشد.', 'hierarchical-product-options'); ?></td>
                             </tr>
                             <?php 
                             else:
@@ -112,7 +109,7 @@
                                         $assignment->category_name = $category->name;
                                         $assignment->parent_id = $category->parent_id;
                                     } else {
-                                        $assignment->category_name = __('Unknown', 'hierarchical-product-options');
+                                        $assignment->category_name = __('نامشخص', 'hierarchical-product-options');
                                         $assignment->parent_id = 0;
                                     }
                                     
@@ -141,12 +138,14 @@
                                 <td rowspan="<?php echo count($data['categories']); ?>">
                                     <?php echo esc_html($data['product']->get_name()); ?>
                                     <div class="hpo-product-description-wrapper">
-                                        <div class="hpo-desc-text">
-                                            <?php 
-                                            // Use the description from the first assignment for this product
-                                            echo esc_html($data['categories'][0]->short_description); 
-                                            ?>
-                                        </div>
+                                        <?php 
+                                        $description = !empty($data['categories'][0]->short_description) ? 
+                                                      $data['categories'][0]->short_description : 
+                                                      __('برای افزودن توضیحات کلیک کنید', 'hierarchical-product-options');
+                                        
+                                        $desc_class = empty($data['categories'][0]->short_description) ? 'hpo-desc-text no-description' : 'hpo-desc-text';
+                                        ?>
+                                        <div class="<?php echo esc_attr($desc_class); ?>"><?php echo esc_html($description); ?></div>
                                         <button class="button button-small hpo-edit-description" 
                                                 data-id="<?php echo esc_attr($data['categories'][0]->id); ?>" 
                                                 data-product-id="<?php echo esc_attr($data['categories'][0]->wc_product_id); ?>"
@@ -171,8 +170,8 @@
                                         
                                         if (!empty($child_categories)) {
                                             echo '<div class="hpo-child-categories-list">';
-                                            echo '<small>' . esc_html__('Includes:', 'hierarchical-product-options') . ' ';
-                                            echo esc_html(implode(', ', $child_categories));
+                                            echo '<small>' . esc_html__('شامل:', 'hierarchical-product-options') . ' ';
+                                            echo esc_html(implode('، ', $child_categories));
                                             echo '</small>';
                                             echo '</div>';
                                         }

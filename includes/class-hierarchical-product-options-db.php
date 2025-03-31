@@ -260,14 +260,14 @@ class Hierarchical_Product_Options_DB {
     }
     
     /**
-     * Assign categories to a WooCommerce product
+     * Assign product to a category
      *
      * @param int $wc_product_id WooCommerce product ID
-     * @param int $category_id Parent category ID
+     * @param int $category_id Category ID
      * @param string $short_description Short description (max 53 chars)
      * @return int New assignment ID
      */
-    public function assign_categories_to_product($wc_product_id, $category_id, $short_description = '') {
+    public function assign_product_to_category($wc_product_id, $category_id, $short_description = '') {
         global $wpdb;
         
         // Check if this assignment already exists
@@ -722,6 +722,72 @@ class Hierarchical_Product_Options_DB {
              ORDER BY c.parent_id, c.sort_order",
             $wc_product_id
         );
+        
+        return $wpdb->get_results($sql);
+    }
+
+    /**
+     * Delete product assignments by category
+     *
+     * @param int $category_id Category ID
+     * @return bool Success
+     */
+    public function delete_product_assignments_by_category($category_id) {
+        global $wpdb;
+        
+        return $wpdb->delete(
+            $this->assignments_table,
+            array('category_id' => $category_id)
+        );
+    }
+
+    /**
+     * Get a specific category-product assignment
+     *
+     * @param int $wc_product_id WooCommerce product ID
+     * @param int $category_id Category ID
+     * @return object Assignment or null if not found
+     */
+    public function get_category_product_assignment($wc_product_id, $category_id) {
+        global $wpdb;
+        
+        $sql = $wpdb->prepare(
+            "SELECT * FROM $this->assignments_table WHERE wc_product_id = %d AND category_id = %d",
+            $wc_product_id,
+            $category_id
+        );
+        
+        return $wpdb->get_row($sql);
+    }
+
+    /**
+     * Delete a specific category-product assignment
+     *
+     * @param int $wc_product_id WooCommerce product ID
+     * @param int $category_id Category ID
+     * @return bool Success
+     */
+    public function delete_category_product_assignment($wc_product_id, $category_id) {
+        global $wpdb;
+        
+        return $wpdb->delete(
+            $this->assignments_table,
+            array(
+                'wc_product_id' => $wc_product_id,
+                'category_id' => $category_id
+            )
+        );
+    }
+
+    /**
+     * Get only parent categories (parent_id = 0)
+     *
+     * @return array Parent categories
+     */
+    public function get_parent_categories_only() {
+        global $wpdb;
+        
+        $sql = "SELECT * FROM $this->categories_table WHERE parent_id = 0 ORDER BY sort_order";
         
         return $wpdb->get_results($sql);
     }

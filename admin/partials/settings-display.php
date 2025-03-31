@@ -68,6 +68,20 @@
             </tr>
         </table>
         
+        <div class="hpo-form-row">
+            <h3><?php echo esc_html__('رفع مشکلات', 'hierarchical-product-options'); ?></h3>
+            <p><?php echo esc_html__('اگر با مشکلاتی در جداول پایگاه داده مواجه هستید، می‌توانید آنها را در اینجا بازسازی کنید.', 'hierarchical-product-options'); ?></p>
+            <button id="hpo-rebuild-tables" class="button button-secondary"><?php echo esc_html__('بازسازی جداول پایگاه داده', 'hierarchical-product-options'); ?></button>
+            <div id="hpo-rebuild-result" style="margin-top: 10px; display: none;"></div>
+        </div>
+        
+        <div class="hpo-form-row" style="margin-top:30px; padding-top:20px; border-top:1px solid #eee;">
+            <h3><?php echo esc_html__('پاکسازی داده‌های ناسازگار', 'hierarchical-product-options'); ?></h3>
+            <p><?php echo esc_html__('اگر دسته‌بندی‌های حذف شده هنوز در لیست‌ها نمایش داده می‌شوند یا با مشکلات ناسازگاری داده مواجه هستید، می‌توانید داده‌های ناسازگار را پاکسازی کنید.', 'hierarchical-product-options'); ?></p>
+            <button id="hpo-clean-data" class="button button-secondary"><?php echo esc_html__('پاکسازی داده‌های ناسازگار', 'hierarchical-product-options'); ?></button>
+            <div id="hpo-clean-result" style="margin-top: 10px; display: none;"></div>
+        </div>
+        
         <?php submit_button(); ?>
     </form>
 </div> 

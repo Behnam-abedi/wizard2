@@ -11,13 +11,13 @@
 
 .hpo-admin-panel {
     background: #fff;
-    border: 1px solid #ccc;
-    padding: 20px;
+    border: 1px solid #e5e5e5;
+    padding: 25px;
     margin-right: 20px;
     margin-bottom: 20px;
-    border-radius: 5px;
+    border-radius: 8px;
     min-width: 400px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
 
 .hpo-actions {
@@ -31,35 +31,59 @@
     padding: 0;
 }
 
-.hpo-category-item, .hpo-product-item {
-    border: 1px solid #ddd;
+.hpo-category-item {
+    border: 1px solid #e0e0e0;
+    margin-bottom: 12px;
+    background: #f7f9ff;
+    border-radius: 6px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    transition: all 0.2s ease;
+}
+
+.hpo-category-item:hover {
+    box-shadow: 0 3px 8px rgba(0,0,0,0.1);
+}
+
+.hpo-product-item {
+    border: 1px solid #e5e5e5;
     margin-bottom: 10px;
-    background: #f9f9f9;
-    border-radius: 3px;
+    background: #fffaf0;
+    border-radius: 6px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    transition: all 0.2s ease;
+}
+
+.hpo-product-item:hover {
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
 }
 
 .hpo-item-header {
     display: flex;
     align-items: center;
-    padding: 10px;
+    padding: 12px 15px;
     position: relative;
 }
 
 .hpo-drag-handle {
     cursor: move;
-    margin-right: 10px;
-    color: #999;
+    margin-right: 12px;
+    color: #777;
 }
 
 .hpo-item-name {
     flex-grow: 1;
     font-weight: bold;
+    color: #2c3e50;
 }
 
 .hpo-item-price {
     margin-right: 15px;
-    color: #82b54b;
+    color: #27ae60;
     font-weight: bold;
+    font-size: 0.95em;
+    background: rgba(39, 174, 96, 0.1);
+    padding: 3px 8px;
+    border-radius: 4px;
 }
 
 .hpo-item-actions {
@@ -72,26 +96,29 @@
     background: transparent;
     border: none;
     cursor: pointer;
-    padding: 5px;
-    border-radius: 3px;
+    padding: 6px;
+    border-radius: 4px;
+    color: #555;
+    transition: all 0.2s ease;
 }
 
 .hpo-item-actions button:hover {
     background: #f1f1f1;
+    color: #0073aa;
 }
 
 /* Nested lists */
 .hpo-category-item .hpo-categories-list {
     margin-left: 20px;
     padding-left: 20px;
-    border-left: 2px solid #eee;
+    border-left: 2px solid #dde4f2;
     margin-bottom: 10px;
 }
 
 .hpo-products-list {
     margin-left: 20px;
     padding-left: 20px;
-    border-left: 2px solid #f1f1f1;
+    border-left: 2px solid #ffefd5;
     margin-bottom: 10px;
 }
 
@@ -254,88 +281,110 @@
 }
 
 .hpo-desc-text {
-    display: inline-block;
-    margin-right: 10px;
+    color: #444;
+    line-height: 1.4;
+}
+
+.hpo-desc-text.no-description {
+    color: #999;
+    font-style: italic;
 }
 
 .hpo-inline-edit {
-    margin-top: 10px;
+    margin-top: 5px;
 }
 
 .hpo-inline-edit textarea {
     width: 100%;
+    border: 1px solid #ddd;
     padding: 5px;
-    margin-bottom: 5px;
 }
 
 .hpo-desc-actions {
-    display: flex;
-    gap: 5px;
-    margin-bottom: 5px;
+    margin-top: 5px;
+    text-align: right;
 }
 
 .hpo-limit-info {
-    color: #888;
     font-size: 11px;
-    margin-top: 5px;
+    color: #666;
+    margin-top: 3px;
+    text-align: left;
+    direction: rtl;
+    padding: 2px 5px;
+    background: #f9f9f9;
+    border-radius: 3px;
+    transition: all 0.2s ease;
 }
 
-/* Character limit warning */
+.hpo-limit-info.length-warning {
+    color: #e67e22;
+    font-weight: bold;
+    background: rgba(230, 126, 34, 0.1);
+}
+
+.hpo-limit-info.length-error {
+    color: #e74c3c;
+    font-weight: bold;
+    background: rgba(231, 76, 60, 0.1);
+}
+
 textarea[maxlength] {
-    border-color: #ddd;
-    transition: border-color 0.3s;
+    background-color: #ffffff;
+    transition: background-color 0.3s ease;
 }
 
 textarea[maxlength]:focus {
-    border-color: #2271b1;
+    background-color: #f9f9f9;
 }
 
 textarea[maxlength].length-warning {
-    border-color: #ffb900;
+    background-color: #fff9f0;
 }
 
 textarea[maxlength].length-error {
-    border-color: #d63638;
+    background-color: #fff0f0;
 }
 
-/* Add CSS for product description */
 .hpo-item-description {
     margin-top: 5px;
-    padding: 5px 10px 5px 30px;
-    font-size: 12px;
-    color: #666;
-    font-style: italic;
-    border-top: 1px solid #f0f0f0;
-    background: #f9f9f9;
+    font-size: 13px;
+    line-height: 1.4;
+    color: #555;
+    padding: 5px 8px;
+    background-color: #f9f9f9;
+    border-radius: 4px;
+    border-right: 3px solid #ddd;
 }
 
 .hpo-item-description.no-description {
-    color: #999;
+    color: #888;
+    font-style: italic;
 }
 
-/* Add styles for description field in the form */
 #hpo-product-description {
+    direction: rtl;
+    text-align: right;
     width: 100%;
-    min-height: 80px;
+    padding: 8px 10px;
     border: 1px solid #ddd;
     border-radius: 4px;
-    padding: 8px;
-    box-sizing: border-box;
+    resize: vertical;
+    min-height: 60px;
+    font-family: inherit;
 }
 
-/* استایل برای پیام محدودیت کاراکتر */
 .hpo-limit-info {
-    font-size: 12px;
+    font-size: 11px;
     color: #666;
-    margin-top: 5px;
-    padding: 3px 8px;
-    background-color: #f9f9f9;
-    border-right: 2px solid #2271b1;
+    margin-top: 3px;
+    padding: 3px 5px;
+    background: #f5f5f5;
     border-radius: 3px;
+    text-align: left;
+    direction: rtl;
 }
 
-/* استایل برای textarea در زمان رسیدن به محدودیت کاراکتر */
 #hpo-product-description:invalid {
-    border-color: #d63638;
-    box-shadow: 0 0 0 1px #d63638;
+    border-color: #e74c3c;
 } 
