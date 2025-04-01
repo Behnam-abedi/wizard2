@@ -748,13 +748,6 @@ class Hierarchical_Product_Options_Admin {
         $coefficient = isset($_POST['coefficient']) ? floatval($_POST['coefficient']) : 1;
         $wc_product_id = isset($_POST['wc_product_id']) ? intval($_POST['wc_product_id']) : 0;
         
-        // Log request data for debugging
-        error_log('Weight add request: ' . wp_json_encode([
-            'name' => $name,
-            'coefficient' => $coefficient,
-            'wc_product_id' => $wc_product_id
-        ]));
-        
         if (empty($name) || empty($wc_product_id)) {
             wp_send_json_error(__('Invalid data: Name or product ID is empty', 'hierarchical-product-options'));
             return;
@@ -770,7 +763,6 @@ class Hierarchical_Product_Options_Admin {
             
             if (!$table_exists) {
                 // Table doesn't exist, create it
-                error_log('Weights table does not exist, creating...');
                 $db->create_tables();
             }
             
@@ -778,7 +770,6 @@ class Hierarchical_Product_Options_Admin {
             $id = $db->add_weight($name, $coefficient, $wc_product_id);
             
             if ($id) {
-                error_log('Weight added successfully: ' . $id);
                 wp_send_json_success(array(
                     'id' => $id,
                     'name' => $name,
@@ -787,11 +778,9 @@ class Hierarchical_Product_Options_Admin {
                 ));
             } else {
                 $last_error = $wpdb->last_error;
-                error_log('Failed to add weight option: ' . $last_error);
                 wp_send_json_error(__('Failed to add weight option: Database error', 'hierarchical-product-options') . ' - ' . $last_error);
             }
         } catch (Exception $e) {
-            error_log('Exception while adding weight: ' . $e->getMessage());
             wp_send_json_error(__('Exception occurred: ', 'hierarchical-product-options') . $e->getMessage());
         }
         
@@ -982,10 +971,8 @@ class Hierarchical_Product_Options_Admin {
                 }
             }
             
-            error_log($status_report);
             wp_send_json_success($status_report);
         } catch (Exception $e) {
-            error_log('Exception during table rebuild: ' . $e->getMessage());
             wp_send_json_error(array('message' => $e->getMessage()));
         }
     }
@@ -1002,13 +989,9 @@ class Hierarchical_Product_Options_Admin {
             wp_send_json_error(array('message' => __('You do not have permission to perform this action.', 'hierarchical-product-options')));
             return;
         }
-        
-        // Debug log
-        error_log('Starting ajax_add_grinder...');
 
         // Validate required fields
         if (empty($_POST['name'])) {
-            error_log('Error: Name is required');
             wp_send_json_error(array('message' => __('Grinder name is required.', 'hierarchical-product-options')));
             return;
         }
@@ -1017,43 +1000,30 @@ class Hierarchical_Product_Options_Admin {
         $name = sanitize_text_field($_POST['name']);
         $price = isset($_POST['price']) ? floatval($_POST['price']) : 0.0;
         
-        error_log('Validated inputs - Name: ' . $name . ', Price: ' . $price);
-        
         // Add to database
         $db = new Hierarchical_Product_Options_DB();
-        
-        // Debug log - Check DB connection
-        error_log('DB class initialized. About to add grinder');
         
         try {
             $grinder_id = $db->add_grinder($name, $price);
             
             if ($grinder_id) {
-                error_log('Successfully added grinder with ID: ' . $grinder_id);
-                
                 $grinder = $db->get_grinder($grinder_id);
                 
                 if ($grinder) {
-                    error_log('Successfully retrieved new grinder');
                     wp_send_json_success(array(
                         'message' => __('Grinder option added successfully.', 'hierarchical-product-options'),
                         'grinder' => $grinder
                     ));
                 } else {
-                    error_log('Failed to retrieve new grinder');
                     wp_send_json_error(array('message' => __('Could not retrieve the newly added grinder.', 'hierarchical-product-options')));
                 }
             } else {
-                error_log('Failed to add grinder. Insert returned false or 0.');
                 wp_send_json_error(array('message' => __('Failed to add grinder option.', 'hierarchical-product-options')));
             }
         } catch (Exception $e) {
-            error_log('Exception while adding grinder: ' . $e->getMessage());
             wp_send_json_error(array('message' => __('An error occurred while adding the grinder option.', 'hierarchical-product-options')));
         }
         
-        // This should not be reached, but just in case
-        error_log('End of ajax_add_grinder reached without sending response');
         wp_die();
     }
     
@@ -1070,18 +1040,13 @@ class Hierarchical_Product_Options_Admin {
             return;
         }
         
-        // Debug log
-        error_log('Starting ajax_update_grinder...');
-        
         // Validate required fields
         if (empty($_POST['id'])) {
-            error_log('Error: Grinder ID is required');
             wp_send_json_error(array('message' => __('Grinder ID is required.', 'hierarchical-product-options')));
             return;
         }
         
         if (empty($_POST['name'])) {
-            error_log('Error: Grinder name is required');
             wp_send_json_error(array('message' => __('Grinder name is required.', 'hierarchical-product-options')));
             return;
         }
@@ -1090,8 +1055,6 @@ class Hierarchical_Product_Options_Admin {
         $id = absint($_POST['id']);
         $name = sanitize_text_field($_POST['name']);
         $price = isset($_POST['price']) ? floatval($_POST['price']) : 0.0;
-        
-        error_log('Updating grinder with ID: ' . $id . ', Name: ' . $name . ', Price: ' . $price);
         
         // Update database
         $db = new Hierarchical_Product_Options_DB();
@@ -1105,8 +1068,6 @@ class Hierarchical_Product_Options_Admin {
             $result = $db->update_grinder($id, $data);
             
             if ($result !== false) {
-                error_log('Successfully updated grinder');
-                
                 $grinder = $db->get_grinder($id);
                 
                 if ($grinder) {
@@ -1118,15 +1079,12 @@ class Hierarchical_Product_Options_Admin {
                     wp_send_json_error(array('message' => __('Failed to retrieve the updated grinder.', 'hierarchical-product-options')));
                 }
             } else {
-                error_log('Failed to update grinder');
                 wp_send_json_error(array('message' => __('Failed to update grinder option.', 'hierarchical-product-options')));
             }
         } catch (Exception $e) {
-            error_log('Exception while updating grinder: ' . $e->getMessage());
             wp_send_json_error(array('message' => __('An error occurred while updating the grinder option.', 'hierarchical-product-options')));
         }
         
-        // This should not be reached, but just in case
         wp_die();
     }
     
@@ -1143,20 +1101,14 @@ class Hierarchical_Product_Options_Admin {
             return;
         }
         
-        // Debug log
-        error_log('Starting ajax_delete_grinder...');
-        
         // Validate required fields
         if (empty($_POST['id'])) {
-            error_log('Error: Grinder ID is required');
             wp_send_json_error(array('message' => __('Grinder ID is required.', 'hierarchical-product-options')));
             return;
         }
         
         // Sanitize input
         $id = absint($_POST['id']);
-        
-        error_log('Deleting grinder with ID: ' . $id);
         
         // Delete from database
         $db = new Hierarchical_Product_Options_DB();
@@ -1165,18 +1117,14 @@ class Hierarchical_Product_Options_Admin {
             $result = $db->delete_grinder($id);
             
             if ($result) {
-                error_log('Successfully deleted grinder');
                 wp_send_json_success(array('message' => __('Grinder option deleted successfully.', 'hierarchical-product-options')));
             } else {
-                error_log('Failed to delete grinder');
                 wp_send_json_error(array('message' => __('Failed to delete grinder option.', 'hierarchical-product-options')));
             }
         } catch (Exception $e) {
-            error_log('Exception while deleting grinder: ' . $e->getMessage());
             wp_send_json_error(array('message' => __('An error occurred while deleting the grinder option.', 'hierarchical-product-options')));
         }
         
-        // This should not be reached, but just in case
         wp_die();
     }
     
@@ -1220,9 +1168,6 @@ class Hierarchical_Product_Options_Admin {
             return;
         }
         
-        // Debug log
-        error_log('Starting ajax_get_grinders...');
-        
         // Get from database
         $db = new Hierarchical_Product_Options_DB();
         
@@ -1230,18 +1175,14 @@ class Hierarchical_Product_Options_Admin {
             $grinders = $db->get_all_grinders();
             
             if ($grinders !== false) {
-                error_log('Successfully retrieved ' . count($grinders) . ' grinders');
                 wp_send_json_success($grinders);
             } else {
-                error_log('Failed to retrieve grinders');
                 wp_send_json_error(array('message' => __('Failed to retrieve grinder options.', 'hierarchical-product-options')));
             }
         } catch (Exception $e) {
-            error_log('Exception while retrieving grinders: ' . $e->getMessage());
             wp_send_json_error(array('message' => __('An error occurred while retrieving grinder options.', 'hierarchical-product-options')));
         }
         
-        // This should not be reached, but just in case
         wp_die();
     }
 
