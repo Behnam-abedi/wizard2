@@ -506,18 +506,9 @@ class Hierarchical_Product_Options_DB {
     public function add_weight($name, $coefficient, $wc_product_id, $sort_order = 0) {
         global $wpdb;
         
-        // Debug log
-        error_log('Inserting weight: ' . wp_json_encode([
-            'name' => $name,
-            'coefficient' => $coefficient,
-            'wc_product_id' => $wc_product_id,
-            'sort_order' => $sort_order
-        ]));
-        
         // Make sure the table exists
         $table_exists = $wpdb->get_var("SHOW TABLES LIKE '$this->weights_table'") === $this->weights_table;
         if (!$table_exists) {
-            error_log('Weights table does not exist, creating tables...');
             $this->create_tables();
         }
         
@@ -532,14 +523,10 @@ class Hierarchical_Product_Options_DB {
         );
         
         if ($result === false) {
-            error_log('Failed to insert weight: ' . $wpdb->last_error);
             return 0;
         }
         
-        $insert_id = $wpdb->insert_id;
-        error_log('Inserted weight with ID: ' . $insert_id);
-        
-        return $insert_id;
+        return $wpdb->insert_id;
     }
     
     /**
