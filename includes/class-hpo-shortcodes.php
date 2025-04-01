@@ -501,7 +501,7 @@ class HPO_Shortcodes {
             if (!empty($data['hpo_options']) && is_array($data['hpo_options'])) {
                 foreach ($data['hpo_options'] as $option) {
                     if (isset($option['price'])) {
-                        $total_price += floatval($option['price']);
+                        $total_price = floatval($option['price']); // Replace base price with option price
                     }
                 }
             }
@@ -534,8 +534,8 @@ class HPO_Shortcodes {
                 'customer_notes' => '',
                 'base_price' => floatval($product->get_price()),
                 'calculated_price' => $total_price,
-                'price_per_unit' => $total_price, // Set both price fields to the same value
-                'custom_price' => $total_price    // Added a third field for redundancy
+                'price_per_unit' => $total_price,
+                'custom_price' => $total_price
             ),
         );
         
@@ -596,11 +596,7 @@ class HPO_Shortcodes {
         $cart_item_data['hpo_total_price'] = $total_price;
         
         // Important: Set the product price to our calculated price before adding to cart
-        // This ensures that WooCommerce will use this price for the item
         $product->set_price($total_price);
-        
-        // Also update the _price meta to ensure consistency
-        $product->update_meta_data('_price', $total_price);
         
         // Add the product to the cart
         $cart_item_key = WC()->cart->add_to_cart($product_id, $quantity, 0, array(), $cart_item_data);
@@ -612,8 +608,7 @@ class HPO_Shortcodes {
                 // Set the price directly on the product object
                 $cart_contents[$cart_item_key]['data']->set_price($total_price);
                 
-                // Update the meta data
-                $cart_contents[$cart_item_key]['data']->update_meta_data('_price', $total_price);
+                // Update custom meta data
                 $cart_contents[$cart_item_key]['data']->update_meta_data('_hpo_custom_price', $total_price);
                 
                 // Ensure our custom data is also stored in the cart item
@@ -783,96 +778,29 @@ class HPO_Shortcodes {
                 $debug_info[] = "Cart item {$cart_item_key}: Using hpo_total_price: {$final_price}";
             }
             
-            // If we haven't found a price yet, calculate it from scratch
-            if (!$price_updated) {
-                $debug_info[] = "Cart item {$cart_item_key}: Calculating price from scratch";
-                $base_price = 0;
+            // If we found a price, update the product object
+            if ($price_updated && $final_price > 0) {
+                // Set the price directly - this is the proper way
+                $cart_item['data']->set_price($final_price);
                 
-                // Get base price
-                if (isset($custom_data['base_price']) && floatval($custom_data['base_price']) > 0) {
-                    $base_price = floatval($custom_data['base_price']);
-                } else {
-                    // Fallback to the product's regular price if base_price is not set
-                    $base_price = floatval($cart_item['data']->get_regular_price());
-                }
+                // Store in custom meta (not internal meta)
+                $cart_item['data']->update_meta_data('_hpo_custom_price', $final_price);
                 
-                // Ensure we have a valid base price
-                $base_price = max(0, $base_price);
-                $final_price = $base_price;
-                $debug_info[] = "   Base price: {$base_price}";
+                // Store in cart item data for later use
+                $cart->cart_contents[$cart_item_key]['hpo_custom_data']['calculated_price'] = $final_price;
+                $cart->cart_contents[$cart_item_key]['data_price'] = $final_price;
+                $cart->cart_contents[$cart_item_key]['hpo_total_price'] = $final_price;
                 
-                // Add option prices
-                if (!empty($custom_data['options'])) {
-                    $options_total = 0;
-                    foreach ($custom_data['options'] as $option) {
-                        if (isset($option['price'])) {
-                            $option_price = floatval($option['price']);
-                            if ($option_price > 0) {
-                                $options_total += $option_price;
-                            }
-                        }
-                    }
-                    $final_price += $options_total;
-                    $debug_info[] = "   Added options: +{$options_total}";
-                }
-                
-                // Apply weight coefficient
-                if (!empty($custom_data['weight']) && isset($custom_data['weight']['coefficient'])) {
-                    $coefficient = floatval($custom_data['weight']['coefficient']);
-                    if ($coefficient > 0) {
-                        $before_coef = $final_price;
-                        $final_price *= $coefficient;
-                        $debug_info[] = "   Applied weight coefficient {$coefficient}: {$before_coef} -> {$final_price}";
-                    }
-                }
-                
-                // Add grinding machine price
-                if (!empty($custom_data['grinding']) && $custom_data['grinding'] === 'ground' 
-                    && !empty($custom_data['grinding_machine']) && isset($custom_data['grinding_machine']['price'])) {
-                    $grinding_price = floatval($custom_data['grinding_machine']['price']);
-                    if ($grinding_price > 0) {
-                        $final_price += $grinding_price;
-                        $debug_info[] = "   Added grinding price: +{$grinding_price}";
-                    }
-                }
+                $debug_info[] = "Cart item {$cart_item_key}: Price updated to {$final_price}";
             }
             
-            // Ensure final price is valid
-            $final_price = max(1, $final_price);
-            
-            // Set the price everywhere it might be needed for redundancy
-            
-            // 1. Set price directly on the product object
-            $cart_item['data']->set_price($final_price);
-            $cart_item['data']->update_meta_data('_price', $final_price);
-            $cart_item['data']->update_meta_data('_hpo_custom_price', $final_price);
-            
-            // 2. Update our custom data fields
-            $cart->cart_contents[$cart_item_key]['hpo_custom_data']['calculated_price'] = $final_price;
-            $cart->cart_contents[$cart_item_key]['hpo_custom_data']['price_per_unit'] = $final_price;
-            $cart->cart_contents[$cart_item_key]['hpo_custom_data']['custom_price'] = $final_price;
-            
-            // 3. Set direct cart item properties
-            $cart->cart_contents[$cart_item_key]['data_price'] = $final_price;
-            $cart->cart_contents[$cart_item_key]['hpo_total_price'] = $final_price;
-            $cart->cart_contents[$cart_item_key]['_hpo_custom_price_item'] = 'yes';
-            
-            $debug_info[] = "Final price set to: {$final_price}";
+            // ... [rest of the function continues] ...
         }
         
-        // Add a script to log debug info to console
+        // Log debug info
         add_action('wp_footer', function() use ($debug_info) {
-            if (empty($debug_info)) return;
-            echo '<script>
-                console.log("HPO DEBUG - Price Calculation --------");
-                ' . implode("\n", array_map(function($info) { 
-                    return 'console.log("' . esc_js($info) . '");'; 
-                }, $debug_info)) . '
-            </script>';
-        }, 100);
-        
-        // Re-add the filter for next time
-        add_filter('woocommerce_before_calculate_totals', array($this, 'calculate_cart_item_prices'), 10, 1);
+            echo '<script>console.log(' . json_encode($debug_info) . ');</script>';
+        }, 999);
     }
     
     /**
@@ -958,7 +886,12 @@ class HPO_Shortcodes {
             // If we're on a cart page, update the data object to ensure consistent pricing
             if (is_cart() || is_checkout()) {
                 WC()->cart->cart_contents[$cart_item_key]['data']->set_price($price_value);
-                WC()->cart->cart_contents[$cart_item_key]['data']->update_meta_data('_price', $price_value);
+                // Don't update internal meta data (_price) directly
+                // WC()->cart->cart_contents[$cart_item_key]['data']->update_meta_data('_price', $price_value);
+                
+                // Only update our custom meta
+                WC()->cart->cart_contents[$cart_item_key]['data']->update_meta_data('_hpo_custom_price', $price_value);
+                
                 $debug_items[] = "Updated product object with price: {$price_value}";
                 
                 // Also update our custom data for consistency
@@ -1050,7 +983,7 @@ class HPO_Shortcodes {
      * Get cart item from session
      *
      * @param array $cart_item Cart item data
-     * @param array $values Cart item values
+     * @param array $values Session data
      * @return array Modified cart item data
      */
     public function get_cart_item_from_session($cart_item, $values) {
@@ -1072,8 +1005,10 @@ class HPO_Shortcodes {
                 // Set the price directly on the product object
                 $cart_item['data']->set_price($price);
                 
-                // Update the meta data
-                $cart_item['data']->update_meta_data('_price', $price);
+                // Don't update internal meta data directly
+                // $cart_item['data']->update_meta_data('_price', $price);
+                
+                // Only update custom meta data
                 $cart_item['data']->update_meta_data('_hpo_custom_price', $price);
                 
                 // Set important flags
@@ -1728,8 +1663,10 @@ class HPO_Shortcodes {
                     // Set the price directly on the product object
                     $cart->cart_contents[$cart_item_key]['data']->set_price($price_value);
                     
-                    // Update the meta data
-                    $cart->cart_contents[$cart_item_key]['data']->update_meta_data('_price', $price_value);
+                    // Don't update internal meta data directly
+                    // $cart->cart_contents[$cart_item_key]['data']->update_meta_data('_price', $price_value);
+                    
+                    // Only update custom meta (not internal _price)
                     $cart->cart_contents[$cart_item_key]['data']->update_meta_data('_hpo_custom_price', $price_value);
                     
                     // Also update our custom data for consistency

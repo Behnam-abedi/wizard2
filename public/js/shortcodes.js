@@ -650,7 +650,7 @@ jQuery(document).ready(function($) {
         var selectedOption = form.find('input[name^="hpo_option"]:checked');
         if (selectedOption.length) {
             var optionPrice = parseFloat(selectedOption.data('price')) || 0;
-            unitPrice += optionPrice;
+            unitPrice = optionPrice; // Replace base price with option price
             console.log('Option price:', optionPrice);
             console.log('Price after adding option:', unitPrice);
         }
@@ -673,21 +673,12 @@ jQuery(document).ready(function($) {
             var selectedGrinder = grindingSelect.find('option:selected');
             
             if (selectedGrinder.length && selectedGrinder.val()) {
-                // Get the price directly from the data attribute
-                var grindingPrice = selectedGrinder.data('price');
-                
-                // Convert to a proper number
-                grindingPrice = parseFloat(grindingPrice) || 0;
-                
+                var grindingPrice = parseFloat(selectedGrinder.data('price')) || 0;
                 console.log('Selected grinder:', selectedGrinder.text());
-                console.log('Grinding price (raw):', selectedGrinder.data('price'));
-                console.log('Grinding price (parsed):', grindingPrice);
+                console.log('Grinding price:', grindingPrice);
                 
-                // Add to unit price
                 unitPrice += grindingPrice;
                 console.log('Price after adding grinding:', unitPrice);
-            } else {
-                console.log('No grinding machine selected or invalid selection');
             }
         }
         
@@ -720,6 +711,7 @@ jQuery(document).ready(function($) {
         
         // Store the calculated price for easier access
         form.data('calculated-price', totalPrice);
+        form.data('price-per-unit', unitPrice); // Store unit price separately
     }
 
     // Reset quantity to 1 when any product options change

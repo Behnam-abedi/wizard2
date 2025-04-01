@@ -454,11 +454,6 @@ class Hierarchical_Product_Options {
                 $calculated_price = round($calculated_price);
                 $cart_item['data']->set_price($calculated_price);
                 
-                // Store the price in WooCommerce's price meta to ensure it persists
-                $cart_item['data']->update_meta_data('_price', $calculated_price);
-                $cart_item['data']->update_meta_data('_regular_price', $calculated_price);
-                $cart_item['data']->save_meta_data();
-                
                 continue;
             }
             
@@ -470,11 +465,6 @@ class Hierarchical_Product_Options {
             
             // Store the calculated price in cart item data for future reference
             $cart_item['hpo_calculated_price'] = $total_price;
-            
-            // Store the price in WooCommerce's price meta to ensure it persists
-            $cart_item['data']->update_meta_data('_price', $total_price);
-            $cart_item['data']->update_meta_data('_regular_price', $total_price);
-            $cart_item['data']->save_meta_data();
             
             // Update the cart item in session
             WC()->session->set('cart_' . $cart_item_key, $cart_item);
