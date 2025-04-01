@@ -607,7 +607,7 @@ class Hierarchical_Product_Options_Admin {
             wp_send_json_error(__('دسترسی غیرمجاز', 'hierarchical-product-options'));
         }
         
-        $wc_product_id = isset($_POST['product_id']) ? intval($_POST['product_id']) : 0;
+        $wc_product_id = isset($_POST['wc_product_id']) ? intval($_POST['wc_product_id']) : (isset($_POST['product_id']) ? intval($_POST['product_id']) : 0);
         $category_id = isset($_POST['category_id']) ? intval($_POST['category_id']) : 0;
         
         if (empty($wc_product_id) || empty($category_id)) {
