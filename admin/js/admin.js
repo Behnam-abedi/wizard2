@@ -462,13 +462,20 @@
         $(document).on('submit', '#hpo-assign-form', function(e) {
             e.preventDefault();
             
+            var $form = $(this);
+            var $submitButton = $form.find('button[type="submit"]');
+            var originalText = $submitButton.text();
+            
             var wc_product_id = $('#hpo-wc-product').val();
             var category_id = $('#hpo-category-select').val();
             
             if (!wc_product_id || !category_id) {
-                alert(hpo_data.strings.select_required);
+                alert(hpo_data.strings.select_required || 'لطفاً محصول و دسته‌بندی را انتخاب کنید.');
                 return;
             }
+            
+            // نمایش لودینگ
+            $submitButton.prop('disabled', true).text('در حال ذخیره...');
             
             var data = {
                 action: 'hpo_assign_product_categories',
@@ -479,15 +486,45 @@
             
             $.post(hpo_data.ajax_url, data, function(response) {
                 if (response.success) {
-                    // پاک کردن فرم و بارگذاری مجدد بخش تخصیص‌ها
-                    $('#hpo-assign-form')[0].reset();
+                    // پاک کردن فرم
+                    $form[0].reset();
                     $('.hpo-child-info').remove();
+                    
+                    // نمایش پیام موفقیت
+                    showSuccessMessage('دسته‌بندی با موفقیت به محصول اختصاص داده شد.');
+                    
+                    // بارگذاری مجدد جدول تخصیص‌ها
                     refreshAssignmentsTable();
                 } else {
                     alert(response.data);
                 }
+                
+                // بازگرداندن دکمه به حالت اولیه
+                $submitButton.prop('disabled', false).text(originalText);
             });
         });
+        
+        // تابع نمایش پیام موفقیت
+        function showSuccessMessage(message) {
+            var $message = $('<div class="hpo-success-message">' + message + '</div>');
+            $('.hpo-admin-panel').first().prepend($message);
+            
+            setTimeout(function() {
+                $message.fadeOut(500, function() {
+                    $(this).remove();
+                });
+            }, 3000);
+        }
+        
+        // تابع بارگذاری مجدد جدول تخصیص‌ها
+        function refreshAssignmentsTable() {
+            var $table = $('#hpo-assignments-list').closest('.hpo-current-assignments');
+            $table.addClass('hpo-loading');
+            
+            setTimeout(function() {
+                location.reload();
+            }, 500);
+        }
         
         // Delete assignment
         $(document).on('click', '.hpo-delete-assignment', function(e) {
@@ -497,124 +534,137 @@
                 return;
             }
             
-            var categoryId = $(this).data('category-id');
-            var productId = $(this).data('product-id');
+            var $button = $(this);
+            var categoryId = $button.data('category-id');
+            var productId = $button.data('product-id');
+            
+            // نمایش لودینگ
+            var $row = $button.closest('tr');
+            $row.addClass('hpo-loading');
+            $button.prop('disabled', true);
             
             var data = {
                 action: 'hpo_delete_assignment',
                 nonce: hpo_data.nonce,
                 category_id: categoryId,
-                wc_product_id: productId
+                product_id: productId
             };
             
             $.post(hpo_data.ajax_url, data, function(response) {
                 if (response.success) {
-                    // Reload the assignments table via AJAX
-                    refreshAssignmentsTable();
+                    // پاک کردن لودینگ و حذف ردیف
+                    $row.removeClass('hpo-loading').fadeOut(300, function() {
+                        $(this).remove();
+                        
+                        // اگر آخرین ردیف برای این محصول بود، کل ردیف محصول را حذف کن
+                        var $productRows = $('tr[data-product-id="' + productId + '"]');
+                        if ($productRows.length === 0) {
+                            location.reload(); // ریفرش کامل اگر آخرین ردیف بود
+                        }
+                    });
                 } else {
+                    // نمایش خطا و پاک کردن لودینگ
                     alert(response.data);
+                    $row.removeClass('hpo-loading');
+                    $button.prop('disabled', false);
                 }
             });
         });
         
-        // Function to refresh the assignments table
-        function refreshAssignmentsTable() {
-            $.ajax({
-                url: window.location.href,
-                success: function(response) {
-                    // Extract the assignments container from the response
-                    var newContent = $(response).find('.hpo-assignments-container').html();
-                    // Replace the current container content
-                    $('.hpo-assignments-container').html(newContent);
-                }
-            });
-        }
-        
-        // ویرایش توضیحات
+        // Edit assignment description
         $(document).on('click', '.hpo-edit-description', function(e) {
             e.preventDefault();
             
-            var $wrapper = $(this).closest('.hpo-product-description-wrapper');
-            var $descText = $wrapper.find('.hpo-desc-text');
-            var currentDescription = $descText.text().trim();
-            var assignmentId = $(this).data('id');
-            var productId = $(this).data('product-id');
+            var $button = $(this);
+            var productId = $button.data('product-id');
+            var description = $button.data('description');
             
-            // Replace text with textarea for editing
-            $descText.hide();
-            $(this).hide();
+            // اگر "برای افزودن توضیحات کلیک کنید" بود، آن را خالی کنیم
+            if (description === hpo_data.strings.click_to_add_desc || description === 'برای افزودن توضیحات کلیک کنید') {
+                description = '';
+            }
             
-            var $editForm = $('<div class="hpo-inline-edit">' +
-                '<textarea maxlength="53" rows="2">' + currentDescription + '</textarea>' +
-                '<div class="hpo-limit-info">حداکثر 53 کاراکتر مجاز است</div>' +
-                '<div class="hpo-desc-actions">' +
-                '<button class="button hpo-save-desc" type="button">ذخیره</button> ' +
-                '<button class="button hpo-cancel-desc" type="button">انصراف</button>' +
-                '</div></div>');
+            // ایجاد مدال ویرایش توضیحات
+            var $modal = $('<div class="hpo-modal-overlay"></div>');
+            var $content = $('<div class="hpo-modal-content"></div>');
+            $content.append('<h3>' + hpo_data.strings.edit_description + '</h3>');
             
-            $wrapper.append($editForm);
+            var $form = $('<form></form>');
+            $form.append('<div class="hpo-form-row"><label for="hpo-description">' + hpo_data.strings.description + '</label></div>');
+            $form.append('<div class="hpo-form-row"><textarea id="hpo-description" name="description" rows="3" maxlength="53">' + description + '</textarea></div>');
+            $form.append('<div class="hpo-limit-info">حداکثر 53 کاراکتر مجاز است</div>');
+            $form.append('<div class="hpo-form-row"><button type="submit" class="button button-primary">' + hpo_data.strings.save + '</button> <button type="button" class="button hpo-cancel">' + hpo_data.strings.cancel + '</button></div>');
             
-            // Focus the textarea
-            $editForm.find('textarea').focus().trigger('input');
+            $content.append($form);
+            $modal.append($content);
+            $('body').append($modal);
             
-            // Handle save button
-            $editForm.find('.hpo-save-desc').on('click', function() {
-                var newDescription = $editForm.find('textarea').val();
+            // تنظیم محدودیت کاراکتر
+            var $textarea = $modal.find('textarea');
+            var $limitInfo = $modal.find('.hpo-limit-info');
+            
+            $textarea.on('input', function() {
+                var maxLength = parseInt($(this).attr('maxlength'));
+                var currentLength = $(this).val().length;
+                var remaining = maxLength - currentLength;
                 
-                // Send AJAX request to update
+                if (remaining <= 10) {
+                    $limitInfo.addClass('length-warning');
+                } else {
+                    $limitInfo.removeClass('length-warning');
+                }
+                
+                $limitInfo.text('تعداد کاراکتر باقیمانده: ' + remaining);
+            }).trigger('input');
+            
+            // ارسال فرم
+            $form.on('submit', function(e) {
+                e.preventDefault();
+                
+                var newDescription = $textarea.val();
+                var $descText = $button.prev('.hpo-desc-text');
+                
+                // نمایش لودینگ
+                $button.prop('disabled', true);
+                $descText.text('در حال بارگذاری...').addClass('loading');
+                
                 var data = {
-                    action: 'hpo_update_assignment_description',
+                    action: 'hpo_update_product_description',
                     nonce: hpo_data.nonce,
-                    assignment_id: assignmentId,
                     product_id: productId,
                     description: newDescription
                 };
                 
                 $.post(hpo_data.ajax_url, data, function(response) {
                     if (response.success) {
-                        // Update the text and show it again
-                        $descText.text(newDescription);
-                        if (newDescription === '') {
-                            $descText.addClass('no-description').text('برای افزودن توضیحات کلیک کنید');
+                        // بستن مدال
+                        $modal.remove();
+                        
+                        // آپدیت نمایش توضیحات
+                        if (newDescription) {
+                            $descText.text(newDescription).removeClass('no-description');
+                            $button.data('description', newDescription);
                         } else {
-                            $descText.removeClass('no-description');
+                            $descText.text(hpo_data.strings.click_to_add_desc || 'برای افزودن توضیحات کلیک کنید').addClass('no-description');
+                            $button.data('description', '');
                         }
                         
-                        $descText.show();
-                        $('.hpo-edit-description').show();
-                        $editForm.remove();
-                        
-                        // Refresh the table to ensure all descriptions are updated
-                        refreshAssignmentsTable();
+                        // حذف لودینگ
+                        $descText.removeClass('loading');
+                        $button.prop('disabled', false);
                     } else {
+                        // نمایش خطا
                         alert(response.data);
+                        $descText.removeClass('loading');
+                        $button.prop('disabled', false);
                     }
                 });
             });
             
-            // Handle cancel button
-            $editForm.find('.hpo-cancel-desc').on('click', function() {
-                $descText.show();
-                $('.hpo-edit-description').show();
-                $editForm.remove();
+            // لغو
+            $modal.find('.hpo-cancel').on('click', function() {
+                $modal.remove();
             });
-        });
-        
-        // محدودیت کاراکتر برای ویرایش توضیحات اساین
-        $(document).on('input', '.hpo-inline-edit textarea', function() {
-            var maxLength = 53;
-            var currentLength = $(this).val().length;
-            var remaining = maxLength - currentLength;
-            
-            // نمایش تعداد کاراکتر باقیمانده
-            var $limitInfo = $(this).next('.hpo-limit-info');
-            if (remaining <= 10) {
-                $limitInfo.addClass('length-warning');
-            } else {
-                $limitInfo.removeClass('length-warning');
-            }
-            
-            $limitInfo.text('تعداد کاراکتر باقیمانده: ' + remaining);
         });
         
         /**
@@ -670,6 +720,101 @@
                     updateItemOrder('product', itemId, newCategoryId, sortOrder);
                 }
             });
+            
+            // Make assignments sortable
+            $('#hpo-assignments-list').sortable({
+                handle: '.hpo-drag-handle',
+                items: 'tr',
+                axis: 'y',
+                placeholder: 'hpo-sortable-placeholder',
+                helper: function(e, tr) {
+                    var $originals = tr.children();
+                    var $helper = tr.clone();
+                    $helper.children().each(function(index) {
+                        $(this).width($originals.eq(index).width());
+                    });
+                    return $helper;
+                },
+                start: function(e, ui) {
+                    ui.placeholder.height(ui.item.height());
+                },
+                update: function(event, ui) {
+                    // نمایش لودینگ
+                    var $table = $('#hpo-assignments-list');
+                    $table.addClass('hpo-loading');
+                    
+                    // Get the sorted assignment IDs
+                    var assignmentIds = [];
+                    $('#hpo-assignments-list tr').each(function() {
+                        assignmentIds.push($(this).data('id'));
+                    });
+                    
+                    // Update the orders via AJAX
+                    var data = {
+                        action: 'hpo_reorder_assignments',
+                        nonce: hpo_data.nonce,
+                        assignments: assignmentIds
+                    };
+                    
+                    $.post(hpo_data.ajax_url, data, function(response) {
+                        // پایان لودینگ
+                        $table.removeClass('hpo-loading');
+                        
+                        if (!response.success) {
+                            alert('خطا در به‌روزرسانی ترتیب: ' + response.data);
+                        } else {
+                            // نمایش پیام موفقیت
+                            showSuccessMessage('ترتیب دسته‌بندی‌ها با موفقیت بروزرسانی شد.');
+                        }
+                    });
+                }
+            });
+            
+            // Make category sortable within each product
+            $('.hpo-categories-sortable').sortable({
+                handle: '.hpo-drag-handle',
+                items: 'li',
+                placeholder: 'hpo-sortable-placeholder',
+                update: function(event, ui) {
+                    // Skip if this is not the receiving list
+                    if (this !== ui.item.parent()[0]) {
+                        return;
+                    }
+                    
+                    var $list = $(this);
+                    var productId = $list.data('product-id');
+                    $list.closest('td').addClass('hpo-loading');
+                    
+                    // Get the sorted category IDs
+                    var sortData = [];
+                    $list.find('li').each(function(index) {
+                        sortData.push({
+                            id: $(this).data('id'),
+                            categoryId: $(this).data('category-id'),
+                            position: index
+                        });
+                    });
+                    
+                    // Update the orders via AJAX
+                    var data = {
+                        action: 'hpo_reorder_product_categories',
+                        nonce: hpo_data.nonce,
+                        product_id: productId,
+                        categories: sortData
+                    };
+                    
+                    $.post(hpo_data.ajax_url, data, function(response) {
+                        $list.closest('td').removeClass('hpo-loading');
+                        
+                        if (!response.success) {
+                            alert('خطا در به‌روزرسانی ترتیب: ' + response.data);
+                        } else {
+                            // نمایش پیام موفقیت
+                            showSuccessMessage('ترتیب دسته‌بندی‌ها با موفقیت بروزرسانی شد.');
+                        }
+                    });
+                }
+            });
         }
         
         /**
@@ -685,7 +830,11 @@
                 sort_order: sortOrder
             };
             
-            $.post(hpo_data.ajax_url, data);
+            $.post(hpo_data.ajax_url, data, function(response) {
+                if (!response.success) {
+                    alert('خطا در به‌روزرسانی ترتیب: ' + response.data);
+                }
+            });
         }
         
         // Weight options functionality
@@ -943,15 +1092,19 @@
             });
         }
 
-        // Rebuild database tables
+        // Rebuild tables button
         $('#hpo-rebuild-tables').on('click', function(e) {
             e.preventDefault();
+            
+            if (!confirm(hpo_data.strings.confirm_rebuild_tables)) {
+                return;
+            }
             
             var $button = $(this);
             var $result = $('#hpo-rebuild-result');
             
-            $button.prop('disabled', true).text('در حال بازسازی...');
-            $result.hide();
+            $button.prop('disabled', true).text(hpo_data.strings.rebuilding_tables || 'Rebuilding tables...');
+            $result.html('<p>' + (hpo_data.strings.rebuilding_please_wait || 'Please wait...') + '</p>').show();
             
             var data = {
                 action: 'hpo_rebuild_tables',
@@ -959,16 +1112,46 @@
             };
             
             $.post(hpo_data.ajax_url, data, function(response) {
-                $button.prop('disabled', false).text('بازسازی جداول پایگاه داده');
+                $button.prop('disabled', false).text(hpo_data.strings.rebuild_tables || 'Rebuild Database Tables');
                 
                 if (response.success) {
-                    $result.html('<div class="notice notice-success inline"><p>' + hpo_data.strings.rebuild_success + '</p></div>').show();
+                    $result.html('<p class="success">' + response.data.message + '</p>');
                 } else {
-                    $result.html('<div class="notice notice-error inline"><p>' + hpo_data.strings.rebuild_error + '</p></div>').show();
+                    $result.html('<p class="error">' + (response.data || 'Error rebuilding tables.') + '</p>');
                 }
             });
         });
-
+        
+        // Initialize assignments sort order button
+        $('#hpo-init-assignments-sort').on('click', function(e) {
+            e.preventDefault();
+            
+            if (!confirm('Are you sure you want to initialize sort order for all category assignments? This will set the default order for all your existing assignments.')) {
+                return;
+            }
+            
+            var $button = $(this);
+            var $result = $('#hpo-init-assignments-result');
+            
+            $button.prop('disabled', true).text('Initializing sort order...');
+            $result.html('<p>Please wait...</p>').show();
+            
+            var data = {
+                action: 'hpo_init_assignments_sort_order',
+                nonce: hpo_data.nonce
+            };
+            
+            $.post(hpo_data.ajax_url, data, function(response) {
+                $button.prop('disabled', false).text('Initialize Assignment Sort Order');
+                
+                if (response.success) {
+                    $result.html('<p class="success">' + response.data.message + '</p>');
+                } else {
+                    $result.html('<p class="error">' + (response.data || 'Error initializing sort order.') + '</p>');
+                }
+            });
+        });
+        
         // Grinder Management
         // Load all grinders on tab open
         $('.nav-tab[href="#tab-grinders"]').on('click', function(e) {
@@ -1240,6 +1423,44 @@
                     $result.html('<div class="notice notice-success inline"><p>' + response.data.message + '</p></div>').show();
                 } else {
                     $result.html('<div class="notice notice-error inline"><p>' + response.data + '</p></div>').show();
+                }
+            });
+        });
+
+        // Delete all assignments for a product
+        $(document).on('click', '.hpo-delete-product-assignments', function(e) {
+            e.preventDefault();
+            
+            if (!confirm(hpo_data.strings.confirm_delete_product_assignments || 'آیا مطمئن هستید که می‌خواهید همه دسته‌بندی‌های این محصول را حذف کنید؟')) {
+                return;
+            }
+            
+            var $button = $(this);
+            var productId = $button.data('product-id');
+            var $row = $button.closest('tr');
+            
+            // نمایش لودینگ
+            $row.addClass('hpo-loading');
+            $button.prop('disabled', true);
+            
+            var data = {
+                action: 'hpo_delete_product_assignments',
+                nonce: hpo_data.nonce,
+                product_id: productId
+            };
+            
+            $.post(hpo_data.ajax_url, data, function(response) {
+                if (response.success) {
+                    // حذف ردیف و نمایش پیام موفقیت
+                    $row.fadeOut(300, function() {
+                        $(this).remove();
+                        showSuccessMessage('تمام دسته‌بندی‌های محصول با موفقیت حذف شدند.');
+                    });
+                } else {
+                    // نمایش خطا
+                    alert(response.data);
+                    $row.removeClass('hpo-loading');
+                    $button.prop('disabled', false);
                 }
             });
         });

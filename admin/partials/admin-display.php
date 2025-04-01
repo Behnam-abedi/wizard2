@@ -80,30 +80,39 @@
 
             <div class="hpo-admin-panel">
                 <h2><?php echo esc_html__('تخصیص‌های دسته‌بندی', 'hierarchical-product-options'); ?></h2>
-                <div class="hpo-assignments-container">
+                <div class="hpo-assignment-form">
+                    <!-- فرم تخصیص دسته‌بندی به محصول -->
+                </div>
+                
+                <div class="hpo-current-assignments">
+                    <h3><?php echo esc_html__('تخصیص‌های فعلی', 'hierarchical-product-options'); ?></h3>
+                    
                     <table class="wp-list-table widefat fixed striped">
                         <thead>
                             <tr>
-                                <th><?php echo esc_html__('محصول ووکامرس', 'hierarchical-product-options'); ?></th>
+                                <th class="hpo-product-column"><?php echo esc_html__('محصول ووکامرس', 'hierarchical-product-options'); ?></th>
+                                <th class="hpo-desc-column"><?php echo esc_html__('توضیحات محصول', 'hierarchical-product-options'); ?></th>
                                 <th><?php echo esc_html__('دسته‌بندی‌های اختصاص داده شده', 'hierarchical-product-options'); ?></th>
                                 <th class="hpo-actions-column"><?php echo esc_html__('اقدامات', 'hierarchical-product-options'); ?></th>
                             </tr>
                         </thead>
-                        <tbody>
-                            <?php 
+                        <tbody id="hpo-assignments-list">
+                            <?php
                             $assignments = $db->get_category_product_assignments();
-                            
+                             
                             if (empty($assignments)): 
                             ?>
                             <tr>
-                                <td colspan="3"><?php echo esc_html__('هیچ تخصیص دسته‌بندی یافت نشد.', 'hierarchical-product-options'); ?></td>
+                                <td colspan="4"><?php echo esc_html__('هیچ تخصیص دسته‌بندی یافت نشد.', 'hierarchical-product-options'); ?></td>
                             </tr>
                             <?php 
                             else:
                                 // Group assignments by product
                                 $products = array();
+                                
+                                // Process assignments to group by products and organize categories
                                 foreach ($assignments as $assignment) {
-                                    // Get category name - this was missing before
+                                    // Get category name
                                     $category = $db->get_category($assignment->category_id);
                                     if ($category) {
                                         $assignment->category_name = $category->name;
@@ -113,90 +122,120 @@
                                         $assignment->parent_id = 0;
                                     }
                                     
+                                    // Initialize product data if this is the first encounter
                                     if (!isset($products[$assignment->wc_product_id])) {
+                                        $product = wc_get_product($assignment->wc_product_id);
+                                        if (!$product) continue;
+                                        
                                         $products[$assignment->wc_product_id] = array(
-                                            'product' => wc_get_product($assignment->wc_product_id),
-                                            'categories' => array()
+                                            'product' => $product,
+                                            'parent_categories' => array(),
+                                            'child_categories' => array(),
+                                            'description' => $assignment->short_description ?: ''
                                         );
+                                    } else if (empty($products[$assignment->wc_product_id]['description']) && !empty($assignment->short_description)) {
+                                        // Use the first non-empty description found
+                                        $products[$assignment->wc_product_id]['description'] = $assignment->short_description;
                                     }
                                     
-                                    $is_child = isset($assignment->parent_id) && $assignment->parent_id > 0;
-                                    
-                                    // Only add parent categories or categories without parent to the main list
-                                    if (!$is_child) {
-                                        $products[$assignment->wc_product_id]['categories'][] = $assignment;
+                                    // Add to parent or child categories
+                                    if ($category && $category->parent_id == 0) {
+                                        // Parent category
+                                        $products[$assignment->wc_product_id]['parent_categories'][] = array(
+                                            'id' => $assignment->id,
+                                            'category_id' => $assignment->category_id,
+                                            'name' => $assignment->category_name,
+                                            'sort_order' => $assignment->sort_order
+                                        );
+                                    } else if ($category) {
+                                        // Child category
+                                        $products[$assignment->wc_product_id]['child_categories'][$category->parent_id][] = array(
+                                            'id' => $assignment->id,
+                                            'category_id' => $assignment->category_id,
+                                            'name' => $assignment->category_name
+                                        );
                                     }
                                 }
                                 
+                                // Sort products by name
+                                uasort($products, function($a, $b) {
+                                    return strcmp($a['product']->get_name(), $b['product']->get_name());
+                                });
+                                
+                                // Display products and their categories
                                 foreach ($products as $product_id => $data):
-                                    if (!$data['product']) continue;
+                                    if (empty($data['parent_categories'])) continue;
                                     
-                                    foreach ($data['categories'] as $index => $assignment):
+                                    // Sort parent categories by sort_order
+                                    usort($data['parent_categories'], function($a, $b) {
+                                        return $a['sort_order'] - $b['sort_order'];
+                                    });
                             ?>
-                            <tr>
-                                <?php if ($index === 0): // Show product name only in the first row ?>
-                                <td rowspan="<?php echo count($data['categories']); ?>">
-                                    <?php echo esc_html($data['product']->get_name()); ?>
-                                    <div class="hpo-product-description-wrapper">
-                                        <?php 
-                                        // Get all assignments for this product to check if any have a description
-                                        $all_product_assignments = $db->get_assignments_for_product($data['product']->get_id());
-                                        $description = '';
-                                        
-                                        // Check all assignments for descriptions
-                                        foreach ($all_product_assignments as $assignment_with_desc) {
-                                            if (!empty($assignment_with_desc->short_description)) {
-                                                $description = $assignment_with_desc->short_description;
-                                                break;
-                                            }
-                                        }
+                            <tr data-product-id="<?php echo esc_attr($product_id); ?>">
+                                <td class="hpo-product-name-cell">
+                                    <strong><?php echo esc_html($data['product']->get_name()); ?></strong>
+                                </td>
+                                <td class="hpo-description-cell">
+                                    <div class="hpo-description-wrapper">
+                                        <?php
+                                        $description = $data['description'];
                                         
                                         if (empty($description)) {
                                             $description = __('برای افزودن توضیحات کلیک کنید', 'hierarchical-product-options');
+                                            $desc_class = 'hpo-desc-text no-description';
+                                        } else {
+                                            $desc_class = 'hpo-desc-text';
                                         }
-                                        
-                                        $desc_class = empty($description) ? 'hpo-desc-text no-description' : 'hpo-desc-text';
                                         ?>
                                         <div class="<?php echo esc_attr($desc_class); ?>"><?php echo esc_html($description); ?></div>
                                         <button class="button button-small hpo-edit-description" 
-                                                data-id="<?php echo esc_attr($data['categories'][0]->id); ?>" 
-                                                data-product-id="<?php echo esc_attr($data['product']->get_id()); ?>"
+                                                data-product-id="<?php echo esc_attr($product_id); ?>"
                                                 data-description="<?php echo esc_attr($description); ?>">
                                             <span class="dashicons dashicons-edit"></span>
                                         </button>
                                     </div>
                                 </td>
-                                <?php endif; ?>
-                                
-                                <td>
-                                    <?php 
-                                        echo esc_html($assignment->category_name);
-                                        
-                                        // Get child categories for this parent
-                                        $child_categories = array();
-                                        foreach ($assignments as $child) {
-                                            if (isset($child->parent_id) && $child->parent_id == $assignment->category_id) {
-                                                $child_categories[] = $child->category_name;
-                                            }
-                                        }
-                                        
-                                        if (!empty($child_categories)) {
-                                            echo '<div class="hpo-child-categories-list">';
-                                            echo '<small>' . esc_html__('شامل:', 'hierarchical-product-options') . ' ';
-                                            echo esc_html(implode('، ', $child_categories));
-                                            echo '</small>';
-                                            echo '</div>';
-                                        }
-                                    ?>
+                                <td class="hpo-categories-cell">
+                                    <div class="hpo-parent-categories">
+                                        <ul class="hpo-categories-sortable" data-product-id="<?php echo esc_attr($product_id); ?>">
+                                        <?php foreach ($data['parent_categories'] as $parent): ?>
+                                            <li data-id="<?php echo esc_attr($parent['id']); ?>" data-category-id="<?php echo esc_attr($parent['category_id']); ?>">
+                                                <div class="hpo-category-item-wrapper">
+                                                    <span class="hpo-drag-handle dashicons dashicons-menu"></span>
+                                                    <span class="hpo-category-name"><?php echo esc_html($parent['name']); ?></span>
+                                                    <button class="button button-small hpo-delete-assignment" data-category-id="<?php echo esc_attr($parent['category_id']); ?>" data-product-id="<?php echo esc_attr($product_id); ?>">
+                                                        <span class="dashicons dashicons-trash"></span>
+                                                    </button>
+                                                    
+                                                    <?php 
+                                                    // Show child categories for this parent if any
+                                                    if (!empty($data['child_categories'][$parent['category_id']])): 
+                                                        $children = $data['child_categories'][$parent['category_id']];
+                                                    ?>
+                                                    <div class="hpo-child-categories-list">
+                                                        <small><?php echo esc_html__('شامل:', 'hierarchical-product-options'); ?> 
+                                                        <?php 
+                                                            $child_names = array_map(function($child) {
+                                                                return $child['name'];
+                                                            }, $children);
+                                                            echo esc_html(implode('، ', $child_names));
+                                                        ?>
+                                                        </small>
+                                                    </div>
+                                                    <?php endif; ?>
+                                                </div>
+                                            </li>
+                                        <?php endforeach; ?>
+                                        </ul>
+                                    </div>
                                 </td>
-                                <td>
-                                    <button class="button button-small hpo-delete-assignment" data-category-id="<?php echo esc_attr($assignment->category_id); ?>" data-product-id="<?php echo esc_attr($assignment->wc_product_id); ?>">
-                                        <span class="dashicons dashicons-trash"></span>
+                                <td class="hpo-actions-cell">
+                                    <button class="button button-small hpo-delete-product-assignments" data-product-id="<?php echo esc_attr($product_id); ?>">
+                                        <span class="dashicons dashicons-no"></span> <?php echo esc_html__('حذف همه', 'hierarchical-product-options'); ?>
                                     </button>
                                 </td>
                             </tr>
                             <?php 
-                                    endforeach;
                                 endforeach;
                             endif; 
                             ?>
@@ -273,6 +312,13 @@
                 <p><?php echo esc_html__('If you are experiencing issues with database tables, you can rebuild them here.', 'hierarchical-product-options'); ?></p>
                 <button id="hpo-rebuild-tables" class="button button-secondary"><?php echo esc_html__('Rebuild Database Tables', 'hierarchical-product-options'); ?></button>
                 <div id="hpo-rebuild-result" style="margin-top: 10px; display: none;"></div>
+            </div>
+            
+            <div class="hpo-form-row">
+                <h3><?php echo esc_html__('Category Order', 'hierarchical-product-options'); ?></h3>
+                <p><?php echo esc_html__('Initialize sort order for existing category assignments. Use this after upgrading the plugin.', 'hierarchical-product-options'); ?></p>
+                <button id="hpo-init-assignments-sort" class="button button-secondary"><?php echo esc_html__('Initialize Assignment Sort Order', 'hierarchical-product-options'); ?></button>
+                <div id="hpo-init-assignments-result" style="margin-top: 10px; display: none;"></div>
             </div>
         </div>
     </div>

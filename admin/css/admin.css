@@ -215,6 +215,89 @@
     border-radius: 3px;
 }
 
+/* Product category assignments new styles */
+.hpo-categories-sortable {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.hpo-categories-sortable li {
+    margin-bottom: 8px;
+    padding: 0;
+}
+
+.hpo-category-item-wrapper {
+    display: flex;
+    align-items: center;
+    background: #f8f8f8;
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+    padding: 8px 12px;
+    position: relative;
+}
+
+.hpo-category-name {
+    flex-grow: 1;
+    margin: 0 10px;
+    font-weight: normal;
+}
+
+.hpo-categories-cell {
+    max-width: 350px;
+}
+
+.hpo-product-column {
+    width: 20%;
+}
+
+.hpo-desc-column {
+    width: 25%;
+}
+
+.hpo-product-name-cell strong {
+    display: block;
+    font-size: 14px;
+    margin-bottom: 3px;
+}
+
+#hpo-assignments-list tr.hpo-sortable-placeholder {
+    display: table-row;
+    height: 50px !important;
+    background-color: #f0f8ff !important;
+    border: 2px dashed #8ab5e0 !important;
+}
+
+#hpo-assignments-list .hpo-categories-sortable li.hpo-sortable-placeholder {
+    height: 40px;
+    margin: 5px 0;
+    background: #f0f8ff;
+    border: 2px dashed #8ab5e0;
+}
+
+/* Assignments table sortable */
+#hpo-assignments-list .hpo-drag-handle-cell {
+    width: 30px;
+    cursor: move;
+}
+
+#hpo-assignments-list .hpo-drag-handle {
+    cursor: move;
+    color: #888;
+}
+
+#hpo-assignments-list .hpo-drag-handle:hover {
+    color: #444;
+}
+
+.hpo-handle-column {
+    width: 40px;
+}
+
+.hpo-actions-column {
+    width: 60px;
+}
+
 /* Checkbox list */
 .hpo-checkbox-list {
     max-height: 200px;
@@ -387,4 +470,72 @@ textarea[maxlength].length-error {
 
 #hpo-product-description:invalid {
     border-color: #e74c3c;
+}
+
+/* Loading styles */
+.hpo-loading {
+    position: relative;
+    opacity: 0.7;
+    pointer-events: none;
+}
+
+.hpo-loading::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 20px;
+    height: 20px;
+    margin: -10px 0 0 -10px;
+    border: 2px solid #0073aa;
+    border-top-color: transparent;
+    border-radius: 50%;
+    animation: hpo-spin 1s linear infinite;
+}
+
+@keyframes hpo-spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Success message */
+.hpo-success-message {
+    background-color: #dff0d8;
+    color: #3c763d;
+    border: 1px solid #d6e9c6;
+    padding: 10px 15px;
+    margin-bottom: 15px;
+    border-radius: 4px;
+    animation: hpo-fade-in 0.3s ease-in-out;
+}
+
+@keyframes hpo-fade-in {
+    0% { opacity: 0; transform: translateY(-10px); }
+    100% { opacity: 1; transform: translateY(0); }
+}
+
+/* Description text */
+.hpo-desc-text {
+    margin-bottom: 5px;
+    padding: 3px 0;
+}
+
+.hpo-desc-text.no-description {
+    color: #999;
+    font-style: italic;
+}
+
+.hpo-desc-text.loading {
+    background-image: url('data:image/svg+xml;charset=utf8,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20"%3E%3Cpath fill="%230073aa" d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 18a8 8 0 1 1 8-8 8 8 0 0 1-8 8z" opacity=".3"/%3E%3Cpath fill="%230073aa" d="M20 12h2A10 10 0 0 0 12 2v2a8 8 0 0 1 8 8z"%3E%3CanimateTransform attributeName="transform" dur="1s" from="0 12 12" repeatCount="indefinite" to="360 12 12" type="rotate"/%3E%3C/path%3E%3C/svg%3E');
+    background-position: left center;
+    background-repeat: no-repeat;
+    padding-left: 25px;
+}
+
+.hpo-description-wrapper {
+    position: relative;
+}
+
+.hpo-description-cell {
+    max-width: 250px;
 } 

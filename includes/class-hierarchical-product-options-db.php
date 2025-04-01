@@ -63,6 +63,7 @@ class Hierarchical_Product_Options_DB {
             wc_product_id mediumint(9) NOT NULL,
             category_id mediumint(9) NOT NULL,
             short_description varchar(53) DEFAULT '',
+            sort_order int(11) DEFAULT 0,
             PRIMARY KEY  (id),
             KEY wc_product_id (wc_product_id)
         ) $charset_collate;";
@@ -260,11 +261,11 @@ class Hierarchical_Product_Options_DB {
     }
     
     /**
-     * Assign product to a category
+     * Assign a product to a category
      *
      * @param int $wc_product_id WooCommerce product ID
      * @param int $category_id Category ID
-     * @param string $short_description Short description (max 53 chars)
+     * @param string $short_description Short description
      * @return int New assignment ID
      */
     public function assign_product_to_category($wc_product_id, $category_id, $short_description = '') {
@@ -291,12 +292,34 @@ class Hierarchical_Product_Options_DB {
             return $existing;
         }
         
+        // Get the highest sort_order for this product's categories
+        $max_sort_order = $wpdb->get_var(
+            $wpdb->prepare(
+                "SELECT MAX(sort_order) FROM $this->assignments_table WHERE wc_product_id = %d AND category_id IN (SELECT id FROM $this->categories_table WHERE parent_id = 0)",
+                $wc_product_id
+            )
+        );
+        
+        // If no existing assignments or sort_order is null, start at 0
+        $next_sort_order = (is_null($max_sort_order)) ? 0 : intval($max_sort_order) + 1;
+        
+        // Only set sort_order for parent categories (parent_id = 0)
+        $is_parent = $wpdb->get_var(
+            $wpdb->prepare(
+                "SELECT COUNT(*) FROM $this->categories_table WHERE id = %d AND parent_id = 0",
+                $category_id
+            )
+        );
+        
+        $sort_order = ($is_parent > 0) ? $next_sort_order : 0;
+        
         $wpdb->insert(
             $this->assignments_table,
             array(
                 'wc_product_id' => $wc_product_id,
                 'category_id' => $category_id,
-                'short_description' => substr($short_description, 0, 53)
+                'short_description' => substr($short_description, 0, 53),
+                'sort_order' => $sort_order
             )
         );
         
@@ -365,7 +388,10 @@ class Hierarchical_Product_Options_DB {
     public function get_category_product_assignments() {
         global $wpdb;
         
-        $sql = "SELECT * FROM $this->assignments_table";
+        $sql = "SELECT a.*, c.name as category_name, c.parent_id 
+                FROM $this->assignments_table a
+                JOIN $this->categories_table c ON a.category_id = c.id
+                ORDER BY a.wc_product_id, c.parent_id, a.sort_order";
         
         return $wpdb->get_results($sql);
     }
@@ -775,6 +801,46 @@ class Hierarchical_Product_Options_DB {
         global $wpdb;
         
         $sql = "SELECT * FROM $this->categories_table WHERE parent_id = 0 ORDER BY sort_order";
+        
+        return $wpdb->get_results($sql);
+    }
+
+    /**
+     * Update assignment sort order
+     *
+     * @param int $id Assignment ID
+     * @param int $sort_order New sort order
+     * @return bool Success
+     */
+    public function update_assignment_sort_order($id, $sort_order) {
+        global $wpdb;
+        
+        return $wpdb->update(
+            $this->assignments_table,
+            array('sort_order' => $sort_order),
+            array('id' => $id)
+        );
+    }
+    
+    /**
+     * Get parent category assignments for a product
+     * Only returns assignments for parent categories (parent_id = 0)
+     *
+     * @param int $wc_product_id WooCommerce product ID
+     * @return array Parent category assignments
+     */
+    public function get_parent_assignments_for_product($wc_product_id) {
+        global $wpdb;
+        
+        $sql = $wpdb->prepare(
+            "SELECT a.*, c.name as category_name 
+            FROM $this->assignments_table a
+            JOIN $this->categories_table c ON a.category_id = c.id
+            WHERE a.wc_product_id = %d 
+            AND c.parent_id = 0
+            ORDER BY a.sort_order",
+            $wc_product_id
+        );
         
         return $wpdb->get_results($sql);
     }

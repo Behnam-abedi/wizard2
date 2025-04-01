@@ -115,7 +115,7 @@ class Hierarchical_Product_Options_Admin {
     }
 
     /**
-     * Display the main admin page
+     * Display the admin page
      * Updated to ensure fresh data is used
      */
     public function display_admin_page() {
@@ -126,6 +126,9 @@ class Hierarchical_Product_Options_Admin {
         $db = new Hierarchical_Product_Options_DB();
         $categories = $db->get_categories();
         $products = $db->get_products();
+        
+        // Get all assignments
+        $assignments = $db->get_category_product_assignments();
         
         // Clean up any orphaned assignments (where category no longer exists)
         $valid_category_ids = array_map(function($category) {
@@ -210,6 +213,11 @@ class Hierarchical_Product_Options_Admin {
         add_action('wp_ajax_hpo_refresh_categories', array($this, 'ajax_refresh_categories'));
         add_action('wp_ajax_hpo_get_fresh_categories', array($this, 'ajax_get_fresh_categories'));
         add_action('wp_ajax_hpo_clean_inconsistent_data', array($this, 'ajax_clean_inconsistent_data'));
+        add_action('wp_ajax_hpo_reorder_assignments', array($this, 'ajax_reorder_assignments'));
+        add_action('wp_ajax_hpo_init_assignments_sort_order', array($this, 'ajax_init_assignments_sort_order'));
+        add_action('wp_ajax_hpo_update_product_description', array($this, 'ajax_update_product_description'));
+        add_action('wp_ajax_hpo_reorder_product_categories', array($this, 'ajax_reorder_product_categories'));
+        add_action('wp_ajax_hpo_delete_product_assignments', array($this, 'ajax_delete_product_assignments'));
     }
     
     /**
@@ -1363,5 +1371,202 @@ class Hierarchical_Product_Options_Admin {
                 $result3
             )
         ));
+    }
+
+    /**
+     * AJAX: Reorder category assignments
+     */
+    public function ajax_reorder_assignments() {
+        check_ajax_referer('hpo_nonce', 'nonce');
+        
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(__('دسترسی غیرمجاز', 'hierarchical-product-options'));
+        }
+        
+        $assignments = isset($_POST['assignments']) ? $_POST['assignments'] : array();
+        
+        if (empty($assignments) || !is_array($assignments)) {
+            wp_send_json_error(__('اطلاعات نامعتبر', 'hierarchical-product-options'));
+        }
+        
+        $db = new Hierarchical_Product_Options_DB();
+        
+        // Update each assignment's sort order
+        foreach ($assignments as $index => $assignment_id) {
+            $db->update_assignment_sort_order(intval($assignment_id), intval($index));
+        }
+        
+        // Clear any cache
+        delete_transient('hpo_category_assignments');
+        
+        wp_send_json_success();
+    }
+
+    /**
+     * AJAX: Initialize sort order for existing category assignments
+     * Sets sort_order for all parent category assignments
+     */
+    public function ajax_init_assignments_sort_order() {
+        check_ajax_referer('hpo_nonce', 'nonce');
+        
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(__('دسترسی غیرمجاز', 'hierarchical-product-options'));
+        }
+        
+        global $wpdb;
+        $db = new Hierarchical_Product_Options_DB();
+        
+        // Get all assignments and corresponding category info
+        $assignments_table = $wpdb->prefix . 'hpo_product_assignments';
+        $categories_table = $wpdb->prefix . 'hpo_categories';
+        
+        // Get unique WooCommerce product IDs that have assignments
+        $product_ids = $wpdb->get_col("SELECT DISTINCT wc_product_id FROM $assignments_table");
+        
+        $count = 0;
+        
+        // For each product
+        foreach ($product_ids as $product_id) {
+            // Get parent category assignments for this product
+            $parent_assignments = $wpdb->get_results(
+                $wpdb->prepare(
+                    "SELECT a.id, a.category_id FROM $assignments_table a
+                    JOIN $categories_table c ON a.category_id = c.id
+                    WHERE a.wc_product_id = %d AND c.parent_id = 0
+                    ORDER BY a.id",
+                    $product_id
+                )
+            );
+            
+            // Update sort order for each parent assignment
+            foreach ($parent_assignments as $index => $assignment) {
+                $result = $wpdb->update(
+                    $assignments_table,
+                    array('sort_order' => $index),
+                    array('id' => $assignment->id)
+                );
+                
+                if ($result !== false) {
+                    $count++;
+                }
+            }
+        }
+        
+        // Clear cache
+        delete_transient('hpo_category_assignments');
+        
+        wp_send_json_success(array(
+            'message' => sprintf(
+                __('%d تخصیص دسته‌بندی مرتب‌سازی شدند.', 'hierarchical-product-options'),
+                $count
+            )
+        ));
+    }
+
+    /**
+     * AJAX: Update product description
+     */
+    public function ajax_update_product_description() {
+        check_ajax_referer('hpo_nonce', 'nonce');
+        
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(__('دسترسی غیرمجاز', 'hierarchical-product-options'));
+        }
+        
+        $product_id = isset($_POST['product_id']) ? intval($_POST['product_id']) : 0;
+        $description = isset($_POST['description']) ? sanitize_textarea_field($_POST['description']) : '';
+        
+        if (empty($product_id)) {
+            wp_send_json_error(__('شناسه محصول نامعتبر است', 'hierarchical-product-options'));
+        }
+        
+        global $wpdb;
+        $db = new Hierarchical_Product_Options_DB();
+        
+        // جدول تخصیص‌ها
+        $assignments_table = $wpdb->prefix . 'hpo_product_assignments';
+        
+        // دریافت تمام تخصیص‌های این محصول
+        $assignments = $db->get_assignments_for_product($product_id);
+        
+        if (empty($assignments)) {
+            wp_send_json_error(__('هیچ تخصیصی برای این محصول یافت نشد', 'hierarchical-product-options'));
+        }
+        
+        // به‌روزرسانی توضیحات برای تمام تخصیص‌های این محصول
+        $result = $wpdb->update(
+            $assignments_table,
+            array('short_description' => substr($description, 0, 53)),
+            array('wc_product_id' => $product_id)
+        );
+        
+        if ($result !== false) {
+            wp_send_json_success();
+        } else {
+            wp_send_json_error(__('خطا در به‌روزرسانی توضیحات', 'hierarchical-product-options'));
+        }
+    }
+    
+    /**
+     * AJAX: Reorder product categories
+     */
+    public function ajax_reorder_product_categories() {
+        check_ajax_referer('hpo_nonce', 'nonce');
+        
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(__('دسترسی غیرمجاز', 'hierarchical-product-options'));
+        }
+        
+        $product_id = isset($_POST['product_id']) ? intval($_POST['product_id']) : 0;
+        $categories = isset($_POST['categories']) ? $_POST['categories'] : array();
+        
+        if (empty($product_id) || empty($categories) || !is_array($categories)) {
+            wp_send_json_error(__('اطلاعات نامعتبر', 'hierarchical-product-options'));
+        }
+        
+        $db = new Hierarchical_Product_Options_DB();
+        
+        // به‌روزرسانی ترتیب هر تخصیص
+        foreach ($categories as $item) {
+            if (isset($item['id']) && isset($item['position'])) {
+                $db->update_assignment_sort_order(intval($item['id']), intval($item['position']));
+            }
+        }
+        
+        // پاک کردن کش
+        delete_transient('hpo_category_assignments');
+        
+        wp_send_json_success();
+    }
+    
+    /**
+     * AJAX: Delete all product assignments
+     */
+    public function ajax_delete_product_assignments() {
+        check_ajax_referer('hpo_nonce', 'nonce');
+        
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(__('دسترسی غیرمجاز', 'hierarchical-product-options'));
+        }
+        
+        $product_id = isset($_POST['product_id']) ? intval($_POST['product_id']) : 0;
+        
+        if (empty($product_id)) {
+            wp_send_json_error(__('شناسه محصول نامعتبر است', 'hierarchical-product-options'));
+        }
+        
+        global $wpdb;
+        
+        // حذف تمام تخصیص‌های این محصول
+        $assignments_table = $wpdb->prefix . 'hpo_product_assignments';
+        $result = $wpdb->delete($assignments_table, array('wc_product_id' => $product_id));
+        
+        if ($result !== false) {
+            // پاک کردن کش
+            delete_transient('hpo_category_assignments');
+            wp_send_json_success();
+        } else {
+            wp_send_json_error(__('خطا در حذف تخصیص‌ها', 'hierarchical-product-options'));
+        }
     }
 } 
