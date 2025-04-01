@@ -479,10 +479,10 @@
             
             $.post(hpo_data.ajax_url, data, function(response) {
                 if (response.success) {
-                    // پاک کردن فرم و بارگذاری مجدد صفحه
+                    // پاک کردن فرم و بارگذاری مجدد بخش تخصیص‌ها
                     $('#hpo-assign-form')[0].reset();
                     $('.hpo-child-info').remove();
-                    location.reload();
+                    refreshAssignmentsTable();
                 } else {
                     alert(response.data);
                 }
@@ -499,7 +499,6 @@
             
             var categoryId = $(this).data('category-id');
             var productId = $(this).data('product-id');
-            var $row = $(this).closest('tr');
             
             var data = {
                 action: 'hpo_delete_assignment',
@@ -510,39 +509,26 @@
             
             $.post(hpo_data.ajax_url, data, function(response) {
                 if (response.success) {
-                    // Get the number of remaining rows for this product
-                    var rowCount = $row.siblings('tr').length + 1;
-                    
-                    // If this was the only category for the product, reload the page
-                    if (rowCount === 1) {
-                        location.reload();
-                    } else {
-                        // Otherwise, adjust the rowspan of the product cell and remove just this row
-                        var $productCell = $row.siblings('tr:first').find('td:first');
-                        if ($productCell.length === 0) {
-                            $productCell = $row.find('td:first');
-                            
-                            // If we're removing the first row, we need to move the product cell to the next row
-                            if ($productCell.attr('rowspan')) {
-                                var $nextRow = $row.next('tr');
-                                if ($nextRow.length) {
-                                    var $newCell = $('<td></td>').attr('rowspan', parseInt($productCell.attr('rowspan')) - 1);
-                                    $newCell.html($productCell.html());
-                                    $nextRow.prepend($newCell);
-                                }
-                            }
-                        } else if ($productCell.attr('rowspan')) {
-                            $productCell.attr('rowspan', parseInt($productCell.attr('rowspan')) - 1);
-                        }
-                        
-                        // Remove the row
-                        $row.remove();
-                    }
+                    // Reload the assignments table via AJAX
+                    refreshAssignmentsTable();
                 } else {
                     alert(response.data);
                 }
             });
         });
+        
+        // Function to refresh the assignments table
+        function refreshAssignmentsTable() {
+            $.ajax({
+                url: window.location.href,
+                success: function(response) {
+                    // Extract the assignments container from the response
+                    var newContent = $(response).find('.hpo-assignments-container').html();
+                    // Replace the current container content
+                    $('.hpo-assignments-container').html(newContent);
+                }
+            });
+        }
         
         // ویرایش توضیحات
         $(document).on('click', '.hpo-edit-description', function(e) {
@@ -597,6 +583,9 @@
                         $descText.show();
                         $('.hpo-edit-description').show();
                         $editForm.remove();
+                        
+                        // Refresh the table to ensure all descriptions are updated
+                        refreshAssignmentsTable();
                     } else {
                         alert(response.data);
                     }

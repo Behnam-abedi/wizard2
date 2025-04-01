@@ -139,17 +139,29 @@
                                     <?php echo esc_html($data['product']->get_name()); ?>
                                     <div class="hpo-product-description-wrapper">
                                         <?php 
-                                        $description = !empty($data['categories'][0]->short_description) ? 
-                                                      $data['categories'][0]->short_description : 
-                                                      __('برای افزودن توضیحات کلیک کنید', 'hierarchical-product-options');
+                                        // Get all assignments for this product to check if any have a description
+                                        $all_product_assignments = $db->get_assignments_for_product($data['product']->get_id());
+                                        $description = '';
                                         
-                                        $desc_class = empty($data['categories'][0]->short_description) ? 'hpo-desc-text no-description' : 'hpo-desc-text';
+                                        // Check all assignments for descriptions
+                                        foreach ($all_product_assignments as $assignment_with_desc) {
+                                            if (!empty($assignment_with_desc->short_description)) {
+                                                $description = $assignment_with_desc->short_description;
+                                                break;
+                                            }
+                                        }
+                                        
+                                        if (empty($description)) {
+                                            $description = __('برای افزودن توضیحات کلیک کنید', 'hierarchical-product-options');
+                                        }
+                                        
+                                        $desc_class = empty($description) ? 'hpo-desc-text no-description' : 'hpo-desc-text';
                                         ?>
                                         <div class="<?php echo esc_attr($desc_class); ?>"><?php echo esc_html($description); ?></div>
                                         <button class="button button-small hpo-edit-description" 
                                                 data-id="<?php echo esc_attr($data['categories'][0]->id); ?>" 
-                                                data-product-id="<?php echo esc_attr($data['categories'][0]->wc_product_id); ?>"
-                                                data-description="<?php echo esc_attr($data['categories'][0]->short_description); ?>">
+                                                data-product-id="<?php echo esc_attr($data['product']->get_id()); ?>"
+                                                data-description="<?php echo esc_attr($description); ?>">
                                             <span class="dashicons dashicons-edit"></span>
                                         </button>
                                     </div>

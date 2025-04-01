@@ -598,7 +598,7 @@ class Hierarchical_Product_Options_Admin {
     
     /**
      * AJAX: Delete assignment
-     * Updated to ensure cache is cleared
+     * Updated to ensure cache is cleared and remove all child categories
      */
     public function ajax_delete_assignment() {
         check_ajax_referer('hpo_nonce', 'nonce');
@@ -616,7 +616,15 @@ class Hierarchical_Product_Options_Admin {
         
         $db = new Hierarchical_Product_Options_DB();
         
-        // Delete the assignment
+        // Get all child categories
+        $child_categories = $this->get_all_child_categories($category_id);
+        
+        // Delete assignments for all child categories
+        foreach ($child_categories as $child_id) {
+            $db->delete_category_product_assignment($wc_product_id, $child_id);
+        }
+        
+        // Delete the main assignment
         $result = $db->delete_category_product_assignment($wc_product_id, $category_id);
         
         if ($result) {
@@ -673,17 +681,14 @@ class Hierarchical_Product_Options_Admin {
             wp_send_json_error('اساین مورد نظر یافت نشد.');
         }
         
-        $result = $wpdb->update(
-            $table_name,
-            ['short_description' => $description],
-            ['id' => $assignment_id],
-            ['%s'],
-            ['%d']
+        // Update ALL assignments for this product
+        $wpdb->query(
+            $wpdb->prepare(
+                "UPDATE {$table_name} SET short_description = %s WHERE wc_product_id = %d",
+                $description,
+                $product_id
+            )
         );
-        
-        if ($result === false) {
-            wp_send_json_error('خطا در بروزرسانی توضیحات: ' . $wpdb->last_error);
-        }
         
         // Clear cache
         $this->clear_cache();
