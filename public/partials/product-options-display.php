@@ -190,7 +190,6 @@ jQuery(document).ready(function($) {
     
     // Get base product price from WooCommerce
     var baseProductPrice = parseFloat($('#hpo-base-price').val());
-    console.log("Base product price:", baseProductPrice);
     
     // Handle product options selection
     $('.hpo-product-option').on('change', function() {
@@ -218,8 +217,6 @@ jQuery(document).ready(function($) {
             });
         }
         
-        console.log("Current selected options:", selectedOptions);
-        
         // Update product price
         updateProductPrice();
     });
@@ -239,8 +236,6 @@ jQuery(document).ready(function($) {
             coefficient: coefficient,
             name: weightName
         };
-        
-        console.log("Selected weight:", selectedWeight);
         
         // Update product price
         updateProductPrice();
@@ -276,7 +271,6 @@ jQuery(document).ready(function($) {
             selectedGrindingMachine = null;
         }
         
-        console.log('Selected grinding machine:', selectedGrindingMachine);
         updateProductPrice();
     });
     
@@ -354,16 +348,6 @@ jQuery(document).ready(function($) {
         // Store the calculated single unit price (without quantity) for the cart
         // Store as an integer for toman
         $('#hpo-calculated-price').val(calculatedPrice);
-        
-        console.log('Price calculation:', {
-            basePrice: baseProductPrice,
-            optionsPrice: totalOptionsPrice,
-            weightMultiplier: selectedWeight ? selectedWeight.coefficient : 1,
-            grindingPrice: selectedGrindingMachine ? selectedGrindingMachine.price : 0,
-            quantity: quantity,
-            finalPricePerUnit: calculatedPrice,
-            finalPriceWithQuantity: totalPriceWithQuantity
-        });
     }
     
     // Helper function to format numbers with commas for thousands
@@ -418,8 +402,6 @@ jQuery(document).ready(function($) {
         var finalPrice = $('#hpo-calculated-price').val();
         finalPrice = Math.round(parseFloat(finalPrice));
         $('#hpo-calculated-price').val(finalPrice);
-        
-        console.log('Form submitted with calculated price:', finalPrice);
         
         return true;
     });
@@ -482,4 +464,4 @@ function hpo_render_category_content($category, $settings) {
             <?php endforeach; ?>
         </div>
     <?php endif;
-} 
+}
