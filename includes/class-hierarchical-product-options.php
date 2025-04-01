@@ -738,7 +738,7 @@ class Hierarchical_Product_Options {
             <table class="widefat">
                 <thead>
                     <tr>
-                        <th class="row-title">نام محصول</th>
+                        <th class="row-title">دسته قهوه</th>
                         <th>نوع قهوه</th>
                         <th>مقدار</th>
                         <th>وضعیت آسیاب</th>
