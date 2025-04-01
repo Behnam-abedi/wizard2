@@ -307,9 +307,6 @@ jQuery(document).ready(function($) {
         
         // Handle grinding machine selection
         $('select[name="hpo_grinding_machine"]').on('change', function() {
-            console.log('Grinding machine selection changed');
-            console.log('Selected value:', $(this).val());
-            console.log('Selected option price:', $(this).find('option:selected').data('price'));
             updateTotalPrice();
             validateSelections();
         });
@@ -494,10 +491,6 @@ jQuery(document).ready(function($) {
                 }
             }
             
-            // For debugging - can be removed in production
-            console.log('Submitting data to cart:');
-            console.log(formData);
-            
             // Convert the data object to a string for AJAX
             var serializedData = $.param({
                 'action': 'hpo_add_to_cart',
@@ -640,9 +633,6 @@ jQuery(document).ready(function($) {
         var basePrice = parseFloat(form.find('input[name="hpo_base_price"]').val()) || 0;
         var quantity = parseInt(form.find('input[name="quantity"]').val()) || 1;
         
-        console.log('Starting price calculation:');
-        console.log('Base price:', basePrice);
-        
         // Step 1: Start with base price
         var unitPrice = basePrice;
         
@@ -651,8 +641,6 @@ jQuery(document).ready(function($) {
         if (selectedOption.length) {
             var optionPrice = parseFloat(selectedOption.data('price')) || 0;
             unitPrice = optionPrice; // Replace base price with option price
-            console.log('Option price:', optionPrice);
-            console.log('Price after adding option:', unitPrice);
         }
         
         // Step 3: Apply weight coefficient (if selected)
@@ -660,13 +648,10 @@ jQuery(document).ready(function($) {
         if (weightOption.length) {
             var coefficient = parseFloat(weightOption.data('coefficient')) || 1;
             unitPrice *= coefficient;
-            console.log('Weight coefficient:', coefficient);
-            console.log('Price after applying weight coefficient:', unitPrice);
         }
         
         // Step 4: Add grinding price (if applicable)
         var grindingValue = form.find('input[name="hpo_grinding"]').val();
-        console.log('Grinding value:', grindingValue);
         
         if (grindingValue === 'ground') {
             var grindingSelect = form.find('select[name="hpo_grinding_machine"]');
@@ -674,11 +659,8 @@ jQuery(document).ready(function($) {
             
             if (selectedGrinder.length && selectedGrinder.val()) {
                 var grindingPrice = parseFloat(selectedGrinder.data('price')) || 0;
-                console.log('Selected grinder:', selectedGrinder.text());
-                console.log('Grinding price:', grindingPrice);
                 
                 unitPrice += grindingPrice;
-                console.log('Price after adding grinding:', unitPrice);
             }
         }
         
@@ -687,9 +669,6 @@ jQuery(document).ready(function($) {
         
         // Step 5: Multiply by quantity
         var totalPrice = unitPrice * quantity;
-        console.log('Unit price:', unitPrice);
-        console.log('Quantity:', quantity);
-        console.log('Final price:', totalPrice);
         
         // Format the price with Farsi numerals
         var formattedPrice = new Intl.NumberFormat('fa-IR', {
@@ -697,8 +676,6 @@ jQuery(document).ready(function($) {
             minimumFractionDigits: 0,
             maximumFractionDigits: 0
         }).format(totalPrice);
-        
-        console.log('Formatted price:', formattedPrice);
         
         // Update the displayed price in both locations
         $('#hpo-total-price').text(formattedPrice + ' تومان');
@@ -756,8 +733,6 @@ jQuery(document).ready(function($) {
     function initGrindingToggle() {
         // Ensure grinding machine select changes trigger price updates
         $(document).on('change', 'select[name="hpo_grinding_machine"]', function() {
-            console.log('Grinding machine changed to:', $(this).find('option:selected').text());
-            console.log('Grinding machine price:', $(this).find('option:selected').data('price'));
             // Reset quantity to 1 when grinding machine changes
             resetQuantity();
             updateTotalPrice();
@@ -885,21 +860,14 @@ jQuery(document).ready(function($) {
 
     // Make entire weight item box clickable with improved handling
     $(document).on('click', '.hpo-weight-item', function(e) {
-        console.log('Weight item clicked:', $(this).find('label').text().trim());
-        console.log('Is in disabled section:', $(this).closest('.disabled-section').length > 0);
-        console.log('Click target type:', e.target.type);
-        console.log('Weight item HTML structure:', $(this).html().trim().substring(0, 100) + '...');
-        
         // Don't trigger if clicking on the radio button itself (it will handle its own click)
         if (e.target.type !== 'radio' && !$(this).closest('.disabled-section').length) {
             // Find the radio button inside this box
             const radio = $(this).find('input[type="radio"]');
-            console.log('Found radio button:', radio.length > 0);
             
             // Toggle its checked state 
             if (radio.length) {
                 radio.prop('checked', true);
-                console.log('Radio checked state set to:', radio.prop('checked'));
                 
                 // Manually trigger the change event
                 radio.trigger('change');
@@ -910,33 +878,25 @@ jQuery(document).ready(function($) {
                 // Add selected class to this option
                 $(this).addClass('selected');
                 
-                console.log('Selected class applied to weight item');
-                
                 // Directly scroll to grinding section after weight selection
                 setTimeout(function() {
                     const $grindingSection = $('.hpo-grinding-options-section');
-                    console.log('Attempting to scroll to grinding section:', $grindingSection.length > 0);
                     
                     if ($grindingSection.length) {
                         const $popupContent = $('.hpo-popup-content');
                         const offsetTop = $grindingSection.offset().top - $popupContent.offset().top;
-                        console.log('Scrolling to grinding section with offset:', offsetTop);
                         
                         $popupContent.animate({
                             scrollTop: $popupContent.scrollTop() + offsetTop - 20
                         }, 500);
                     }
                 }, 300);
-            } else {
-                console.log('ERROR: No radio button found in the weight item');
             }
         }
     });
 
     // Update the input[name="hpo_weight"] change handler to ensure proper handling
     $('body').on('change', 'input[name="hpo_weight"]', function() {
-        console.log('Weight option changed via input change event');
-        
         // Reset quantity to 1 when weight option changes
         resetQuantity();
         
@@ -947,7 +907,5 @@ jQuery(document).ready(function($) {
         // Handle visual selection for weight options
         $('.hpo-weight-item').removeClass('selected');
         $(this).closest('.hpo-weight-item').addClass('selected');
-        
-        console.log('Weight selection processed');
     });
 }); 
