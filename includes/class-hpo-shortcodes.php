@@ -1425,93 +1425,138 @@ class HPO_Shortcodes {
                 
                 // Fix checkout page prices
                 function fixCheckoutPrices() {
-                    // Process each item in the order review
-                    $('#order_review .cart_item').each(function() {
-                        var $item = $(this);
-                        var $nameCol = $item.find('.product-name');
-                        var $totalCol = $item.find('.product-total');
-                        
-                        // Check if we have a quantity indicator
-                        var quantityText = $nameCol.find('.product-quantity').text().trim();
-                        var quantity = 1;
-                        
-                        // Try to extract quantity from the format: × 2
-                        var qtyMatch = quantityText.match(/×\s*(\d+)/);
-                        if (qtyMatch && qtyMatch[1]) {
-                            quantity = parseInt(qtyMatch[1]) || 1;
-                        }
-                        
-                        // Check if it's an HPO product by seeing if it has our custom data
-                        var unitPrice = 0;
-                        var totalPrice = 0;
-                        
-                        if ($totalCol.length) {
-                            // Get the formatted price and parse it
-                            var totalText = $totalCol.text().trim();
-                            totalPrice = parsePrice(totalText);
+                    // جلوگیری از اجرای همزمان تابع
+                    if (window.isFixingCheckout) return;
+                    
+                    window.isFixingCheckout = true;
+                    
+                    try {
+                        // Process each item in the order review
+                        $('#order_review .cart_item').each(function() {
+                            var $item = $(this);
+                            var $nameCol = $item.find('.product-name');
+                            var $totalCol = $item.find('.product-total');
                             
-                            // Calculate unit price by dividing total by quantity
-                            if (quantity > 1 && totalPrice > 0) {
-                                unitPrice = Math.round(totalPrice / quantity);
+                            // Check if we have a quantity indicator
+                            var quantityText = $nameCol.find('.product-quantity').text().trim();
+                            var quantity = 1;
+                            
+                            // Try to extract quantity from the format: × 2
+                            var qtyMatch = quantityText.match(/×\s*(\d+)/);
+                            if (qtyMatch && qtyMatch[1]) {
+                                quantity = parseInt(qtyMatch[1]) || 1;
+                            }
+                            
+                            // Check if it's an HPO product by seeing if it has our custom data
+                            var unitPrice = 0;
+                            var totalPrice = 0;
+                            
+                            if ($totalCol.length) {
+                                // Get the formatted price and parse it
+                                var totalText = $totalCol.text().trim();
+                                totalPrice = parsePrice(totalText);
                                 
-                                // Add the unit price info to the product name to make it clearer
-                                if (!$nameCol.find('.hpo-unit-price').length) {
-                                    $nameCol.append('<div class="hpo-unit-price" style="font-size: 0.85em; opacity: 0.8;">' + 
-                                        'قیمت واحد: ' + numberWithCommas(unitPrice) + ' تومان</div>');
+                                // Calculate unit price by dividing total by quantity
+                                if (quantity > 1 && totalPrice > 0) {
+                                    unitPrice = Math.round(totalPrice / quantity);
+                                    
+                                    // Add the unit price info if it doesn't exist already
+                                    if (!$nameCol.find('.hpo-unit-price').length) {
+                                        $nameCol.append('<div class="hpo-unit-price" style="font-size: 0.85em; opacity: 0.8;">' + 
+                                            'قیمت واحد: ' + numberWithCommas(unitPrice) + ' تومان</div>');
+                                    }
                                 }
                             }
+                        });
+                        
+                        // Fix the cart subtotal and order total - فقط اگر جعبه کوپن باز نباشد
+                        if ($('.woocommerce-checkout-payment-wrap').is(':visible')) {
+                            fixCheckoutTotals();
                         }
-                    });
-                    
-                    // Fix the cart subtotal and order total
-                    fixCheckoutTotals();
+                    } catch (e) {
+                        console.error('Error fixing checkout prices: ', e);
+                    } finally {
+                        // همیشه وضعیت را پاک کنیم حتی در صورت بروز خطا
+                        window.isFixingCheckout = false;
+                    }
                 }
                 
                 // Fix checkout totals
                 function fixCheckoutTotals() {
-                    // Calculate the real subtotal
-                    var subtotal = 0;
+                    // جلوگیری از اجرای همزمان این تابع
+                    if (window.isFixingTotals) return;
                     
-                    $('#order_review .cart_item').each(function() {
-                        var $item = $(this);
-                        var totalText = $item.find('.product-total').text().trim();
-                        var itemTotal = parsePrice(totalText);
-                        
-                        if (itemTotal > 0) {
-                            subtotal += itemTotal;
-                        }
-                    });
+                    window.isFixingTotals = true;
                     
-                    // Update the subtotal if valid
-                    if (subtotal > 0) {
-                        var $subtotalRow = $('#order_review .cart-subtotal');
-                        if ($subtotalRow.length) {
-                            $subtotalRow.find('.woocommerce-Price-amount').html('<bdi>' + 
-                                numberWithCommas(subtotal) + '&nbsp;<span class="woocommerce-Price-currencySymbol">تومان</span></bdi>');
-                        }
+                    try {
+                        // Calculate the real subtotal
+                        var subtotal = 0;
+                        var itemCount = 0;
                         
-                        // If no shipping, update order total as well
-                        var $shippingRow = $('#order_review .shipping');
-                        if ($shippingRow.length === 0) {
-                            var $totalRow = $('#order_review .order-total');
-                            if ($totalRow.length) {
-                                $totalRow.find('.woocommerce-Price-amount').html('<bdi>' + 
-                                    numberWithCommas(subtotal) + '&nbsp;<span class="woocommerce-Price-currencySymbol">تومان</span></bdi>');
-                            }
-                        } else {
-                            // Otherwise add shipping to subtotal
-                            var shippingText = $shippingRow.find('.woocommerce-Price-amount').text().trim();
-                            var shippingCost = parsePrice(shippingText);
+                        $('#order_review .cart_item').each(function() {
+                            var $item = $(this);
+                            var totalText = $item.find('.product-total').text().trim();
+                            var itemTotal = parsePrice(totalText);
                             
-                            if (shippingCost > 0) {
-                                var total = subtotal + shippingCost;
+                            if (itemTotal > 0) {
+                                subtotal += itemTotal;
+                                itemCount++;
+                            }
+                        });
+                        
+                        // فقط اگر محصولی در سبد خرید باشد، به‌روزرسانی کنیم
+                        if (subtotal > 0 && itemCount > 0) {
+                            var $subtotalRow = $('#order_review .cart-subtotal');
+                            if ($subtotalRow.length) {
+                                var currentSubtotalText = $subtotalRow.find('.woocommerce-Price-amount').text().trim();
+                                var currentSubtotal = parsePrice(currentSubtotalText);
+                                
+                                // فقط اگر تغییری واقعی وجود داشته باشد، به‌روزرسانی کنیم
+                                if (Math.abs(currentSubtotal - subtotal) > 100) { // اختلاف بیش از 100 واحد
+                                    $subtotalRow.find('.woocommerce-Price-amount').html('<bdi>' + 
+                                        numberWithCommas(subtotal) + '&nbsp;<span class="woocommerce-Price-currencySymbol">تومان</span></bdi>');
+                                }
+                            }
+                            
+                            // If no shipping, update order total as well
+                            var $shippingRow = $('#order_review .shipping');
+                            if ($shippingRow.length === 0) {
                                 var $totalRow = $('#order_review .order-total');
                                 if ($totalRow.length) {
-                                    $totalRow.find('.woocommerce-Price-amount').html('<bdi>' + 
-                                        numberWithCommas(total) + '&nbsp;<span class="woocommerce-Price-currencySymbol">تومان</span></bdi>');
+                                    var currentTotalText = $totalRow.find('.woocommerce-Price-amount').text().trim();
+                                    var currentTotal = parsePrice(currentTotalText);
+                                    
+                                    // فقط اگر تغییری واقعی وجود داشته باشد، به‌روزرسانی کنیم
+                                    if (Math.abs(currentTotal - subtotal) > 100) { // اختلاف بیش از 100 واحد
+                                        $totalRow.find('.woocommerce-Price-amount').html('<bdi>' + 
+                                            numberWithCommas(subtotal) + '&nbsp;<span class="woocommerce-Price-currencySymbol">تومان</span></bdi>');
+                                    }
+                                }
+                            } else {
+                                // Otherwise add shipping to subtotal
+                                var shippingText = $shippingRow.find('.woocommerce-Price-amount').text().trim();
+                                var shippingCost = parsePrice(shippingText);
+                                
+                                if (shippingCost > 0) {
+                                    var total = subtotal + shippingCost;
+                                    var $totalRow = $('#order_review .order-total');
+                                    if ($totalRow.length) {
+                                        var currentTotalText = $totalRow.find('.woocommerce-Price-amount').text().trim();
+                                        var currentTotal = parsePrice(currentTotalText);
+                                        
+                                        // فقط اگر تغییری واقعی وجود داشته باشد، به‌روزرسانی کنیم
+                                        if (Math.abs(currentTotal - total) > 100) { // اختلاف بیش از 100 واحد
+                                            $totalRow.find('.woocommerce-Price-amount').html('<bdi>' + 
+                                                numberWithCommas(total) + '&nbsp;<span class="woocommerce-Price-currencySymbol">تومان</span></bdi>');
+                                        }
+                                    }
                                 }
                             }
                         }
+                    } catch (e) {
+                        console.error('Error fixing checkout totals: ', e);
+                    } finally {
+                        window.isFixingTotals = false;
                     }
                 }
 
@@ -1646,33 +1691,38 @@ class HPO_Shortcodes {
 
                 // Ensure the form is updated immediately after page load on checkout
                 if (document.body.classList.contains('woocommerce-checkout')) {
-                    // Override WooCommerce's update_checkout method to run our custom calculations
-                    var originalUpdateCheckout = null;
+                    // رویکرد ساده‌تر - فقط به‌روزرسانی دوره‌ای بدون تداخل با متدهای WooCommerce
+                    setTimeout(fixCheckoutPrices, 500);
                     
-                    if ($.fn.wc_checkout_form && $.fn.wc_checkout_form.prototype && $.fn.wc_checkout_form.prototype.update_checkout) {
-                        originalUpdateCheckout = $.fn.wc_checkout_form.prototype.update_checkout;
+                    // به‌جای بازنویسی متد update_checkout، فقط به رویدادهایی که توسط WooCommerce ایجاد می‌شوند گوش کنیم
+                    $(document.body).on('updated_checkout', function() {
+                        // اضافه کردن تأخیر برای اطمینان از اینکه WooCommerce تمام به‌روزرسانی‌های خود را انجام داده است
+                        setTimeout(fixCheckoutPrices, 500);
+                    });
+                    
+                    // استفاده از setInterval با فاصله زمانی بیشتر و محدودیت زمانی برای جلوگیری از مصرف زیاد منابع
+                    var checkoutUpdateCount = 0;
+                    var checkoutInterval = setInterval(function() {
+                        fixCheckoutPrices();
+                        checkoutUpdateCount++;
                         
-                        $.fn.wc_checkout_form.prototype.update_checkout = function() {
-                            // Call the original method
-                            var result = originalUpdateCheckout.apply(this, arguments);
-                            
-                            // Add a slight delay to allow WooCommerce to finish its update
-                            setTimeout(function() {
-                                fixCheckoutPrices();
-                            }, 500);
-                            
-                            return result;
-                        };
-                    }
+                        // بعد از 30 بار بررسی (60 ثانیه)، setInterval را متوقف کنیم
+                        if (checkoutUpdateCount > 30) {
+                            clearInterval(checkoutInterval);
+                        }
+                    }, 2000);
                     
-                    // Run immediately and then periodically
-                    setTimeout(fixCheckoutPrices, 300);
-                    setInterval(fixCheckoutPrices, 2000);
-                    
-                    // Watch for checkout section changes
+                    // MutationObserver با یک تأخیر برای جلوگیری از فراخوانی‌های متعدد
                     if (window.MutationObserver) {
+                        var observerActive = false;
                         var reviewObserver = new MutationObserver(function() {
-                            fixCheckoutPrices();
+                            if (!observerActive) {
+                                observerActive = true;
+                                setTimeout(function() {
+                                    fixCheckoutPrices();
+                                    observerActive = false;
+                                }, 1000);
+                            }
                         });
                         
                         var orderReview = document.getElementById('order_review');
@@ -1680,23 +1730,14 @@ class HPO_Shortcodes {
                             reviewObserver.observe(orderReview, {
                                 childList: true,
                                 subtree: true,
-                                attributes: true,
-                                characterData: true
-                            });
-                        }
-                        
-                        // Also watch for changes to billing forms as they can trigger updates
-                        var billingForm = document.getElementById('customer_details');
-                        if (billingForm) {
-                            reviewObserver.observe(billingForm, {
-                                subtree: true,
-                                attributes: true
+                                attributes: false, // تغییر به false برای کاهش تعداد فراخوانی‌ها
+                                characterData: false // تغییر به false برای کاهش تعداد فراخوانی‌ها
                             });
                         }
                     }
                     
-                    // Handle checkout form events directly
-                    $(document.body).on('checkout_error update_checkout updated_checkout payment_method_selected applied_coupon removed_coupon', function() {
+                    // کاهش تعداد رویدادها برای جلوگیری از فراخوانی‌های متعدد
+                    $(document.body).on('checkout_error payment_method_selected updated_checkout', function() {
                         setTimeout(fixCheckoutPrices, 500);
                     });
                 }
@@ -1970,91 +2011,88 @@ class HPO_Shortcodes {
      * @param WC_Cart $cart The cart object
      */
     public function after_calculate_totals($cart) {
+        static $is_calculating = false;
+        
         if (is_admin() && !defined('DOING_AJAX')) {
             return;
         }
         
-        // Only proceed if we have HPO items in the cart
-        $has_hpo_items = false;
-        
-        foreach ($cart->get_cart() as $cart_item) {
-            if (isset($cart_item['hpo_custom_data'])) {
-                $has_hpo_items = true;
-                break;
-            }
-        }
-        
-        if (!$has_hpo_items) {
+        // جلوگیری از فراخوانی بازگشتی
+        if ($is_calculating) {
             return;
         }
         
-        // Calculate totals correctly for HPO items
-        $subtotal = 0;
+        $is_calculating = true;
         
-        foreach ($cart->get_cart() as $cart_item_key => $cart_item) {
-            $price = 0;
-            $quantity = $cart_item['quantity'];
+        try {
+            // Only proceed if we have HPO items in the cart
+            $has_hpo_items = false;
             
-            if (isset($cart_item['hpo_custom_data'])) {
-                // Get price from HPO custom data
-                if (isset($cart_item['hpo_custom_data']['price_per_unit']) && 
-                    $cart_item['hpo_custom_data']['price_per_unit'] > 0) {
-                    $price = floatval($cart_item['hpo_custom_data']['price_per_unit']);
-                } elseif (isset($cart_item['hpo_custom_data']['calculated_price']) && 
-                        $cart_item['hpo_custom_data']['calculated_price'] > 0) {
-                    $price = floatval($cart_item['hpo_custom_data']['calculated_price']);
-                } elseif (isset($cart_item['hpo_custom_data']['custom_price']) && 
-                        $cart_item['hpo_custom_data']['custom_price'] > 0) {
-                    $price = floatval($cart_item['hpo_custom_data']['custom_price']);
+            foreach ($cart->get_cart() as $cart_item) {
+                if (isset($cart_item['hpo_custom_data'])) {
+                    $has_hpo_items = true;
+                    break;
                 }
-            } else {
-                // For regular products, get price from product
-                $price = floatval($cart_item['data']->get_price());
             }
             
-            $line_total = $price * $quantity;
-            $subtotal += $line_total;
+            if (!$has_hpo_items) {
+                return;
+            }
             
-            // Make sure the line total is correctly set in the cart item
-            $cart->cart_contents[$cart_item_key]['line_total'] = $line_total;
-            $cart->cart_contents[$cart_item_key]['line_subtotal'] = $line_total;
-        }
-        
-        // Set cart subtotal
-        if ($subtotal > 0) {
-            // We need to handle the cart subtotal correctly
-            add_filter('woocommerce_cart_subtotal', function($cart_subtotal, $compound, $cart) use ($subtotal) {
-                // Format the subtotal with WooCommerce's currency format
-                return wc_price($subtotal);
-            }, 100, 3);
+            // Calculate totals correctly for HPO items
+            $subtotal = 0;
             
-            // Add filter specifically for checkout page totals
-            add_filter('woocommerce_calculated_total', function($total, $cart) use ($subtotal) {
-                // If there's no shipping, fees, or taxes, use our subtotal as the total
-                if (count($cart->get_shipping_packages()) === 0 && count($cart->get_fees()) === 0 && $cart->get_total_tax() == 0) {
-                    return $subtotal;
+            foreach ($cart->get_cart() as $cart_item_key => $cart_item) {
+                $price = 0;
+                $quantity = $cart_item['quantity'];
+                
+                if (isset($cart_item['hpo_custom_data'])) {
+                    // Get price from HPO custom data
+                    if (isset($cart_item['hpo_custom_data']['price_per_unit']) && 
+                        $cart_item['hpo_custom_data']['price_per_unit'] > 0) {
+                        $price = floatval($cart_item['hpo_custom_data']['price_per_unit']);
+                    } elseif (isset($cart_item['hpo_custom_data']['calculated_price']) && 
+                            $cart_item['hpo_custom_data']['calculated_price'] > 0) {
+                        $price = floatval($cart_item['hpo_custom_data']['calculated_price']);
+                    } elseif (isset($cart_item['hpo_custom_data']['custom_price']) && 
+                            $cart_item['hpo_custom_data']['custom_price'] > 0) {
+                        $price = floatval($cart_item['hpo_custom_data']['custom_price']);
+                    }
+                } else {
+                    // For regular products, get price from product
+                    $price = floatval($cart_item['data']->get_price());
                 }
                 
-                // Otherwise, account for shipping, fees, and taxes
-                $new_total = $subtotal;
-                $new_total += $cart->get_shipping_total();
-                $new_total += $cart->get_fee_total();
-                $new_total += $cart->get_total_tax();
+                $line_total = $price * $quantity;
+                $subtotal += $line_total;
                 
-                return $new_total;
-            }, 100, 2);
+                // Make sure the line total is correctly set in the cart item
+                $cart->cart_contents[$cart_item_key]['line_total'] = $line_total;
+                $cart->cart_contents[$cart_item_key]['line_subtotal'] = $line_total;
+            }
             
-            // If there's no shipping or fees, we can also set the total directly in the cart object
-            if (count($cart->get_shipping_packages()) === 0 && count($cart->get_fees()) === 0) {
-                // Use set_subtotal_ex_tax for consistency
-                $cart->set_subtotal($subtotal);
-                $cart->set_cart_contents_total($subtotal);
-                $cart->set_total($subtotal);
-                
-                add_filter('woocommerce_cart_total', function($total) use ($subtotal) {
+            // Set cart subtotal
+            if ($subtotal > 0) {
+                // We need to handle the cart subtotal correctly
+                add_filter('woocommerce_cart_subtotal', function($cart_subtotal, $compound, $cart) use ($subtotal) {
+                    // Format the subtotal with WooCommerce's currency format
                     return wc_price($subtotal);
-                }, 100);
+                }, 999, 3);
+                
+                // If there's no shipping or fees, we can also set the total directly in the cart object
+                if (count($cart->get_shipping_packages()) === 0 && count($cart->get_fees()) === 0) {
+                    // Use set_subtotal_ex_tax for consistency
+                    $cart->set_subtotal($subtotal);
+                    $cart->set_cart_contents_total($subtotal);
+                    $cart->set_total($subtotal);
+                    
+                    add_filter('woocommerce_cart_total', function($total) use ($subtotal) {
+                        return wc_price($subtotal);
+                    }, 999);
+                }
             }
+        } finally {
+            $is_calculating = false;
         }
     }
 
@@ -2197,42 +2235,58 @@ class HPO_Shortcodes {
      * @return float Modified total
      */
     public function update_calculated_total($total, $cart) {
-        // Calculate our own subtotal
-        $subtotal = 0;
+        static $is_calculating = false;
         
-        foreach ($cart->get_cart() as $cart_item_key => $cart_item) {
-            $price = 0;
-            $quantity = $cart_item['quantity'];
+        // جلوگیری از فراخوانی‌های بازگشتی
+        if ($is_calculating) {
+            return $total;
+        }
+        
+        $is_calculating = true;
+        
+        try {
+            // Calculate our own subtotal
+            $subtotal = 0;
             
-            // Get price based on our custom data if available
-            if (isset($cart_item['hpo_custom_data'])) {
-                if (isset($cart_item['hpo_custom_data']['price_per_unit'])) {
-                    $price = floatval($cart_item['hpo_custom_data']['price_per_unit']);
-                } elseif (isset($cart_item['hpo_custom_data']['calculated_price'])) {
-                    $price = floatval($cart_item['hpo_custom_data']['calculated_price']);
-                } elseif (isset($cart_item['hpo_custom_data']['custom_price'])) {
-                    $price = floatval($cart_item['hpo_custom_data']['custom_price']);
+            foreach ($cart->get_cart() as $cart_item_key => $cart_item) {
+                $price = 0;
+                $quantity = $cart_item['quantity'];
+                
+                // Get price based on our custom data if available
+                if (isset($cart_item['hpo_custom_data'])) {
+                    if (isset($cart_item['hpo_custom_data']['price_per_unit'])) {
+                        $price = floatval($cart_item['hpo_custom_data']['price_per_unit']);
+                    } elseif (isset($cart_item['hpo_custom_data']['calculated_price'])) {
+                        $price = floatval($cart_item['hpo_custom_data']['calculated_price']);
+                    } elseif (isset($cart_item['hpo_custom_data']['custom_price'])) {
+                        $price = floatval($cart_item['hpo_custom_data']['custom_price']);
+                    }
+                } else {
+                    // For regular products, use the product price
+                    $price = floatval($cart_item['data']->get_price());
                 }
-            } else {
-                // For regular products, use the product price
-                $price = floatval($cart_item['data']->get_price());
+                
+                // Add to subtotal with quantity
+                $subtotal += $price * $quantity;
             }
             
-            // Add to subtotal with quantity
-            $subtotal += $price * $quantity;
-        }
-        
-        // If our subtotal is valid, add shipping, fees, and taxes to it
-        if ($subtotal > 0) {
-            $new_total = $subtotal;
-            $new_total += $cart->get_shipping_total();
-            $new_total += $cart->get_fee_total();
-            $new_total += $cart->get_total_tax();
+            // If our subtotal is valid, add shipping, fees, and taxes to it
+            if ($subtotal > 0) {
+                $new_total = $subtotal;
+                $new_total += $cart->get_shipping_total();
+                $new_total += $cart->get_fee_total();
+                $new_total += $cart->get_total_tax();
+                
+                // فقط اگر اختلاف قابل توجهی وجود داشته باشد، مقدار را تغییر دهیم
+                if (abs($new_total - $total) > 1) {
+                    return $new_total;
+                }
+            }
             
-            return $new_total;
+            return $total;
+        } finally {
+            $is_calculating = false;
         }
-        
-        return $total;
     }
 }
 
