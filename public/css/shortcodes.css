@@ -1445,6 +1445,7 @@ body.hpo-popup-open {
     display: flex!important;
     flex-direction: row!important;
     gap: 10px!important;
+    justify-content: center!important;
 }
 
 .hpo-success-actions button {
