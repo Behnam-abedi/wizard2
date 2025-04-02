@@ -202,6 +202,27 @@ class Hierarchical_Product_Options_DB {
     }
     
     /**
+     * Get product items by category ordered by assignments sort_order
+     *
+     * @param int $category_id Category ID
+     * @param int $wc_product_id WooCommerce product ID
+     * @return array Product items
+     */
+    public function get_products_by_category_with_assignment_order($category_id, $wc_product_id) {
+        global $wpdb;
+        
+        $sql = $wpdb->prepare(
+            "SELECT p.* FROM $this->products_table p 
+             LEFT JOIN $this->assignments_table a ON a.category_id = %d AND a.wc_product_id = %d 
+             WHERE p.category_id = %d 
+             ORDER BY a.sort_order, p.sort_order", 
+            $category_id, $wc_product_id, $category_id
+        );
+        
+        return $wpdb->get_results($sql);
+    }
+    
+    /**
      * Add a new product item
      *
      * @param string $name Product name
@@ -732,7 +753,7 @@ class Hierarchical_Product_Options_DB {
             "SELECT c.* FROM $this->categories_table c
              JOIN $this->assignments_table a ON c.id = a.category_id
              WHERE a.wc_product_id = %d
-             ORDER BY c.parent_id, c.sort_order",
+             ORDER BY c.parent_id, a.sort_order",
             $wc_product_id
         );
         

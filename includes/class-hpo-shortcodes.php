@@ -278,6 +278,32 @@ class HPO_Shortcodes {
             }
         }
         
+        // Get parent category assignments ordered by sort_order
+        $parent_assignments = $db->get_parent_assignments_for_product($product_id);
+        
+        // Reorder parent_categories based on parent_assignments sort_order
+        if (!empty($parent_assignments)) {
+            $ordered_parent_categories = array();
+            $category_map = array();
+            
+            // First create a map of categories by id
+            foreach ($parent_categories as $category) {
+                $category_map[$category->id] = $category;
+            }
+            
+            // Then create a new ordered array based on assignments
+            foreach ($parent_assignments as $assignment) {
+                if (isset($category_map[$assignment->category_id])) {
+                    $ordered_parent_categories[] = $category_map[$assignment->category_id];
+                }
+            }
+            
+            // Replace the parent_categories array if we have ordered categories
+            if (!empty($ordered_parent_categories)) {
+                $parent_categories = $ordered_parent_categories;
+            }
+        }
+        
         // Get weight options
         $weights = $db->get_weights_for_product($product_id);
         
@@ -303,7 +329,7 @@ class HPO_Shortcodes {
                             <div class="hpo-products">
                                 <?php 
                                 // Get products for parent category
-                                $parent_products = $db->get_products_by_category($parent->id);
+                                $parent_products = $db->get_products_by_category_with_assignment_order($parent->id, $product_id);
                                 foreach ($parent_products as $opt_product): 
                                 ?>
                                 <div class="hpo-product-option">
@@ -339,7 +365,7 @@ class HPO_Shortcodes {
                                     <div class="hpo-products">
                                         <?php 
                                         // Get products for child category
-                                        $child_products = $db->get_products_by_category($child->id);
+                                        $child_products = $db->get_products_by_category_with_assignment_order($child->id, $product_id);
                                         foreach ($child_products as $child_product): 
                                         ?>
                                         <div class="hpo-product-option">
