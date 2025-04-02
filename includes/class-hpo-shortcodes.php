@@ -610,7 +610,9 @@ class HPO_Shortcodes {
             json_encode(isset($data['hpo_options']) ? $data['hpo_options'] : []) . '_' . 
             json_encode(isset($data['hpo_weight']) ? $data['hpo_weight'] : []) . '_' . 
             $data['hpo_grinding'] . '_' . 
-            json_encode(isset($data['hpo_grinding_machine']) ? $data['hpo_grinding_machine'] : [])
+            json_encode(isset($data['hpo_grinding_machine']) ? $data['hpo_grinding_machine'] : []) . '_' .
+            $total_price . '_' .
+            microtime(true) // Add timestamp to ensure uniqueness
         );
         $cart_item_data['unique_key'] = $unique_key;
         
@@ -620,6 +622,7 @@ class HPO_Shortcodes {
         // Set the price everywhere it might be needed
         $cart_item_data['data_price'] = $total_price;
         $cart_item_data['hpo_total_price'] = $total_price;
+        $cart_item_data['hpo_calculated_price'] = $total_price;
         
         // Important: Set the product price to our calculated price before adding to cart
         $product->set_price($total_price);
@@ -641,6 +644,12 @@ class HPO_Shortcodes {
                 $cart_contents[$cart_item_key]['hpo_custom_data']['calculated_price'] = $total_price;
                 $cart_contents[$cart_item_key]['hpo_custom_data']['price_per_unit'] = $total_price;
                 $cart_contents[$cart_item_key]['hpo_custom_data']['custom_price'] = $total_price;
+                $cart_contents[$cart_item_key]['data_price'] = $total_price;
+                $cart_contents[$cart_item_key]['hpo_total_price'] = $total_price;
+                $cart_contents[$cart_item_key]['hpo_calculated_price'] = $total_price;
+                
+                // Explicitly save to session
+                WC()->session->set('cart_' . $cart_item_key, $cart_contents[$cart_item_key]);
             }
             
             // Force WooCommerce to recalculate totals
@@ -669,6 +678,7 @@ class HPO_Shortcodes {
             console.log("HPO: Product added to cart with ID: <?php echo esc_js($product_id); ?>");
             console.log("HPO: Calculated price: <?php echo esc_js($total_price); ?>");
             console.log("HPO: Cart item key: <?php echo esc_js($cart_item_key); ?>");
+            console.log("HPO: Unique key: <?php echo esc_js($unique_key); ?>");
             </script>
             <?php
             $success_popup_html = ob_get_clean();
@@ -677,6 +687,7 @@ class HPO_Shortcodes {
                 'message' => 'محصول با موفقیت به سبد خرید اضافه شد.',
                 'cart_item_key' => $cart_item_key,
                 'price' => $total_price,
+                'unique_key' => $unique_key,
                 'success_popup_html' => $success_popup_html
             ));
         } else {
@@ -758,9 +769,12 @@ class HPO_Shortcodes {
             return;
         }
         
-        // Ensure this runs only once
-        remove_filter('woocommerce_before_calculate_totals', array($this, 'calculate_cart_item_prices'), 10);
+        // Ensure this runs only once per page load but will run again on next page load
+        static $has_run = false;
+        if ($has_run) return;
+        $has_run = true;
         
+        // Process each cart item
         foreach ($cart->get_cart() as $cart_item_key => $cart_item) {
             // Skip if this is not our custom item
             if (!isset($cart_item['hpo_custom_data'])) {
@@ -806,10 +820,20 @@ class HPO_Shortcodes {
                 
                 // Store in cart item data for later use
                 $cart->cart_contents[$cart_item_key]['hpo_custom_data']['calculated_price'] = $final_price;
+                $cart->cart_contents[$cart_item_key]['hpo_custom_data']['price_per_unit'] = $final_price;
+                $cart->cart_contents[$cart_item_key]['hpo_custom_data']['custom_price'] = $final_price;
                 $cart->cart_contents[$cart_item_key]['data_price'] = $final_price;
                 $cart->cart_contents[$cart_item_key]['hpo_total_price'] = $final_price;
+                
+                // Make sure it's updated in the session
+                if (function_exists('WC') && WC()->session) {
+                    WC()->session->set('cart_' . $cart_item_key, $cart->cart_contents[$cart_item_key]);
+                }
             }
         }
+        
+        // Force cart recalculation to update totals
+        $cart->calculate_totals();
     }
     
     /**
@@ -941,16 +965,37 @@ class HPO_Shortcodes {
             $weight = isset($cart_item_data['hpo_custom_data']['weight']) ? $cart_item_data['hpo_custom_data']['weight'] : [];
             $grinding = isset($cart_item_data['hpo_custom_data']['grinding']) ? $cart_item_data['hpo_custom_data']['grinding'] : 'whole';
             $grinding_machine = isset($cart_item_data['hpo_custom_data']['grinding_machine']) ? $cart_item_data['hpo_custom_data']['grinding_machine'] : [];
+            $price = 0;
+            
+            // Get the calculated price to include in the unique key
+            if (isset($cart_item_data['hpo_custom_data']['price_per_unit'])) {
+                $price = floatval($cart_item_data['hpo_custom_data']['price_per_unit']);
+            } elseif (isset($cart_item_data['hpo_custom_data']['calculated_price'])) {
+                $price = floatval($cart_item_data['hpo_custom_data']['calculated_price']);
+            } elseif (isset($cart_item_data['hpo_custom_data']['custom_price'])) {
+                $price = floatval($cart_item_data['hpo_custom_data']['custom_price']);
+            }
             
             $unique_key = md5(
                 $product_id . '_' . 
                 json_encode($options) . '_' . 
                 json_encode($weight) . '_' . 
                 $grinding . '_' . 
-                json_encode($grinding_machine)
+                json_encode($grinding_machine) . '_' .
+                // Add price to ensure uniqueness for different price configurations
+                $price . '_' .
+                // Add a timestamp to ensure uniqueness even for identical products
+                microtime(true)
             );
             
             $cart_item_data['unique_key'] = $unique_key;
+            
+            // For debugging
+            add_action('wp_footer', function() use ($unique_key, $product_id) {
+                if (is_cart() || is_checkout() || wp_doing_ajax()) {
+                    echo '<script>console.log("HPO: Generated unique key ' . esc_js($unique_key) . ' for product ' . esc_js($product_id) . '");</script>';
+                }
+            }, 99);
         }
         return $cart_item_data;
     }
@@ -992,9 +1037,35 @@ class HPO_Shortcodes {
                 $cart_item['data_price'] = $price;
                 $cart_item['hpo_total_price'] = $price;
                 
+                // Make sure this is a reference to the correct values with a clean unique key
+                if (isset($values['unique_key'])) {
+                    $cart_item['unique_key'] = $values['unique_key'];
+                } else {
+                    // Generate a new unique key if missing
+                    if (isset($cart_item['data']) && method_exists($cart_item['data'], 'get_id')) {
+                        $product_id = $cart_item['data']->get_id();
+                        $options = isset($cart_item['hpo_custom_data']['options']) ? $cart_item['hpo_custom_data']['options'] : [];
+                        $weight = isset($cart_item['hpo_custom_data']['weight']) ? $cart_item['hpo_custom_data']['weight'] : [];
+                        $grinding = isset($cart_item['hpo_custom_data']['grinding']) ? $cart_item['hpo_custom_data']['grinding'] : 'whole';
+                        $grinding_machine = isset($cart_item['hpo_custom_data']['grinding_machine']) ? $cart_item['hpo_custom_data']['grinding_machine'] : [];
+                        
+                        $cart_item['unique_key'] = md5(
+                            $product_id . '_' . 
+                            json_encode($options) . '_' . 
+                            json_encode($weight) . '_' . 
+                            $grinding . '_' . 
+                            json_encode($grinding_machine) . '_' .
+                            // Add the price to ensure uniqueness when prices differ
+                            $price
+                        );
+                    }
+                }
+                
                 // Log to console for debugging
                 add_action('wp_footer', function() use ($price, $cart_item) {
-                    echo '<script>console.log("HPO: Session item restored with price: ' . esc_js($price) . '");</script>';
+                    if (is_cart() || is_checkout()) {
+                        echo '<script>console.log("HPO: Session item restored with price: ' . esc_js($price) . ' and key: ' . esc_js(isset($cart_item['unique_key']) ? $cart_item['unique_key'] : 'unknown') . '");</script>';
+                    }
                 }, 99);
             }
             
@@ -1604,12 +1675,30 @@ class HPO_Shortcodes {
                     $cart->cart_contents[$cart_item_key]['data_price'] = $price_value;
                     $cart->cart_contents[$cart_item_key]['hpo_total_price'] = $price_value;
                     $cart->cart_contents[$cart_item_key]['_hpo_custom_price_item'] = 'yes';
+                    
+                    // Explicitly set in WooCommerce session to prevent lost updates
+                    if (function_exists('WC') && WC()->session) {
+                        WC()->session->set('cart_' . $cart_item_key, $cart->cart_contents[$cart_item_key]);
+                    }
                 }
             }
         }
         
         // Force cart recalculation
         $cart->calculate_totals();
+        
+        // Add debugging to check if prices are correctly set
+        add_action('wp_footer', function() use ($cart) {
+            if (is_cart() || is_checkout()) {
+                echo '<script>console.log("HPO Debug: Cart session loaded and prices fixed");</script>';
+                foreach ($cart->get_cart() as $cart_item_key => $cart_item) {
+                    if (isset($cart_item['hpo_custom_data'])) {
+                        $price = isset($cart_item['data']) ? $cart_item['data']->get_price() : 0;
+                        echo '<script>console.log("HPO Item ' . esc_js($cart_item_key) . ' price: ' . esc_js($price) . '");</script>';
+                    }
+                }
+            }
+        }, 999);
     }
 }
 
