@@ -1461,10 +1461,10 @@ class HPO_Shortcodes {
                                     unitPrice = Math.round(totalPrice / quantity);
                                     
                                     // Add the unit price info if it doesn't exist already
-                                    if (!$nameCol.find('.hpo-unit-price').length) {
-                                        $nameCol.append('<div class="hpo-unit-price" style="font-size: 0.85em; opacity: 0.8;">' + 
-                                            'قیمت واحد: ' + numberWithCommas(unitPrice) + ' تومان</div>');
-                                    }
+                                    // if (!$nameCol.find('.hpo-unit-price').length) {
+                                    //     $nameCol.append('<div class="hpo-unit-price" style="font-size: 0.85em; opacity: 0.8;">' + 
+                                    //         'قیمت واحد: ' + numberWithCommas(unitPrice) + ' تومان</div>');
+                                    // }
                                 }
                             }
                         });
