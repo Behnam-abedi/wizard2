@@ -592,7 +592,7 @@
             var $form = $('<form></form>');
             $form.append('<div class="hpo-form-row"><label for="hpo-description">' + hpo_data.strings.description + '</label></div>');
             $form.append('<div class="hpo-form-row"><textarea id="hpo-description" name="description" rows="3" maxlength="53" dir="rtl">' + description + '</textarea></div>');
-            $form.append('<div class="hpo-limit-info">حداکثر 53 کاراکتر مجاز است</div>');
+            $form.append('<div class="hpo-limit-info">حداکثر 53 کاراکتر مجاز است (<span class="remaining-chars">53</span> کاراکتر باقیمانده)</div>');
             $form.append('<div class="hpo-form-row hpo-form-actions"><button type="submit" class="button button-primary">' + hpo_data.strings.save + '</button> <button type="button" class="button hpo-cancel">' + hpo_data.strings.cancel + '</button></div>');
             
             $content.append($form);
@@ -602,16 +602,20 @@
             // تنظیم محدودیت کاراکتر
             var $textarea = $modal.find('textarea');
             var $limitInfo = $modal.find('.hpo-limit-info');
+            var $remainingChars = $limitInfo.find('.remaining-chars');
             
             // Focus on textarea after modal is shown
             setTimeout(function() {
                 $textarea.focus();
             }, 100);
             
-            $textarea.on('input', function() {
-                var maxLength = parseInt($(this).attr('maxlength'));
-                var currentLength = $(this).val().length;
+            // اعمال محدودیت کاراکتر و نمایش تعداد باقیمانده
+            function updateCharCount() {
+                var maxLength = 53;
+                var currentLength = $textarea.val().length;
                 var remaining = maxLength - currentLength;
+                
+                $remainingChars.text(remaining);
                 
                 if (remaining <= 10) {
                     $limitInfo.addClass('length-warning');
@@ -619,8 +623,19 @@
                     $limitInfo.removeClass('length-warning');
                 }
                 
-                $limitInfo.text('تعداد کاراکتر باقیمانده: ' + remaining);
-            }).trigger('input');
+                // اگر تعداد کاراکترها بیش از حد مجاز بود، آنها را کوتاه کنیم
+                if (currentLength > maxLength) {
+                    $textarea.val($textarea.val().substring(0, maxLength));
+                    updateCharCount();
+                }
+            }
+            
+            // اجرای اولیه برای نمایش تعداد کاراکتر باقیمانده
+            updateCharCount();
+            
+            $textarea.on('input keyup paste', function() {
+                updateCharCount();
+            });
             
             // Close on Escape key
             $(document).on('keydown.hpo_modal', function(e) {
@@ -635,6 +650,12 @@
                 e.preventDefault();
                 
                 var newDescription = $textarea.val();
+                
+                // بررسی مجدد طول توضیحات
+                if (newDescription.length > 53) {
+                    newDescription = newDescription.substring(0, 53);
+                }
+                
                 var $descText = $button.prev('.hpo-desc-text');
                 
                 // نمایش لودینگ
@@ -671,10 +692,14 @@
                         showSuccessMessage(hpo_data.strings.description_updated || 'توضیحات با موفقیت بروزرسانی شد');
                     } else {
                         // نمایش خطا
-                        alert(response.data);
+                        alert(response.data || 'خطا در ذخیره توضیحات. لطفاً مجدد تلاش کنید.');
                         $descText.removeClass('loading');
                         $button.prop('disabled', false);
                     }
+                }).fail(function() {
+                    alert('خطا در ارتباط با سرور. لطفاً مجدد تلاش کنید.');
+                    $descText.removeClass('loading');
+                    $button.prop('disabled', false);
                 });
             });
             

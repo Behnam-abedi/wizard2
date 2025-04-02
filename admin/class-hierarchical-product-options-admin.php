@@ -664,7 +664,7 @@ class Hierarchical_Product_Options_Admin {
         // Get and validate assignment_id
         $assignment_id = isset($_POST['assignment_id']) ? intval($_POST['assignment_id']) : 0;
         $product_id = isset($_POST['product_id']) ? intval($_POST['product_id']) : 0;
-        $description = isset($_POST['description']) ? sanitize_text_field($_POST['description']) : '';
+        $description = isset($_POST['description']) ? sanitize_textarea_field($_POST['description']) : '';
         
         // Ensure assignment_id was provided
         if (!$assignment_id || !$product_id) {
@@ -694,7 +694,7 @@ class Hierarchical_Product_Options_Admin {
         }
         
         // Update ALL assignments for this product
-        $wpdb->query(
+        $result = $wpdb->query(
             $wpdb->prepare(
                 "UPDATE {$table_name} SET short_description = %s WHERE wc_product_id = %d",
                 $description,
@@ -705,7 +705,18 @@ class Hierarchical_Product_Options_Admin {
         // Clear cache
         $this->clear_cache();
         
-        wp_send_json_success();
+        if ($result !== false) {
+            wp_send_json_success();
+        } else {
+            // Check if there was an actual error or if the description was just the same
+            $error = $wpdb->last_error;
+            if (empty($error)) {
+                // No error, description didn't change
+                wp_send_json_success();
+            } else {
+                wp_send_json_error('خطا در به‌روزرسانی توضیحات: ' . $error);
+            }
+        }
     }
     
     /**
@@ -1497,17 +1508,41 @@ class Hierarchical_Product_Options_Admin {
             wp_send_json_error(__('هیچ تخصیصی برای این محصول یافت نشد', 'hierarchical-product-options'));
         }
         
+        // Make sure description is not longer than 53 characters
+        $description_length = mb_strlen($description);
+        if ($description_length > 53) {
+            $description = mb_substr($description, 0, 53);
+        }
+        
+        // بررسی وجود ستون short_description
+        $column_exists = $wpdb->get_results("SHOW COLUMNS FROM {$assignments_table} LIKE 'short_description'");
+        
+        // اگر ستون وجود نداشت، آن را اضافه کنیم
+        if (empty($column_exists)) {
+            $wpdb->query("ALTER TABLE {$assignments_table} ADD COLUMN `short_description` varchar(53) DEFAULT '' AFTER `wc_product_id`");
+        }
+        
         // به‌روزرسانی توضیحات برای تمام تخصیص‌های این محصول
         $result = $wpdb->update(
             $assignments_table,
-            array('short_description' => substr($description, 0, 53)),
+            array('short_description' => $description),
             array('wc_product_id' => $product_id)
         );
+        
+        // Clear cache to ensure updates are visible
+        delete_transient('hpo_category_assignments');
         
         if ($result !== false) {
             wp_send_json_success();
         } else {
-            wp_send_json_error(__('خطا در به‌روزرسانی توضیحات', 'hierarchical-product-options'));
+            // Check if there was an actual error or if the description was just the same
+            $error = $wpdb->last_error;
+            if (empty($error)) {
+                // No error, description didn't change
+                wp_send_json_success();
+            } else {
+                wp_send_json_error('خطا در به‌روزرسانی توضیحات: ' . $error);
+            }
         }
     }
     

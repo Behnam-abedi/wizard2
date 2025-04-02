@@ -301,12 +301,17 @@ class Hierarchical_Product_Options_DB {
             )
         );
         
+        // Make sure description is not longer than 53 characters
+        if (mb_strlen($short_description) > 53) {
+            $short_description = mb_substr($short_description, 0, 53);
+        }
+        
         if ($existing) {
             // Update short description if provided
             if (!empty($short_description)) {
                 $wpdb->update(
                     $this->assignments_table,
-                    array('short_description' => substr($short_description, 0, 53)),
+                    array('short_description' => $short_description),
                     array('id' => $existing)
                 );
             }
@@ -339,7 +344,7 @@ class Hierarchical_Product_Options_DB {
             array(
                 'wc_product_id' => $wc_product_id,
                 'category_id' => $category_id,
-                'short_description' => substr($short_description, 0, 53),
+                'short_description' => $short_description,
                 'sort_order' => $sort_order
             )
         );
@@ -441,9 +446,14 @@ class Hierarchical_Product_Options_DB {
     public function update_assignment_description($id, $short_description) {
         global $wpdb;
         
+        // Make sure description is not longer than 53 characters
+        if (mb_strlen($short_description) > 53) {
+            $short_description = mb_substr($short_description, 0, 53);
+        }
+        
         return $wpdb->update(
             $this->assignments_table,
-            array('short_description' => substr($short_description, 0, 53)),
+            array('short_description' => $short_description),
             array('id' => $id)
         );
     }
