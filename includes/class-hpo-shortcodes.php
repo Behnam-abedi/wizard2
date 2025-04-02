@@ -62,6 +62,13 @@ class HPO_Shortcodes {
             return $name . '_hpo_custom';
         });
         
+        // Add checkout-specific hook for correct totals in checkout
+        add_action('woocommerce_review_order_after_cart_contents', function() {
+            if (WC()->cart) {
+                $this->after_calculate_totals(WC()->cart);
+            }
+        }, 20);
+        
         // Add CSS/JS to pages
         add_action('wp_footer', array($this, 'add_custom_cart_css'));
         
@@ -1406,42 +1413,86 @@ class HPO_Shortcodes {
 
                 // Function to fix cart totals
                 function fixCartTotals() {
-                    if (!document.body.classList.contains('woocommerce-cart')) {
+                    // Check if we're on the cart or checkout page
+                    if (!document.body.classList.contains('woocommerce-cart') && !document.body.classList.contains('woocommerce-checkout')) {
                         return;
                     }
                     
                     let subtotal = 0;
                     
-                    // Calculate the correct subtotal from the individual items
-                    $('.woocommerce-cart-form__cart-item').each(function() {
-                        const $row = $(this);
-                        const $priceElement = $row.find('.product-price .woocommerce-Price-amount');
-                        const $quantityInput = $row.find('.product-quantity input.qty');
-                        
-                        // Extract price from the price element
-                        if ($priceElement.length) {
-                            let priceText = $priceElement.text().trim();
-                            let price = parsePrice(priceText);
-                            let quantity = parseInt($quantityInput.val()) || 1;
+                    // For cart page: Calculate the correct subtotal from the individual items
+                    if (document.body.classList.contains('woocommerce-cart')) {
+                        $('.woocommerce-cart-form__cart-item').each(function() {
+                            const $row = $(this);
+                            const $priceElement = $row.find('.product-price .woocommerce-Price-amount');
+                            const $quantityInput = $row.find('.product-quantity input.qty');
                             
-                            // Add to subtotal
-                            subtotal += price * quantity;
-                        }
-                    });
+                            // Extract price from the price element
+                            if ($priceElement.length) {
+                                let priceText = $priceElement.text().trim();
+                                let price = parsePrice(priceText);
+                                let quantity = parseInt($quantityInput.val()) || 1;
+                                
+                                // Add to subtotal
+                                subtotal += price * quantity;
+                            }
+                        });
+                    }
+                    
+                    // For checkout page: Calculate from the order review items
+                    if (document.body.classList.contains('woocommerce-checkout')) {
+                        $('#order_review .cart_item').each(function() {
+                            const $row = $(this);
+                            const $priceElement = $row.find('.product-total .woocommerce-Price-amount');
+                            const quantityText = $row.find('.product-name .product-quantity').text().trim();
+                            let quantity = 1; // Default quantity
+                            
+                            // Try to extract quantity from the format like: × 2
+                            const qtyMatch = quantityText.match(/×\s*(\d+)/);
+                            if (qtyMatch && qtyMatch[1]) {
+                                quantity = parseInt(qtyMatch[1]) || 1;
+                            }
+                            
+                            // Extract unit price
+                            if ($priceElement.length) {
+                                let totalPriceText = $priceElement.text().trim();
+                                let totalPrice = parsePrice(totalPriceText);
+                                
+                                // For product total, we already have quantity included, so we add the total
+                                subtotal += totalPrice;
+                            }
+                        });
+                    }
                     
                     // Find and update the subtotal element
                     if (subtotal > 0) {
+                        // Update for cart page
                         const $subtotalElement = $('.cart-subtotal .woocommerce-Price-amount');
                         if ($subtotalElement.length) {
                             $subtotalElement.html('<bdi>' + numberWithCommas(subtotal) + 
                                 '&nbsp;<span class="woocommerce-Price-currencySymbol">تومان</span></bdi>');
                         }
                         
+                        // Update for checkout page
+                        const $checkoutSubtotalElement = $('#order_review .cart-subtotal .woocommerce-Price-amount');
+                        if ($checkoutSubtotalElement.length) {
+                            $checkoutSubtotalElement.html('<bdi>' + numberWithCommas(subtotal) + 
+                                '&nbsp;<span class="woocommerce-Price-currencySymbol">تومان</span></bdi>');
+                        }
+                        
                         // Find and update the total if no shipping or tax
                         if ($('.shipping').length === 0 && $('.tax-rate').length === 0) {
+                            // Update for cart page
                             const $totalElement = $('.order-total .woocommerce-Price-amount');
                             if ($totalElement.length) {
                                 $totalElement.html('<bdi>' + numberWithCommas(subtotal) + 
+                                    '&nbsp;<span class="woocommerce-Price-currencySymbol">تومان</span></bdi>');
+                            }
+                            
+                            // Update for checkout page
+                            const $checkoutTotalElement = $('#order_review .order-total .woocommerce-Price-amount');
+                            if ($checkoutTotalElement.length) {
+                                $checkoutTotalElement.html('<bdi>' + numberWithCommas(subtotal) + 
                                     '&nbsp;<span class="woocommerce-Price-currencySymbol">تومان</span></bdi>');
                             }
                         }
@@ -1477,6 +1528,11 @@ class HPO_Shortcodes {
                         fixMainCartPrices();
                     }
                     
+                    // Fix checkout page
+                    if (document.body.classList.contains('woocommerce-checkout')) {
+                        fixCartTotals();
+                    }
+                    
                     // Fix Woodmart specific elements
                     fixWoodmartCartWidget();
                     
@@ -1490,6 +1546,32 @@ class HPO_Shortcodes {
                 $(document.body).on('updated_cart_totals updated_checkout wc_fragments_refreshed added_to_cart wc_fragments_loaded', function(e) {
                     setTimeout(fixAllCartPrices, 100);
                 });
+                
+                // Special handler for checkout page
+                if (document.body.classList.contains('woocommerce-checkout')) {
+                    // Run when checkout is updated
+                    $(document.body).on('updated_checkout', function() {
+                        setTimeout(fixCartTotals, 100);
+                    });
+                    
+                    // Run periodically on checkout page to ensure correct prices
+                    setInterval(fixCartTotals, 1000);
+                    
+                    // Watch for order review changes
+                    if (window.MutationObserver && document.querySelector('#order_review')) {
+                        var checkoutObserver = new MutationObserver(function(mutations) {
+                            setTimeout(fixCartTotals, 50);
+                        });
+                        
+                        var orderReview = document.querySelector('#order_review');
+                        checkoutObserver.observe(orderReview, { 
+                            childList: true, 
+                            subtree: true,
+                            characterData: true,
+                            attributes: true
+                        });
+                    }
+                }
                 
                 // Set up mutation observer to detect DOM changes in the cart
                 if (window.MutationObserver && document.querySelector('.woocommerce-cart-form, .widget_shopping_cart_content')) {
@@ -1774,7 +1856,7 @@ class HPO_Shortcodes {
         // Calculate totals correctly for HPO items
         $subtotal = 0;
         
-        foreach ($cart->get_cart() as $cart_item) {
+        foreach ($cart->get_cart() as $cart_item_key => $cart_item) {
             $price = 0;
             $quantity = $cart_item['quantity'];
             
@@ -1797,6 +1879,10 @@ class HPO_Shortcodes {
             
             $line_total = $price * $quantity;
             $subtotal += $line_total;
+            
+            // Make sure the line total is correctly set in the cart item
+            $cart->cart_contents[$cart_item_key]['line_total'] = $line_total;
+            $cart->cart_contents[$cart_item_key]['line_subtotal'] = $line_total;
         }
         
         // Set cart subtotal
@@ -1807,9 +1893,27 @@ class HPO_Shortcodes {
                 return wc_price($subtotal);
             }, 100, 3);
             
-            // If there's no shipping or fees, we can also set the total
+            // Add filter specifically for checkout page totals
+            add_filter('woocommerce_calculated_total', function($total, $cart) use ($subtotal) {
+                // If there's no shipping, fees, or taxes, use our subtotal as the total
+                if (count($cart->get_shipping_packages()) === 0 && count($cart->get_fees()) === 0 && $cart->get_total_tax() == 0) {
+                    return $subtotal;
+                }
+                
+                // Otherwise, account for shipping, fees, and taxes
+                $new_total = $subtotal;
+                $new_total += $cart->get_shipping_total();
+                $new_total += $cart->get_fee_total();
+                $new_total += $cart->get_total_tax();
+                
+                return $new_total;
+            }, 100, 2);
+            
+            // If there's no shipping or fees, we can also set the total directly in the cart object
             if (count($cart->get_shipping_packages()) === 0 && count($cart->get_fees()) === 0) {
+                // Use set_subtotal_ex_tax for consistency
                 $cart->set_subtotal($subtotal);
+                $cart->set_cart_contents_total($subtotal);
                 $cart->set_total($subtotal);
                 
                 add_filter('woocommerce_cart_total', function($total) use ($subtotal) {
