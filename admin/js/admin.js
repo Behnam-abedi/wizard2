@@ -677,25 +677,54 @@
                 items: '> li',
                 placeholder: 'hpo-sortable-placeholder',
                 connectWith: '.hpo-categories-list',
+                tolerance: 'pointer',
+                start: function(e, ui) {
+                    // Add class to the item being sorted
+                    ui.item.addClass('hpo-sorting');
+                    
+                    // Set placeholder height to match item
+                    ui.placeholder.height(ui.item.outerHeight());
+                },
+                stop: function(e, ui) {
+                    // Remove sorting class
+                    ui.item.removeClass('hpo-sorting');
+                },
                 update: function(event, ui) {
                     // Skip if this is not the receiving list
                     if (this !== ui.item.parent()[0]) {
                         return;
                     }
                     
-                    var item = ui.item;
-                    var itemId = item.data('id');
+                    var $list = $(this);
                     var newParentId = 0;
-                    var sortOrder = item.index();
                     
-                    // If the item is in a sub-list, get the parent ID
-                    var $parentList = item.closest('.hpo-categories-list');
-                    if ($parentList.closest('.hpo-category-item').length) {
-                        newParentId = $parentList.closest('.hpo-category-item').data('id');
+                    // If the list is in a sub-list, get the parent ID
+                    if ($list.closest('.hpo-category-item').length) {
+                        newParentId = $list.closest('.hpo-category-item').data('id');
                     }
                     
-                    // Update the order via AJAX
-                    updateItemOrder('category', itemId, newParentId, sortOrder);
+                    // Add loading indicator to the list
+                    $list.addClass('hpo-loading');
+                    
+                    // Get all items in the list to update their sort order
+                    var items = [];
+                    $list.children('li').each(function(index) {
+                        var $item = $(this);
+                        var itemId = $item.data('id');
+                        
+                        if (itemId) {
+                            items.push({
+                                id: itemId,
+                                parent_id: newParentId,
+                                sort_order: index
+                            });
+                        }
+                    });
+                    
+                    // Update all items at once
+                    updateMultipleSortOrders('categories', items, function() {
+                        $list.removeClass('hpo-loading');
+                    });
                 }
             });
             
@@ -705,19 +734,49 @@
                 items: '> li',
                 placeholder: 'hpo-sortable-placeholder',
                 connectWith: '.hpo-products-list',
+                tolerance: 'pointer',
+                start: function(e, ui) {
+                    // Add class to the item being sorted
+                    ui.item.addClass('hpo-sorting');
+                    
+                    // Set placeholder height to match item
+                    ui.placeholder.height(ui.item.outerHeight());
+                },
+                stop: function(e, ui) {
+                    // Remove sorting class
+                    ui.item.removeClass('hpo-sorting');
+                },
                 update: function(event, ui) {
                     // Skip if this is not the receiving list
                     if (this !== ui.item.parent()[0]) {
                         return;
                     }
                     
-                    var item = ui.item;
-                    var itemId = item.data('id');
-                    var newCategoryId = item.closest('.hpo-products-list').data('category-id');
-                    var sortOrder = item.index();
+                    var $list = $(this);
+                    var categoryId = $list.data('category-id');
                     
-                    // Update the order via AJAX
-                    updateItemOrder('product', itemId, newCategoryId, sortOrder);
+                    // Add loading indicator to the list
+                    $list.addClass('hpo-loading');
+                    
+                    // Get all items in the list to update their sort order
+                    var items = [];
+                    $list.children('li').each(function(index) {
+                        var $item = $(this);
+                        var itemId = $item.data('id');
+                        
+                        if (itemId) {
+                            items.push({
+                                id: itemId,
+                                category_id: categoryId,
+                                sort_order: index
+                            });
+                        }
+                    });
+                    
+                    // Update all items at once
+                    updateMultipleSortOrders('products', items, function() {
+                        $list.removeClass('hpo-loading');
+                    });
                 }
             });
             
@@ -818,21 +877,25 @@
         }
         
         /**
-         * Update item order via AJAX
+         * Update multiple items sort order via AJAX
          */
-        function updateItemOrder(itemType, itemId, parentId, sortOrder) {
+        function updateMultipleSortOrders(tableType, items, callback) {
             var data = {
-                action: 'hpo_update_order',
+                action: 'hpo_update_multiple_sort_orders',
                 nonce: hpo_data.nonce,
-                item_type: itemType,
-                item_id: itemId,
-                parent_id: parentId,
-                sort_order: sortOrder
+                table_type: tableType,
+                items: items
             };
             
             $.post(hpo_data.ajax_url, data, function(response) {
-                if (!response.success) {
+                if (response.success) {
+                    showSuccessMessage(response.data);
+                } else {
                     alert('خطا در به‌روزرسانی ترتیب: ' + response.data);
+                }
+                
+                if (typeof callback === 'function') {
+                    callback();
                 }
             });
         }

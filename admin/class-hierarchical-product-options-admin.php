@@ -218,6 +218,7 @@ class Hierarchical_Product_Options_Admin {
         add_action('wp_ajax_hpo_update_product_description', array($this, 'ajax_update_product_description'));
         add_action('wp_ajax_hpo_reorder_product_categories', array($this, 'ajax_reorder_product_categories'));
         add_action('wp_ajax_hpo_delete_product_assignments', array($this, 'ajax_delete_product_assignments'));
+        add_action('wp_ajax_hpo_update_multiple_sort_orders', array($this, 'ajax_update_multiple_sort_orders'));
     }
     
     /**
@@ -441,7 +442,7 @@ class Hierarchical_Product_Options_Admin {
         check_ajax_referer('hpo_nonce', 'nonce');
         
         if (!current_user_can('manage_options')) {
-            wp_send_json_error(__('Permission denied', 'hierarchical-product-options'));
+            wp_send_json_error(__('دسترسی غیرمجاز', 'hierarchical-product-options'));
         }
         
         $item_type = isset($_POST['item_type']) ? sanitize_text_field($_POST['item_type']) : '';
@@ -450,7 +451,7 @@ class Hierarchical_Product_Options_Admin {
         $sort_order = isset($_POST['sort_order']) ? intval($_POST['sort_order']) : 0;
         
         if (empty($item_type) || empty($item_id)) {
-            wp_send_json_error(__('Invalid data', 'hierarchical-product-options'));
+            wp_send_json_error(__('اطلاعات نامعتبر', 'hierarchical-product-options'));
         }
         
         $db = new Hierarchical_Product_Options_DB();
@@ -460,6 +461,9 @@ class Hierarchical_Product_Options_Admin {
                 'parent_id' => $parent_id,
                 'sort_order' => $sort_order
             ));
+            
+            // Clear cache
+            delete_transient('hpo_categories');
         } else if ($item_type === 'product') {
             $result = $db->update_product($item_id, array(
                 'category_id' => $parent_id,
@@ -472,7 +476,7 @@ class Hierarchical_Product_Options_Admin {
         if ($result !== false) {
             wp_send_json_success();
         } else {
-            wp_send_json_error(__('Failed to update order', 'hierarchical-product-options'));
+            wp_send_json_error(__('خطا در به‌روزرسانی ترتیب', 'hierarchical-product-options'));
         }
     }
     
@@ -1567,6 +1571,34 @@ class Hierarchical_Product_Options_Admin {
             wp_send_json_success();
         } else {
             wp_send_json_error(__('خطا در حذف تخصیص‌ها', 'hierarchical-product-options'));
+        }
+    }
+
+    /**
+     * AJAX: Update multiple items order at once
+     */
+    public function ajax_update_multiple_sort_orders() {
+        check_ajax_referer('hpo_nonce', 'nonce');
+        
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(__('دسترسی غیرمجاز', 'hierarchical-product-options'));
+        }
+        
+        $table_type = isset($_POST['table_type']) ? sanitize_text_field($_POST['table_type']) : '';
+        $items = isset($_POST['items']) ? $_POST['items'] : array();
+        
+        if (empty($table_type) || empty($items) || !is_array($items)) {
+            wp_send_json_error(__('اطلاعات نامعتبر', 'hierarchical-product-options'));
+        }
+        
+        $db = new Hierarchical_Product_Options_DB();
+        
+        $result = $db->update_multiple_sort_orders($table_type, $items);
+        
+        if ($result !== false) {
+            wp_send_json_success(__('ترتیب آیتم‌ها با موفقیت بروزرسانی شد', 'hierarchical-product-options'));
+        } else {
+            wp_send_json_error(__('خطا در به‌روزرسانی ترتیب آیتم‌ها', 'hierarchical-product-options'));
         }
     }
 } 

@@ -865,4 +865,82 @@ class Hierarchical_Product_Options_DB {
         
         return $wpdb->get_results($sql);
     }
+
+    /**
+     * Update multiple items sort order at once
+     *
+     * @param string $table_type Type of table ('categories' or 'products')
+     * @param array $items Array of items with id, parent_id/category_id and sort_order
+     * @return bool Success
+     */
+    public function update_multiple_sort_orders($table_type, $items) {
+        global $wpdb;
+        
+        if (empty($items)) {
+            return false;
+        }
+        
+        $table = '';
+        $parent_column = '';
+        
+        // Determine which table to update
+        if ($table_type === 'categories') {
+            $table = $this->categories_table;
+            $parent_column = 'parent_id';
+        } elseif ($table_type === 'products') {
+            $table = $this->products_table;
+            $parent_column = 'category_id';
+        } else {
+            return false;
+        }
+        
+        $success = true;
+        
+        // Start transaction for better performance
+        $wpdb->query('START TRANSACTION');
+        
+        try {
+            foreach ($items as $item) {
+                if (!isset($item['id']) || !isset($item['sort_order'])) {
+                    continue;
+                }
+                
+                $data = array(
+                    'sort_order' => $item['sort_order']
+                );
+                
+                // Include parent/category ID if provided
+                if (isset($item[$parent_column])) {
+                    $data[$parent_column] = $item[$parent_column];
+                }
+                
+                $result = $wpdb->update(
+                    $table,
+                    $data,
+                    array('id' => $item['id'])
+                );
+                
+                if ($result === false) {
+                    $success = false;
+                    break;
+                }
+            }
+            
+            if ($success) {
+                $wpdb->query('COMMIT');
+                
+                // Clear cache
+                if ($table_type === 'categories') {
+                    delete_transient('hpo_categories');
+                }
+            } else {
+                $wpdb->query('ROLLBACK');
+            }
+        } catch (Exception $e) {
+            $wpdb->query('ROLLBACK');
+            $success = false;
+        }
+        
+        return $success;
+    }
 } 

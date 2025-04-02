@@ -66,8 +66,11 @@
 
 .hpo-drag-handle {
     cursor: move;
-    margin-right: 12px;
-    color: #777;
+    color: #767676;
+    background: #f1f1f1;
+    padding: 3px 5px;
+    border-radius: 3px;
+    transition: all 0.2s ease;
 }
 
 .hpo-item-name {
@@ -208,11 +211,26 @@
 
 /* Sortable placeholder */
 .hpo-sortable-placeholder {
-    border: 2px dashed #ccc;
-    background: #f9f9f9;
+    border: 2px dashed #c3c4c7;
+    background: #f6f7f7;
     margin-bottom: 10px;
     height: 40px;
     border-radius: 3px;
+    animation: hpo-placeholder-pulse 1.5s infinite ease-in-out;
+}
+
+@keyframes hpo-placeholder-pulse {
+    0% { background-color: #f6f7f7; }
+    50% { background-color: #ecf5fa; }
+    100% { background-color: #f6f7f7; }
+}
+
+/* Styling for item being dragged */
+.ui-sortable-helper {
+    box-shadow: 0 5px 10px rgba(0,0,0,0.15);
+    opacity: 0.9;
+    transform: rotate(1deg);
+    z-index: 100;
 }
 
 /* Product category assignments new styles */
@@ -476,21 +494,21 @@ textarea[maxlength].length-error {
 .hpo-loading {
     position: relative;
     opacity: 0.7;
-    pointer-events: none;
 }
 
 .hpo-loading::after {
-    content: '';
+    content: "";
     position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 20px;
-    height: 20px;
-    margin: -10px 0 0 -10px;
-    border: 2px solid #0073aa;
-    border-top-color: transparent;
-    border-radius: 50%;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255,255,255,0.6) url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="%23333" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M16 12a4 4 0 1 1-8 0"></path></svg>') no-repeat center center;
+    background-size: 20px;
+    border-radius: 4px;
+    z-index: 10;
     animation: hpo-spin 1s linear infinite;
+    pointer-events: none;
 }
 
 @keyframes hpo-spin {
@@ -538,4 +556,12 @@ textarea[maxlength].length-error {
 
 .hpo-description-cell {
     max-width: 250px;
+}
+
+/* Styling for item being sorted */
+.hpo-sorting {
+    outline: 2px solid #2271b1;
+    background-color: #f0f6fc !important;
+    position: relative;
+    z-index: 99;
 } 
