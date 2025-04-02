@@ -440,7 +440,7 @@ class HPO_Shortcodes {
                                 ?>
                                 <option value="<?php echo esc_attr($grinder->id); ?>" 
                                         data-price="<?php echo esc_attr($grinder_price); ?>">
-                                    <?php echo esc_html($grinder->name); ?> (<?php echo number_format($grinder_price); ?> تومان)
+                                    <?php echo esc_html($grinder->name); ?> (<?php echo $grinder_price == 0 ? 'رایگان' : number_format($grinder_price) . ' تومان'; ?>)
                                 </option>
                                 <?php endforeach; ?>
                             </select>
