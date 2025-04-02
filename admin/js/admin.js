@@ -591,9 +591,9 @@
             
             var $form = $('<form></form>');
             $form.append('<div class="hpo-form-row"><label for="hpo-description">' + hpo_data.strings.description + '</label></div>');
-            $form.append('<div class="hpo-form-row"><textarea id="hpo-description" name="description" rows="3" maxlength="53">' + description + '</textarea></div>');
+            $form.append('<div class="hpo-form-row"><textarea id="hpo-description" name="description" rows="3" maxlength="53" dir="rtl">' + description + '</textarea></div>');
             $form.append('<div class="hpo-limit-info">حداکثر 53 کاراکتر مجاز است</div>');
-            $form.append('<div class="hpo-form-row"><button type="submit" class="button button-primary">' + hpo_data.strings.save + '</button> <button type="button" class="button hpo-cancel">' + hpo_data.strings.cancel + '</button></div>');
+            $form.append('<div class="hpo-form-row hpo-form-actions"><button type="submit" class="button button-primary">' + hpo_data.strings.save + '</button> <button type="button" class="button hpo-cancel">' + hpo_data.strings.cancel + '</button></div>');
             
             $content.append($form);
             $modal.append($content);
@@ -602,6 +602,11 @@
             // تنظیم محدودیت کاراکتر
             var $textarea = $modal.find('textarea');
             var $limitInfo = $modal.find('.hpo-limit-info');
+            
+            // Focus on textarea after modal is shown
+            setTimeout(function() {
+                $textarea.focus();
+            }, 100);
             
             $textarea.on('input', function() {
                 var maxLength = parseInt($(this).attr('maxlength'));
@@ -616,6 +621,14 @@
                 
                 $limitInfo.text('تعداد کاراکتر باقیمانده: ' + remaining);
             }).trigger('input');
+            
+            // Close on Escape key
+            $(document).on('keydown.hpo_modal', function(e) {
+                if (e.keyCode === 27) { // Escape key
+                    $modal.remove();
+                    $(document).off('keydown.hpo_modal');
+                }
+            });
             
             // ارسال فرم
             $form.on('submit', function(e) {
@@ -639,6 +652,7 @@
                     if (response.success) {
                         // بستن مدال
                         $modal.remove();
+                        $(document).off('keydown.hpo_modal');
                         
                         // آپدیت نمایش توضیحات
                         if (newDescription) {
@@ -652,6 +666,9 @@
                         // حذف لودینگ
                         $descText.removeClass('loading');
                         $button.prop('disabled', false);
+                        
+                        // Show success message
+                        showSuccessMessage(hpo_data.strings.description_updated || 'توضیحات با موفقیت بروزرسانی شد');
                     } else {
                         // نمایش خطا
                         alert(response.data);
@@ -664,6 +681,7 @@
             // لغو
             $modal.find('.hpo-cancel').on('click', function() {
                 $modal.remove();
+                $(document).off('keydown.hpo_modal');
             });
         });
         
