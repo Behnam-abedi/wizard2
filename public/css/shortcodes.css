@@ -1107,7 +1107,7 @@
     .hpo-popup-content {
         height: calc(100% - 60px);
         max-height: none;
-        padding: 15px;
+        padding: 0px!important;
     }
     
     /* Fix back button positioning */
@@ -1411,7 +1411,7 @@ body.hpo-popup-open {
     background-color: #fff;
     border-radius: 8px;
     padding: 30px;
-    max-width: 450px;
+    max-width: 550px;
     width: 90%;
     text-align: center;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
@@ -1475,7 +1475,13 @@ body.hpo-popup-open {
 .hpo-checkout-btn:hover {
     background-color: #3a68d9!important;
 }
-
+.hpo-cart-btn{
+    background-color: #2e25ae!important;
+    color: white!important;
+}
+.hpo-cart-btn:hover {
+    background-color: #1f0270!important;
+}
 .hpo-close-success-btn {
     background-color: #f0f0f0!important;
     color: #666!important;

@@ -687,16 +687,13 @@ class HPO_Shortcodes {
                     <div class="hpo-success-actions">
                         <button class="hpo-repeat-order-btn">سفارش جدید</button>
                         <button class="hpo-checkout-btn">پرداخت سفارش</button>
+                        <button class="hpo-cart-btn">مشاهده سبد خرید</button>
                         <button class="hpo-close-success-btn">بستن</button>
+                        
                     </div>
                 </div>
             </div>
-            <script>
-            console.log("HPO: Product added to cart with ID: <?php echo esc_js($product_id); ?>");
-            console.log("HPO: Calculated price: <?php echo esc_js($total_price); ?>");
-            console.log("HPO: Cart item key: <?php echo esc_js($cart_item_key); ?>");
-            console.log("HPO: Unique key: <?php echo esc_js($unique_key); ?>");
-            </script>
+
             <?php
             $success_popup_html = ob_get_clean();
             

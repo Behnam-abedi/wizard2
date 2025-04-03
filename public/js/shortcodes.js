@@ -578,7 +578,9 @@ jQuery(document).ready(function($) {
                             // انتقال به صفحه پرداخت
                             window.location.href = '/checkout/';
                         });
-                        
+                        $('.hpo-cart-btn').on('click', function() {
+                            window.location.href = '/cart/';
+                        });
                         // رویداد کلیک دکمه "بستن"
                         $('.hpo-close-success-btn').on('click', function() {
                             // بستن پاپ‌آپ موفقیت
@@ -590,7 +592,7 @@ jQuery(document).ready(function($) {
                             $('#hpo-popup-overlay').fadeOut(300);
                             unlockBodyScroll();
                         });
-                        
+                         
                         // بروزرسانی سبد خرید کوچک
                         $(document.body).trigger('wc_fragment_refresh');
                     } else {
