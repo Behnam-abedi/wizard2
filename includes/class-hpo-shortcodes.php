@@ -2081,13 +2081,21 @@ class HPO_Shortcodes {
                 
                 // If there's no shipping or fees, we can also set the total directly in the cart object
                 if (count($cart->get_shipping_packages()) === 0 && count($cart->get_fees()) === 0) {
+                    // Get any discount applied (coupons)
+                    $discount_total = $cart->get_discount_total();
+                    
                     // Use set_subtotal_ex_tax for consistency
                     $cart->set_subtotal($subtotal);
                     $cart->set_cart_contents_total($subtotal);
-                    $cart->set_total($subtotal);
                     
-                    add_filter('woocommerce_cart_total', function($total) use ($subtotal) {
-                        return wc_price($subtotal);
+                    // Apply the discount to the total
+                    $total_after_discount = $subtotal - $discount_total;
+                    
+                    // Set the final total with discount applied
+                    $cart->set_total($total_after_discount);
+                    
+                    add_filter('woocommerce_cart_total', function($total) use ($total_after_discount) {
+                        return wc_price($total_after_discount);
                     }, 999);
                 }
             }
@@ -2204,6 +2212,10 @@ class HPO_Shortcodes {
         
         // Only change if our subtotal is valid
         if ($subtotal > 0) {
+            // Store the original subtotal so WooCommerce can properly calculate discount savings display
+            if (!$compound) {
+                $cart->subtotal = $subtotal;
+            }
             return wc_price($subtotal);
         }
         
@@ -2273,6 +2285,11 @@ class HPO_Shortcodes {
             // If our subtotal is valid, add shipping, fees, and taxes to it
             if ($subtotal > 0) {
                 $new_total = $subtotal;
+                
+                // Apply discount from coupons
+                $discount_total = $cart->get_discount_total();
+                $new_total -= $discount_total;
+                
                 $new_total += $cart->get_shipping_total();
                 $new_total += $cart->get_fee_total();
                 $new_total += $cart->get_total_tax();
