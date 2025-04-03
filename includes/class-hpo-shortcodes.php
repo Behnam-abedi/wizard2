@@ -1338,6 +1338,7 @@ class HPO_Shortcodes {
             /* Make the quantity more visible in checkout */
             #order_review .product-quantity {
                 font-weight: bold;
+                display: none;
             }
         </style>
         <script type="text/javascript">
