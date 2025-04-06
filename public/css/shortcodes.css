@@ -1411,12 +1411,16 @@ body.hpo-popup-open {
     background-color: #fff;
     border-radius: 8px;
     padding: 30px;
-    max-width: 550px;
+    max-width: 580px;
     width: 90%;
     text-align: center;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
 }
-
+@media (max-width: 768px) {
+    .hpo-success-popup {
+        max-width: 280px;
+    }
+}
 .hpo-success-popup h3 {
     color: #333;
     font-size: 18px;
@@ -1447,7 +1451,11 @@ body.hpo-popup-open {
     gap: 10px!important;
     justify-content: center!important;
 }
-
+@media (max-width: 768px) {
+    .hpo-success-actions {
+        flex-direction: column!important;
+    }
+}
 .hpo-success-actions button {
     padding: 12px 20px!important;
     border-radius: 6px!important;
