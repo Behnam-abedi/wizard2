@@ -1080,10 +1080,13 @@
     opacity: 1;
     transform: translateY(0);
     display: flex;
-    flex-direction: row;
-    align-items: center;
+    flex-direction: column;
+    border-bottom: 1px solid #dedede;
+    padding: 5px;
 }
-
+.hpo-option-section:not(.disabled-section):last-of-type {
+    border-bottom: none;
+}
 .hpo-weight-section:not(.disabled-section) {
     opacity: 1;
     transform: translateY(0);

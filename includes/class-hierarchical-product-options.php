@@ -1479,9 +1479,9 @@ class Hierarchical_Product_Options {
                 
                 .hpo-option-section h4 {
                     color: #333;
-                    border-bottom: 1px solid #eee;
-                    padding-bottom: 8px;
-                    margin-bottom: 10px;
+                    border-bottom: 0px solid #eee;
+                    padding-bottom: 9px;
+                    margin-bottom: 0px;
                     font-size: 14px;
                     font-weight: 600;
                 }

@@ -333,6 +333,7 @@
     left: 0;
     color: #7fb85c;
     font-weight: bold;
+    display: none;
 }
 
 .hpo-option-name {
