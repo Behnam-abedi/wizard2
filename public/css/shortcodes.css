@@ -1085,6 +1085,9 @@
     border-radius: 0px;
     padding: 5px;
 }
+.hpo-product-options-form .hpo-option-section:not(.disabled-section){
+    border-bottom:none;
+}
 .hpo-option-section:not(.disabled-section):last-of-type {
     border-bottom: none;
 }
