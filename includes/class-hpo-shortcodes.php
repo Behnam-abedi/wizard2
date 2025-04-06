@@ -64,6 +64,9 @@ class HPO_Shortcodes {
         // Handle cart totals calculation
         add_action('woocommerce_after_calculate_totals', array($this, 'after_calculate_totals'), 20);
         
+        // Fix coupon display in cart totals
+        add_filter('woocommerce_coupon_get_discount_amount', array($this, 'fix_coupon_discount_amount'), 10, 5);
+        
         // Make sure cart fragments get the correct prices
         add_filter('woocommerce_cart_fragment_name', function($name) {
             return $name . '_hpo_custom';
@@ -788,6 +791,19 @@ class HPO_Shortcodes {
         if ($has_run) return;
         $has_run = true;
         
+        // Count how many HPO items we have in the cart
+        $hpo_item_count = 0;
+        foreach ($cart->get_cart() as $cart_item) {
+            if (isset($cart_item['hpo_custom_data'])) {
+                $hpo_item_count++;
+            }
+        }
+        
+        // Store count in session for use in other methods
+        if (function_exists('WC') && WC()->session) {
+            WC()->session->set('hpo_item_count', $hpo_item_count);
+        }
+        
         // Process each cart item
         foreach ($cart->get_cart() as $cart_item_key => $cart_item) {
             // Skip if this is not our custom item
@@ -838,12 +854,20 @@ class HPO_Shortcodes {
                 $cart->cart_contents[$cart_item_key]['hpo_custom_data']['custom_price'] = $final_price;
                 $cart->cart_contents[$cart_item_key]['data_price'] = $final_price;
                 $cart->cart_contents[$cart_item_key]['hpo_total_price'] = $final_price;
+                $cart->cart_contents[$cart_item_key]['line_total'] = $final_price * $cart_item['quantity'];
+                $cart->cart_contents[$cart_item_key]['line_subtotal'] = $final_price * $cart_item['quantity'];
                 
                 // Make sure it's updated in the session
                 if (function_exists('WC') && WC()->session) {
                     WC()->session->set('cart_' . $cart_item_key, $cart->cart_contents[$cart_item_key]);
                 }
             }
+        }
+        
+        // If we have HPO items, immediately run recalculation to ensure consistent pricing
+        if ($hpo_item_count > 0) {
+            // This will trigger our custom calculation hooks
+            $cart->calculate_totals();
         }
     }
     
@@ -1200,7 +1224,7 @@ class HPO_Shortcodes {
     /**
      * Modify cart item quantity
      *
-     * @param string $quantity Cart item quantity
+     * @param string $quantity_html Cart item quantity
      * @param array $cart_item Cart item data
      * @param string $cart_item_key Cart item key
      * @return string Modified cart item quantity
@@ -2025,11 +2049,12 @@ class HPO_Shortcodes {
         try {
             // Only proceed if we have HPO items in the cart
             $has_hpo_items = false;
+            $hpo_items_count = 0;
             
             foreach ($cart->get_cart() as $cart_item) {
                 if (isset($cart_item['hpo_custom_data'])) {
                     $has_hpo_items = true;
-                    break;
+                    $hpo_items_count++;
                 }
             }
             
@@ -2079,22 +2104,54 @@ class HPO_Shortcodes {
                 
                 // If there's no shipping or fees, we can also set the total directly in the cart object
                 if (count($cart->get_shipping_packages()) === 0 && count($cart->get_fees()) === 0) {
-                    // Get any discount applied (coupons)
-                    $discount_total = $cart->get_discount_total();
-                    
-                    // Use set_subtotal_ex_tax for consistency
+                    // Store the original subtotal so WooCommerce can calculate percentage discounts correctly
                     $cart->set_subtotal($subtotal);
                     $cart->set_cart_contents_total($subtotal);
+                    
+                    // Get applied coupons
+                    $applied_coupons = $cart->get_applied_coupons();
+                    $discount_total = 0;
+                    
+                    // Calculate discount manually for percentage coupons to ensure they're correctly applied
+                    if (!empty($applied_coupons)) {
+                        foreach ($applied_coupons as $coupon_code) {
+                            $coupon = new WC_Coupon($coupon_code);
+                            
+                            if ($coupon->get_discount_type() === 'percent') {
+                                // For percentage coupons, recalculate the discount based on our correct subtotal
+                                $percent = $coupon->get_amount();
+                                $discount_amount = ($subtotal * $percent) / 100;
+                                $discount_total += $discount_amount;
+                            } else {
+                                // For non-percentage coupons, use WooCommerce's calculation
+                                $discount_total = $cart->get_discount_total();
+                                break; // If there's any fixed amount coupon, use WC's discount total
+                            }
+                        }
+                    } else {
+                        // No coupons applied
+                        $discount_total = $cart->get_discount_total();
+                    }
                     
                     // Apply the discount to the total
                     $total_after_discount = $subtotal - $discount_total;
                     
                     // Set the final total with discount applied
+                    $cart->set_discount_total($discount_total);
                     $cart->set_total($total_after_discount);
                     
                     add_filter('woocommerce_cart_total', function($total) use ($total_after_discount) {
                         return wc_price($total_after_discount);
                     }, 999);
+                    
+                    // Add filter to ensure the discount total is displayed correctly
+                    add_filter('woocommerce_cart_totals_coupon_html', function($coupon_html, $coupon, $discount_amount_html) use ($discount_total, $applied_coupons) {
+                        if (count($applied_coupons) === 1) {
+                            // Only modify if there's a single coupon applied
+                            return '-' . wc_price($discount_total);
+                        }
+                        return $coupon_html;
+                    }, 10, 3);
                 }
             }
         } finally {
@@ -2284,13 +2341,41 @@ class HPO_Shortcodes {
             if ($subtotal > 0) {
                 $new_total = $subtotal;
                 
-                // Apply discount from coupons
-                $discount_total = $cart->get_discount_total();
+                // Get applied coupons
+                $applied_coupons = $cart->get_applied_coupons();
+                $discount_total = 0;
+                
+                // Calculate discount manually for percentage coupons
+                if (!empty($applied_coupons)) {
+                    foreach ($applied_coupons as $coupon_code) {
+                        $coupon = new WC_Coupon($coupon_code);
+                        
+                        if ($coupon->get_discount_type() === 'percent') {
+                            // For percentage coupons, recalculate based on our correct subtotal
+                            $percent = $coupon->get_amount();
+                            $discount_amount = ($subtotal * $percent) / 100;
+                            $discount_total += $discount_amount;
+                        } else {
+                            // For fixed amount coupons, use WooCommerce's calculation
+                            $discount_total = $cart->get_discount_total();
+                            break;
+                        }
+                    }
+                } else {
+                    // No coupons
+                    $discount_total = $cart->get_discount_total();
+                }
+                
+                // Apply the discount
                 $new_total -= $discount_total;
                 
+                // Add other components
                 $new_total += $cart->get_shipping_total();
                 $new_total += $cart->get_fee_total();
                 $new_total += $cart->get_total_tax();
+                
+                // Update discount total in cart for consistency
+                $cart->set_discount_total($discount_total);
                 
                 // فقط اگر اختلاف قابل توجهی وجود داشته باشد، مقدار را تغییر دهیم
                 if (abs($new_total - $total) > 1) {
@@ -2302,6 +2387,57 @@ class HPO_Shortcodes {
         } finally {
             $is_calculating = false;
         }
+    }
+
+    /**
+     * Fix coupon discount amount for percentage coupons
+     * 
+     * @param float $discount
+     * @param float $discounting_amount
+     * @param object $cart_item
+     * @param bool $single
+     * @param WC_Coupon $coupon
+     * @return float
+     */
+    public function fix_coupon_discount_amount($discount, $discounting_amount, $cart_item, $single, $coupon) {
+        // Only fix percentage coupons
+        if ($coupon->get_discount_type() !== 'percent') {
+            return $discount;
+        }
+        
+        // Check if we have HPO items in cart
+        $hpo_item_count = 0;
+        if (function_exists('WC') && WC()->session) {
+            $hpo_item_count = (int) WC()->session->get('hpo_item_count', 0);
+        }
+        
+        // Only handle when we have multiple HPO items (3 or more)
+        if ($hpo_item_count < 3 || !isset($cart_item['hpo_custom_data'])) {
+            return $discount;
+        }
+        
+        // Get the correct price for this item
+        $price = 0;
+        if (isset($cart_item['hpo_custom_data']['price_per_unit'])) {
+            $price = floatval($cart_item['hpo_custom_data']['price_per_unit']);
+        } elseif (isset($cart_item['hpo_custom_data']['calculated_price'])) {
+            $price = floatval($cart_item['hpo_custom_data']['calculated_price']);
+        } elseif (isset($cart_item['hpo_custom_data']['custom_price'])) {
+            $price = floatval($cart_item['hpo_custom_data']['custom_price']);
+        }
+        
+        if ($price <= 0) {
+            return $discount;
+        }
+        
+        // Calculate line total
+        $line_total = $price * $cart_item['quantity'];
+        
+        // Calculate the correct percentage discount
+        $percentage = $coupon->get_amount();
+        $correct_discount = ($line_total * $percentage) / 100;
+        
+        return $correct_discount;
     }
 }
 
