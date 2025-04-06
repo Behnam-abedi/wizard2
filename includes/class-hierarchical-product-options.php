@@ -997,7 +997,14 @@ class Hierarchical_Product_Options {
             
             foreach ($products_data as $product) {
                 echo '<li>';
-                echo '<span class="hpo-option-name">' . esc_html($product['name']) . '</span>';
+                
+                // حذف کلمه "تومان" و اعداد شبیه قیمت (سه رقم سه رقم جدا شده با کاما) از اسم محصول
+                $clean_name = preg_replace('/\b\d{1,3}(,\d{3})+\s*تومان?\b|\b\d{1,3}(,\d{3})+\b|\bتومان\b/u', '', $product['name']);
+                
+                // حذف فاصله‌های اضافی که ممکن است بعد از حذف ایجاد شده باشد
+                $clean_name = trim(preg_replace('/\s+/', ' ', $clean_name));
+                
+                echo '<span class="hpo-option-name">' . esc_html($clean_name) . '</span>';
                 
                 if (!empty($product['price']) && $product['price'] > 0) {
                     echo ' <span class="hpo-option-price">(+' . wc_price($product['price']) . ')</span>';
@@ -1484,6 +1491,7 @@ class Hierarchical_Product_Options {
                     margin-bottom: 0px;
                     font-size: 14px;
                     font-weight: 600;
+                    direction: ltr;
                 }
                 
                 .hpo-order-options-list {
