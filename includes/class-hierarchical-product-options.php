@@ -936,12 +936,37 @@ class Hierarchical_Product_Options {
         $weight_data = $item->get_meta('_hpo_weight');
         $grinder_data = $item->get_meta('_hpo_grinder');
         $customer_notes = $item->get_meta('_hpo_customer_notes');
+        
+        // Check if this product was added via shortcode by looking at the structure of products_data
+        $is_from_shortcode = !empty($products_data) && isset($products_data[0]['category_id']);
 
         if (empty($categories_data) && empty($products_data) && empty($weight_data) && empty($grinder_data) && empty($customer_notes)) {
             return;
         }
 
         echo '<div class="hpo-order-item-options">';
+        
+        // Display main product name for shortcode products
+        if ($is_from_shortcode) {
+            echo '<div class="hpo-option-section">';
+            echo '<h4>دسته قهوه</h4>';
+            echo '<ul class="hpo-order-options-list">';
+            echo '<li>';
+            echo '<span class="hpo-option-name">' . esc_html($item->get_name()) . '</span>';
+            echo '</li>';
+            echo '</ul>';
+            echo '</div>';
+            
+            // Display quantity
+            echo '<div class="hpo-option-section">';
+            echo '<h4>تعداد</h4>';
+            echo '<ul class="hpo-order-options-list">';
+            echo '<li>';
+            echo '<span class="hpo-option-name">' . esc_html($item->get_quantity()) . '</span>';
+            echo '</li>';
+            echo '</ul>';
+            echo '</div>';
+        }
         
         // Display product options (categories)
         if (!empty($categories_data)) {
@@ -1060,6 +1085,9 @@ class Hierarchical_Product_Options {
             $grinder_data = $item->get_meta('_hpo_grinder');
             $customer_notes = $item->get_meta('_hpo_customer_notes');
             
+            // Check if this product was added via shortcode by looking at the structure of products_data
+            $is_from_shortcode = !empty($products_data) && isset($products_data[0]['category_id']);
+            
             // Skip if no option data
             if (empty($categories_data) && empty($products_data) && empty($weight_data) && empty($grinder_data) && empty($customer_notes)) {
                 continue;
@@ -1069,6 +1097,24 @@ class Hierarchical_Product_Options {
             echo '<h3 style="margin-top:0;">' . esc_html($item->get_name()) . ' - ' . esc_html__('Selected Options', 'hierarchical-product-options') . '</h3>';
             
             echo '<div class="hpo-order-item-options">';
+            
+            // Display main product name for shortcode products
+            if ($is_from_shortcode) {
+                echo '<h4>' . esc_html__('Coffee Category', 'hierarchical-product-options') . '</h4>';
+                echo '<ul class="hpo-order-options-list">';
+                echo '<li>';
+                echo '<span class="hpo-option-name">' . esc_html($item->get_name()) . '</span>';
+                echo '</li>';
+                echo '</ul>';
+                
+                // Display quantity
+                echo '<h4>' . esc_html__('Quantity', 'hierarchical-product-options') . '</h4>';
+                echo '<ul class="hpo-order-options-list">';
+                echo '<li>';
+                echo '<span class="hpo-option-name">' . esc_html($item->get_quantity()) . '</span>';
+                echo '</li>';
+                echo '</ul>';
+            }
             
             // Display product options (categories)
             if (!empty($categories_data)) {
