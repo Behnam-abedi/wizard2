@@ -755,23 +755,35 @@ class Hierarchical_Product_Options {
                         </td>
                         <td>
                             <?php
-                            $products = $item->get_meta('_hpo_products');
-                            if (!empty($products)) {
-                                $product_names = array();
-                                foreach ($products as $product) {
-                                    // Check if this is from the shortcode format
-                                    if (isset($product['category_id'])) {
-                                        $product_names[] = $product['name'];
-                                    } 
-                                    // Standard format
-                                    else if (isset($product['name'])) {
-                                        $product_names[] = $product['name'];
+                                $products = $item->get_meta('_hpo_products');
+                                if (!empty($products)) {
+                                    $product_names = array();
+                                    foreach ($products as $product) {
+                                        $product_name = '';
+                                        
+                                        // Check if this is from the shortcode format
+                                        if (isset($product['category_id'])) {
+                                            $product_name = $product['name'];
+                                        } 
+                                        // Standard format
+                                        else if (isset($product['name'])) {
+                                            $product_name = $product['name'];
+                                        }
+                                        
+                                        // حذف کلمه "تومان" و اعداد شبیه قیمت (سه رقم سه رقم جدا شده با کاما) از اسم محصول
+                                        if (!empty($product_name)) {
+                                            $clean_name = preg_replace('/\b\d{1,3}(,\d{3})+\s*تومان?\b|\b\d{1,3}(,\d{3})+\b|\bتومان\b/u', '', $product_name);
+                                            
+                                            // حذف فاصله‌های اضافی که ممکن است بعد از حذف ایجاد شده باشد
+                                            $clean_name = trim(preg_replace('/\s+/', ' ', $clean_name));
+                                            
+                                            $product_names[] = $clean_name;
+                                        }
                                     }
+                                    echo implode(' + ', $product_names);
+                                } else {
+                                    echo '-';
                                 }
-                                echo implode(' + ', $product_names);
-                            } else {
-                                echo '-';
-                            }
                             ?>
                         </td>
                         <td>
