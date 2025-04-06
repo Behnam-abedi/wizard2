@@ -992,7 +992,7 @@ class Hierarchical_Product_Options {
         // Display product options selected
         if (!empty($products_data)) {
             echo '<div class="hpo-option-section">';
-            echo '<h4>محصولات انتخاب شده</h4>';
+            echo '<h4>نوع قهوه انتخاب شده</h4>';
             echo '<ul class="hpo-order-options-list">';
             
             foreach ($products_data as $product) {
