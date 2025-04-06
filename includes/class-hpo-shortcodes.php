@@ -67,6 +67,9 @@ class HPO_Shortcodes {
         // Fix coupon display in cart totals
         add_filter('woocommerce_coupon_get_discount_amount', array($this, 'fix_coupon_discount_amount'), 10, 5);
         
+        // Fix the display of the coupon discount amount in cart
+        add_filter('woocommerce_cart_totals_coupon_html', array($this, 'fix_coupon_display_in_cart'), 10, 3);
+        
         // Make sure cart fragments get the correct prices
         add_filter('woocommerce_cart_fragment_name', function($name) {
             return $name . '_hpo_custom';
@@ -1361,450 +1364,19 @@ class HPO_Shortcodes {
                 font-weight: bold;
                 /* display: none; */
             }
+            
+            /* Fix cart discount display */
+            tr.cart-discount td {
+                text-align: right;
+            }
+            
+            /* Make sure the amount has a minus sign */
+            tr.cart-discount .woocommerce-Price-amount.amount:before {
+                content: "-";
+                display: inline-block;
+                margin-right: 2px;
+            }
         </style>
-        <script type="text/javascript">
-            jQuery(document).ready(function($) {
-                // Function to safely parse price text to number
-                function parsePrice(priceText) {
-                    // Remove all non-digit characters and parse as integer
-                    if (!priceText) return 0;
-                    let digits = priceText.replace(/[^\d]/g, '');
-                    return digits ? parseInt(digits) : 0;
-                }
-
-                // Helper function to format numbers with commas
-                function numberWithCommas(x) {
-                    // Make sure x is a valid number
-                    x = parseFloat(x) || 0;
-                    return Math.round(x).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-                }
-                
-                // Function to get price from quantity element
-                function getPriceFromQuantity(quantityText) {
-                    if (!quantityText) return 0;
-                    
-                    // Try to extract price from format: "2 × 125,000 تومان"
-                    var priceMatch = quantityText.match(/(\d+)\s*×\s*([\d,]+)\s*تومان/);
-                    if (priceMatch && priceMatch[2]) {
-                        var unitPrice = parsePrice(priceMatch[2]);
-                        return unitPrice;
-                    }
-                    
-                    return 0;
-                }
-                
-                // Fix mini cart prices
-                function fixMiniCartPrices() {
-                    $('.widget_shopping_cart_content .mini_cart_item').each(function() {
-                        var $item = $(this);
-                        var $priceElement = $item.find('.woocommerce-Price-amount');
-                        var $quantityElement = $item.find('.quantity');
-                        
-                        if ($quantityElement.length > 0) {
-                            var quantityText = $quantityElement.text();
-                            var unitPrice = getPriceFromQuantity(quantityText);
-                            
-                            if (unitPrice > 0 && $priceElement.length > 0) {
-                                $priceElement.html('<bdi>' + numberWithCommas(unitPrice) + 
-                                    '&nbsp;<span class="woocommerce-Price-currencySymbol">تومان</span></bdi>');
-                            }
-                        }
-                    });
-                }
-                
-                // Fix main cart prices
-                function fixMainCartPrices() {
-                    $('.woocommerce-cart-form__cart-item').each(function() {
-                        var $row = $(this);
-                        var $customQuantity = $row.find('.hpo-custom-quantity');
-                        
-                        if ($customQuantity.length > 0) {
-                            var quantityText = $customQuantity.text();
-                            var unitPrice = getPriceFromQuantity(quantityText);
-                            
-                            if (unitPrice > 0) {
-                                var quantity = parseInt($row.find('input.qty').val()) || 1;
-                                var total = unitPrice * quantity;
-                                
-                                // Update unit price
-                                $row.find('.product-price .woocommerce-Price-amount').html('<bdi>' + 
-                                    numberWithCommas(unitPrice) + '&nbsp;<span class="woocommerce-Price-currencySymbol">تومان</span></bdi>');
-                                
-                                // Update subtotal
-                                $row.find('.product-subtotal .woocommerce-Price-amount').html('<bdi>' + 
-                                    numberWithCommas(total) + '&nbsp;<span class="woocommerce-Price-currencySymbol">تومان</span></bdi>');
-                                
-                                // Force update data attributes that might be used by WooCommerce
-                                $row.find('.product-price').attr('data-price', unitPrice);
-                                $row.find('.product-subtotal').attr('data-subtotal', total);
-                            }
-                        }
-                    });
-                    
-                    // Manually recalculate cart totals
-                    fixCartTotals();
-                }
-                
-                // Fix checkout page prices
-                function fixCheckoutPrices() {
-                    // جلوگیری از اجرای همزمان تابع
-                    if (window.isFixingCheckout) return;
-                    
-                    window.isFixingCheckout = true;
-                    
-                    try {
-                        // Process each item in the order review
-                        $('#order_review .cart_item').each(function() {
-                            var $item = $(this);
-                            var $nameCol = $item.find('.product-name');
-                            var $totalCol = $item.find('.product-total');
-                            
-                            // Check if we have a quantity indicator
-                            var quantityText = $nameCol.find('.product-quantity').text().trim();
-                            var quantity = 1;
-                            
-                            // Try to extract quantity from the format: × 2
-                            var qtyMatch = quantityText.match(/×\s*(\d+)/);
-                            if (qtyMatch && qtyMatch[1]) {
-                                quantity = parseInt(qtyMatch[1]) || 1;
-                            }
-                            
-                            // Check if it's an HPO product by seeing if it has our custom data
-                            var unitPrice = 0;
-                            var totalPrice = 0;
-                            
-                            if ($totalCol.length) {
-                                // Get the formatted price and parse it
-                                var totalText = $totalCol.text().trim();
-                                totalPrice = parsePrice(totalText);
-                                
-                                // Calculate unit price by dividing total by quantity
-                                if (quantity > 1 && totalPrice > 0) {
-                                    unitPrice = Math.round(totalPrice / quantity);
-                                    
-                                    // Add the unit price info if it doesn't exist already
-                                    // if (!$nameCol.find('.hpo-unit-price').length) {
-                                    //     $nameCol.append('<div class="hpo-unit-price" style="font-size: 0.85em; opacity: 0.8;">' + 
-                                    //         'قیمت واحد: ' + numberWithCommas(unitPrice) + ' تومان</div>');
-                                    // }
-                                }
-                            }
-                        });
-                        
-                        // Fix the cart subtotal and order total - فقط اگر جعبه کوپن باز نباشد
-                        if ($('.woocommerce-checkout-payment-wrap').is(':visible')) {
-                            fixCheckoutTotals();
-                        }
-                    } catch (e) {
-                        console.error('Error fixing checkout prices: ', e);
-                    } finally {
-                        // همیشه وضعیت را پاک کنیم حتی در صورت بروز خطا
-                        window.isFixingCheckout = false;
-                    }
-                }
-                
-                // Fix checkout totals
-                function fixCheckoutTotals() {
-                    // جلوگیری از اجرای همزمان این تابع
-                    if (window.isFixingTotals) return;
-                    
-                    window.isFixingTotals = true;
-                    
-                    try {
-                        // Calculate the real subtotal
-                        var subtotal = 0;
-                        var itemCount = 0;
-                        
-                        $('#order_review .cart_item').each(function() {
-                            var $item = $(this);
-                            var totalText = $item.find('.product-total').text().trim();
-                            var itemTotal = parsePrice(totalText);
-                            
-                            if (itemTotal > 0) {
-                                subtotal += itemTotal;
-                                itemCount++;
-                            }
-                        });
-                        
-                        // فقط اگر محصولی در سبد خرید باشد، به‌روزرسانی کنیم
-                        if (subtotal > 0 && itemCount > 0) {
-                            var $subtotalRow = $('#order_review .cart-subtotal');
-                            if ($subtotalRow.length) {
-                                var currentSubtotalText = $subtotalRow.find('.woocommerce-Price-amount').text().trim();
-                                var currentSubtotal = parsePrice(currentSubtotalText);
-                                
-                                // فقط اگر تغییری واقعی وجود داشته باشد، به‌روزرسانی کنیم
-                                if (Math.abs(currentSubtotal - subtotal) > 100) { // اختلاف بیش از 100 واحد
-                                    $subtotalRow.find('.woocommerce-Price-amount').html('<bdi>' + 
-                                        numberWithCommas(subtotal) + '&nbsp;<span class="woocommerce-Price-currencySymbol">تومان</span></bdi>');
-                                }
-                            }
-                            
-                            // If no shipping, update order total as well
-                            var $shippingRow = $('#order_review .shipping');
-                            if ($shippingRow.length === 0) {
-                                var $totalRow = $('#order_review .order-total');
-                                if ($totalRow.length) {
-                                    var currentTotalText = $totalRow.find('.woocommerce-Price-amount').text().trim();
-                                    var currentTotal = parsePrice(currentTotalText);
-                                    
-                                    // فقط اگر تغییری واقعی وجود داشته باشد، به‌روزرسانی کنیم
-                                    if (Math.abs(currentTotal - subtotal) > 100) { // اختلاف بیش از 100 واحد
-                                        $totalRow.find('.woocommerce-Price-amount').html('<bdi>' + 
-                                            numberWithCommas(subtotal) + '&nbsp;<span class="woocommerce-Price-currencySymbol">تومان</span></bdi>');
-                                    }
-                                }
-                            } else {
-                                // Otherwise add shipping to subtotal
-                                var shippingText = $shippingRow.find('.woocommerce-Price-amount').text().trim();
-                                var shippingCost = parsePrice(shippingText);
-                                
-                                if (shippingCost > 0) {
-                                    var total = subtotal + shippingCost;
-                                    var $totalRow = $('#order_review .order-total');
-                                    if ($totalRow.length) {
-                                        var currentTotalText = $totalRow.find('.woocommerce-Price-amount').text().trim();
-                                        var currentTotal = parsePrice(currentTotalText);
-                                        
-                                        // فقط اگر تغییری واقعی وجود داشته باشد، به‌روزرسانی کنیم
-                                        if (Math.abs(currentTotal - total) > 100) { // اختلاف بیش از 100 واحد
-                                            $totalRow.find('.woocommerce-Price-amount').html('<bdi>' + 
-                                                numberWithCommas(total) + '&nbsp;<span class="woocommerce-Price-currencySymbol">تومان</span></bdi>');
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    } catch (e) {
-                        console.error('Error fixing checkout totals: ', e);
-                    } finally {
-                        window.isFixingTotals = false;
-                    }
-                }
-
-                // Function to fix cart totals
-                function fixCartTotals() {
-                    // Check if we're on the cart or checkout page
-                    if (!document.body.classList.contains('woocommerce-cart') && !document.body.classList.contains('woocommerce-checkout')) {
-                        return;
-                    }
-                    
-                    let subtotal = 0;
-                    
-                    // For cart page: Calculate the correct subtotal from the individual items
-                    if (document.body.classList.contains('woocommerce-cart')) {
-                        $('.woocommerce-cart-form__cart-item').each(function() {
-                            const $row = $(this);
-                            const $priceElement = $row.find('.product-price .woocommerce-Price-amount');
-                            const $quantityInput = $row.find('.product-quantity input.qty');
-                            
-                            // Extract price from the price element
-                            if ($priceElement.length) {
-                                let priceText = $priceElement.text().trim();
-                                let price = parsePrice(priceText);
-                                let quantity = parseInt($quantityInput.val()) || 1;
-                                
-                                // Add to subtotal
-                                subtotal += price * quantity;
-                            }
-                        });
-                    }
-                    
-                    // For checkout page: Calculate from the order review items
-                    if (document.body.classList.contains('woocommerce-checkout')) {
-                        $('#order_review .cart_item').each(function() {
-                            const $row = $(this);
-                            const $priceElement = $row.find('.product-total .woocommerce-Price-amount');
-                            const quantityText = $row.find('.product-name .product-quantity').text().trim();
-                            let quantity = 1; // Default quantity
-                            
-                            // Try to extract quantity from the format like: × 2
-                            const qtyMatch = quantityText.match(/×\s*(\d+)/);
-                            if (qtyMatch && qtyMatch[1]) {
-                                quantity = parseInt(qtyMatch[1]) || 1;
-                            }
-                            
-                            // Extract unit price
-                            if ($priceElement.length) {
-                                let totalPriceText = $priceElement.text().trim();
-                                let totalPrice = parsePrice(totalPriceText);
-                                
-                                // For product total, we already have quantity included, so we add the total
-                                subtotal += totalPrice;
-                            }
-                        });
-                    }
-                    
-                    // Find and update the subtotal element
-                    if (subtotal > 0) {
-                        // Update for cart page
-                        const $subtotalElement = $('.cart-subtotal .woocommerce-Price-amount');
-                        if ($subtotalElement.length) {
-                            $subtotalElement.html('<bdi>' + numberWithCommas(subtotal) + 
-                                '&nbsp;<span class="woocommerce-Price-currencySymbol">تومان</span></bdi>');
-                        }
-                        
-                        // Update for checkout page
-                        const $checkoutSubtotalElement = $('#order_review .cart-subtotal .woocommerce-Price-amount');
-                        if ($checkoutSubtotalElement.length) {
-                            $checkoutSubtotalElement.html('<bdi>' + numberWithCommas(subtotal) + 
-                                '&nbsp;<span class="woocommerce-Price-currencySymbol">تومان</span></bdi>');
-                        }
-                        
-                        // Find and update the total if no shipping or tax
-                        if ($('.shipping').length === 0 && $('.tax-rate').length === 0) {
-                            // Update for cart page
-                            const $totalElement = $('.order-total .woocommerce-Price-amount');
-                            if ($totalElement.length) {
-                                $totalElement.html('<bdi>' + numberWithCommas(subtotal) + 
-                                    '&nbsp;<span class="woocommerce-Price-currencySymbol">تومان</span></bdi>');
-                            }
-                            
-                            // Update for checkout page
-                            const $checkoutTotalElement = $('#order_review .order-total .woocommerce-Price-amount');
-                            if ($checkoutTotalElement.length) {
-                                $checkoutTotalElement.html('<bdi>' + numberWithCommas(subtotal) + 
-                                    '&nbsp;<span class="woocommerce-Price-currencySymbol">تومان</span></bdi>');
-                            }
-                        }
-                    }
-                }
-                
-                // Fix Woodmart theme cart widget
-                function fixWoodmartCartWidget() {
-                    $('body > div.cart-widget-side .widget_shopping_cart_content li').each(function() {
-                        var $item = $(this);
-                        var $priceElement = $item.find('.woocommerce-Price-amount');
-                        var $quantityElement = $item.find('.quantity');
-                        
-                        if ($quantityElement.length > 0 && $priceElement.length > 0) {
-                            var quantityText = $quantityElement.text();
-                            var unitPrice = getPriceFromQuantity(quantityText);
-                            
-                            if (unitPrice > 0) {
-                                $priceElement.html('<bdi>' + numberWithCommas(unitPrice) + 
-                                    '&nbsp;<span class="woocommerce-Price-currencySymbol">تومان</span></bdi>');
-                            }
-                        }
-                    });
-                }
-                
-                // Master function to fix all cart prices
-                function fixAllCartPrices() {
-                    // Fix mini cart in header
-                    fixMiniCartPrices();
-                    
-                    // Fix main cart page items
-                    if (document.body.classList.contains('woocommerce-cart')) {
-                        fixMainCartPrices();
-                    }
-                    
-                    // Fix checkout page
-                    if (document.body.classList.contains('woocommerce-checkout')) {
-                        fixCheckoutPrices();
-                    }
-                    
-                    // Fix Woodmart specific elements
-                    fixWoodmartCartWidget();
-                    
-                    // Add a custom event that any custom theme can hook into
-                    $(document).trigger('hpo_prices_updated');
-                }
-
-                // Ensure the form is updated immediately after page load on checkout
-                if (document.body.classList.contains('woocommerce-checkout')) {
-                    // رویکرد ساده‌تر - فقط به‌روزرسانی دوره‌ای بدون تداخل با متدهای WooCommerce
-                    setTimeout(fixCheckoutPrices, 500);
-                    
-                    // به‌جای بازنویسی متد update_checkout، فقط به رویدادهایی که توسط WooCommerce ایجاد می‌شوند گوش کنیم
-                    $(document.body).on('updated_checkout', function() {
-                        // اضافه کردن تأخیر برای اطمینان از اینکه WooCommerce تمام به‌روزرسانی‌های خود را انجام داده است
-                        setTimeout(fixCheckoutPrices, 500);
-                    });
-                    
-                    // استفاده از setInterval با فاصله زمانی بیشتر و محدودیت زمانی برای جلوگیری از مصرف زیاد منابع
-                    var checkoutUpdateCount = 0;
-                    var checkoutInterval = setInterval(function() {
-                        fixCheckoutPrices();
-                        checkoutUpdateCount++;
-                        
-                        // بعد از 30 بار بررسی (60 ثانیه)، setInterval را متوقف کنیم
-                        if (checkoutUpdateCount > 30) {
-                            clearInterval(checkoutInterval);
-                        }
-                    }, 2000);
-                    
-                    // MutationObserver با یک تأخیر برای جلوگیری از فراخوانی‌های متعدد
-                    if (window.MutationObserver) {
-                        var observerActive = false;
-                        var reviewObserver = new MutationObserver(function() {
-                            if (!observerActive) {
-                                observerActive = true;
-                                setTimeout(function() {
-                                    fixCheckoutPrices();
-                                    observerActive = false;
-                                }, 1000);
-                            }
-                        });
-                        
-                        var orderReview = document.getElementById('order_review');
-                        if (orderReview) {
-                            reviewObserver.observe(orderReview, {
-                                childList: true,
-                                subtree: true,
-                                attributes: false, // تغییر به false برای کاهش تعداد فراخوانی‌ها
-                                characterData: false // تغییر به false برای کاهش تعداد فراخوانی‌ها
-                            });
-                        }
-                    }
-                    
-                    // کاهش تعداد رویدادها برای جلوگیری از فراخوانی‌های متعدد
-                    $(document.body).on('checkout_error payment_method_selected updated_checkout', function() {
-                        setTimeout(fixCheckoutPrices, 500);
-                    });
-                }
-                
-                // Set up event listeners for cart updates
-                
-                // Run the fixes when cart/fragments are updated
-                $(document.body).on('updated_cart_totals updated_checkout wc_fragments_refreshed added_to_cart wc_fragments_loaded', function(e) {
-                    setTimeout(fixAllCartPrices, 100);
-                });
-                
-                // Set up mutation observer to detect DOM changes in the cart
-                if (window.MutationObserver && document.querySelector('.woocommerce-cart-form, .widget_shopping_cart_content')) {
-                    var cartObserver = new MutationObserver(function(mutations) {
-                        fixAllCartPrices();
-                    });
-                    
-                    var cartElements = document.querySelectorAll('.woocommerce-cart-form, .widget_shopping_cart_content');
-                    for (var i = 0; i < cartElements.length; i++) {
-                        cartObserver.observe(cartElements[i], { 
-                            childList: true, 
-                            subtree: true 
-                        });
-                    }
-                }
-                
-                // Wait for DOM and run immediately as well
-                setTimeout(fixAllCartPrices, 300);
-                
-                // Also when the mini cart is opened
-                $(document).on('click', '.woodmart-cart-icon, .cart-contents', function() {
-                    setTimeout(fixAllCartPrices, 300);
-                });
-                
-                // Also when adding to cart
-                $(document).on('click', '.hpo-add-to-cart-button', function() {
-                    setTimeout(fixAllCartPrices, 500);
-                });
-                
-                // Also run on page load
-                $(window).on('load', function() {
-                    setTimeout(fixAllCartPrices, 300);
-                });
-            });
-        </script>
         <?php
     }
 
@@ -2438,6 +2010,75 @@ class HPO_Shortcodes {
         $correct_discount = ($line_total * $percentage) / 100;
         
         return $correct_discount;
+    }
+
+    /**
+     * Fix the display of the coupon discount amount in cart
+     *
+     * @param string $coupon_html The coupon HTML
+     * @param object $coupon The coupon object
+     * @param string $discount_amount_html The discount amount HTML
+     * @return string Modified coupon HTML
+     */
+    public function fix_coupon_display_in_cart($coupon_html, $coupon, $discount_amount_html) {
+        // Only fix percentage coupons
+        if ($coupon->get_discount_type() !== 'percent') {
+            return $coupon_html;
+        }
+        
+        // Calculate our own cart subtotal
+        $subtotal = 0;
+        foreach (WC()->cart->get_cart() as $cart_item_key => $cart_item) {
+            $price = 0;
+            $quantity = $cart_item['quantity'];
+            
+            // Get price based on our custom data if available
+            if (isset($cart_item['hpo_custom_data'])) {
+                if (isset($cart_item['hpo_custom_data']['price_per_unit'])) {
+                    $price = floatval($cart_item['hpo_custom_data']['price_per_unit']);
+                } elseif (isset($cart_item['hpo_custom_data']['calculated_price'])) {
+                    $price = floatval($cart_item['hpo_custom_data']['calculated_price']);
+                } elseif (isset($cart_item['hpo_custom_data']['custom_price'])) {
+                    $price = floatval($cart_item['hpo_custom_data']['custom_price']);
+                }
+            } else {
+                // For regular products, use the product price
+                $price = floatval($cart_item['data']->get_price());
+            }
+            
+            // Add to subtotal with quantity
+            $subtotal += $price * $quantity;
+        }
+        
+        // Calculate correct discount amount
+        $percent = $coupon->get_amount();
+        $correct_discount = ($subtotal * $percent) / 100;
+        
+        // Format the discount amount to match WooCommerce standard format (no minus sign)
+        $formatted_discount = wc_price($correct_discount, array('decimals' => 0));
+        
+        // For checkout page, keep the HTML structure but replace the amount
+        if (is_checkout()) {
+            // Find the existing amount in the format and replace it
+            $pattern = '/<span class="woocommerce-Price-amount amount">(.*?)<\/span>/i';
+            if (preg_match($pattern, $discount_amount_html, $matches)) {
+                $new_discount_html = str_replace($matches[1], $formatted_discount, $discount_amount_html);
+                return str_replace($discount_amount_html, $new_discount_html, $coupon_html);
+            }
+            
+            // If we can't find the pattern, just return the formatted discount
+            return $formatted_discount;
+        }
+        
+        // For cart page, keep the HTML structure including the remove link
+        $pattern = '/<span class="woocommerce-Price-amount amount">(.*?)<\/span>/i';
+        if (preg_match($pattern, $discount_amount_html, $matches)) {
+            $new_discount_html = str_replace($matches[1], $formatted_discount, $discount_amount_html);
+            return str_replace($discount_amount_html, $new_discount_html, $coupon_html);
+        }
+        
+        // If we couldn't match the pattern, use our CSS to handle the minus sign
+        return '<span class="woocommerce-Price-amount amount">' . $formatted_discount . '</span>';
     }
 }
 
