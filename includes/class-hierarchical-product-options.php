@@ -949,7 +949,7 @@ class Hierarchical_Product_Options {
         // Display main product name for shortcode products
         if ($is_from_shortcode) {
             echo '<div class="hpo-option-section">';
-            echo '<h4>دسته قهوه</h4>';
+            echo '<h4>:دسته قهوه</h4>';
             echo '<ul class="hpo-order-options-list">';
             echo '<li>';
             echo '<span class="hpo-option-name">' . esc_html($item->get_name()) . '</span>';
@@ -959,7 +959,7 @@ class Hierarchical_Product_Options {
             
             // Display quantity
             echo '<div class="hpo-option-section">';
-            echo '<h4>تعداد</h4>';
+            echo '<h4>:تعداد</h4>';
             echo '<ul class="hpo-order-options-list">';
             echo '<li>';
             echo '<span class="hpo-option-name">' . esc_html($item->get_quantity()) . '</span>';
@@ -971,7 +971,7 @@ class Hierarchical_Product_Options {
         // Display product options (categories)
         if (!empty($categories_data)) {
             echo '<div class="hpo-option-section">';
-            echo '<h4>آپشن‌های محصول</h4>';
+            echo '<h4>:آپشن‌های محصول</h4>';
             echo '<ul class="hpo-order-options-list">';
             
             foreach ($categories_data as $category) {
@@ -992,7 +992,7 @@ class Hierarchical_Product_Options {
         // Display product options selected
         if (!empty($products_data)) {
             echo '<div class="hpo-option-section">';
-            echo '<h4>نوع قهوه انتخاب شده</h4>';
+            echo '<h4>:نوع قهوه انتخاب شده</h4>';
             echo '<ul class="hpo-order-options-list">';
             
             foreach ($products_data as $product) {
@@ -1013,7 +1013,7 @@ class Hierarchical_Product_Options {
         // Display weight option
         if (!empty($weight_data)) {
             echo '<div class="hpo-option-section">';
-            echo '<h4>وزن انتخابی</h4>';
+            echo '<h4>:وزن انتخابی</h4>';
             echo '<ul class="hpo-order-options-list">';
             echo '<li>';
             echo '<span class="hpo-option-name">' . esc_html($weight_data['name']) . '</span>';
@@ -1030,7 +1030,7 @@ class Hierarchical_Product_Options {
         // Display grinder option
         if (!empty($grinder_data)) {
             echo '<div class="hpo-option-section">';
-            echo '<h4>نوع آسیاب</h4>';
+            echo '<h4>:نوع آسیاب</h4>';
             echo '<ul class="hpo-order-options-list">';
             
             if ($grinder_data['type'] === 'ground') {
@@ -1061,7 +1061,7 @@ class Hierarchical_Product_Options {
         // Display customer notes
         if (!empty($customer_notes)) {
             echo '<div class="hpo-option-section">';
-            echo '<h4>توضیحات سفارش</h4>';
+            echo '<h4>:توضیحات سفارش</h4>';
             echo '<div class="hpo-customer-notes">';
             echo '<p>' . nl2br(esc_html($customer_notes)) . '</p>';
             echo '</div>';
