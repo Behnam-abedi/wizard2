@@ -969,40 +969,6 @@ class Hierarchical_Product_Options {
             echo '</ul>';
             echo '</div>';
         }
-        
-        if ($is_from_shortcode) {
-            // Display quantity
-            echo '<div class="hpo-option-section">';
-            echo '<h4>:تعداد</h4>';
-            echo '<ul class="hpo-order-options-list">';
-            echo '<li>';
-            echo '<span class="hpo-option-name">' . esc_html($item->get_quantity()) . '</span>';
-            echo '</li>';
-            echo '</ul>';
-            echo '</div>';
-        }
-        
-        // Display product options (categories)
-        if (!empty($categories_data)) {
-            echo '<div class="hpo-option-section">';
-            echo '<h4>:آپشن‌های محصول</h4>';
-            echo '<ul class="hpo-order-options-list">';
-            
-            foreach ($categories_data as $category) {
-                echo '<li>';
-                echo '<span class="hpo-option-name">' . esc_html($category['name']) . '</span>';
-                
-                if (!empty($category['price']) && $category['price'] > 0) {
-                    echo ' <span class="hpo-option-price">(+' . wc_price($category['price']) . ')</span>';
-                }
-                
-                echo '</li>';
-            }
-            
-            echo '</ul>';
-            echo '</div>';
-        }
-        
         // Display product options selected
         if (!empty($products_data)) {
             echo '<div class="hpo-option-section">';
@@ -1026,11 +992,9 @@ class Hierarchical_Product_Options {
                 
                 echo '</li>';
             }
-            
             echo '</ul>';
             echo '</div>';
         }
-        
         // Display weight option
         if (!empty($weight_data)) {
             echo '<div class="hpo-option-section">';
@@ -1047,7 +1011,17 @@ class Hierarchical_Product_Options {
             echo '</ul>';
             echo '</div>';
         }
-        
+        // Display quantity
+        if ($is_from_shortcode) {
+            echo '<div class="hpo-option-section">';
+            echo '<h4>:تعداد</h4>';
+            echo '<ul class="hpo-order-options-list">';
+            echo '<li>';
+            echo '<span class="hpo-option-name">' . esc_html($item->get_quantity()) . '</span>';
+            echo '</li>';
+            echo '</ul>';
+            echo '</div>';
+        }
         // Display grinder option
         if (!empty($grinder_data)) {
             echo '<div class="hpo-option-section">';
@@ -1078,7 +1052,6 @@ class Hierarchical_Product_Options {
             echo '</ul>';
             echo '</div>';
         }
-        
         // Display customer notes
         if (!empty($customer_notes)) {
             echo '<div class="hpo-option-section">';
@@ -1088,7 +1061,6 @@ class Hierarchical_Product_Options {
             echo '</div>';
             echo '</div>';
         }
-        
         echo '</div>';
     }
 
