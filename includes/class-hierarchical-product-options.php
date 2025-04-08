@@ -968,7 +968,9 @@ class Hierarchical_Product_Options {
             echo '</li>';
             echo '</ul>';
             echo '</div>';
-            
+        }
+        
+        if ($is_from_shortcode) {
             // Display quantity
             echo '<div class="hpo-option-section">';
             echo '<h4>:تعداد</h4>';
