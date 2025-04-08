@@ -1105,11 +1105,6 @@ class HPO_Shortcodes {
                 }
                 
                 // Log to console for debugging
-                add_action('wp_footer', function() use ($price, $cart_item) {
-                    if (is_cart() || is_checkout()) {
-                        echo '<script>console.log("HPO: Session item restored with price: ' . esc_js($price) . ' and key: ' . esc_js(isset($cart_item['unique_key']) ? $cart_item['unique_key'] : 'unknown') . '");</script>';
-                    }
-                }, 99);
             }
             
             // If the object has a unique key, preserve it
@@ -1362,7 +1357,6 @@ class HPO_Shortcodes {
             /* Make the quantity more visible in checkout */
             #order_review .product-quantity {
                 font-weight: bold;
-                /* display: none; */
             }
             
             /* Fix cart discount display */
