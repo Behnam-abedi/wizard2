@@ -1345,6 +1345,18 @@ class Hierarchical_Product_Options {
                 array(),
                 HPO_VERSION
             );
+
+            // Enqueue order-received.js only on the order-received page
+            if (is_wc_endpoint_url('order-received') || (isset($_GET['key']) && isset($_GET['order']))) {
+                wp_enqueue_script(
+                    'hpo-order-received',
+                    HPO_PLUGIN_URL . 'public/js/order-received.js',
+                    array('jquery'),
+                    HPO_VERSION,
+                    true
+                );
+            }
+
             // Add some inline CSS to ensure our styles are applied
             $additional_css = '
                 .hpo-order-item-options {
@@ -1372,6 +1384,7 @@ class Hierarchical_Product_Options {
                 /* Table styles for order details */
                 .woocommerce-table--order-details {
                     direction: rtl;
+                    border-collapse: collapse;
                     border-radius: 8px !important;
                     overflow: hidden;
                     border: none !important;
