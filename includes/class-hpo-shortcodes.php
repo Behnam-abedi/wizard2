@@ -144,7 +144,7 @@ class HPO_Shortcodes {
         <div class="hpo-order-button-container">
             <button class="<?php echo esc_attr($atts['button_class']); ?>" id="hpo-order-button">
                 <?php echo esc_html($atts['button_text']); ?>
-                <i class="hpo-cart-icon"></i>
+                <i class="hpo-cart-icon-button"></i>
             </button>
         </div>
         
