@@ -186,11 +186,11 @@ class HPO_Shortcodes {
                     
                     // Load products via AJAX
                     $.ajax({
-                        url: hpo_ajax.ajaxUrl,
+                        url: hpoAjax.ajaxUrl,
                         type: 'POST',
                         data: {
                             action: 'hpo_load_products',
-                            nonce: hpo_ajax.nonce,
+                            nonce: hpoAjax.nonce,
                             unique_id: '{$unique_id}'
                         },
                         success: function(response) {
@@ -213,11 +213,11 @@ class HPO_Shortcodes {
                 
                 function loadProductDetails(productId) {
                     $.ajax({
-                        url: hpo_ajax.ajaxUrl,
+                        url: hpoAjax.ajaxUrl,
                         type: 'POST',
                         data: {
                             action: 'hpo_load_product_details',
-                            nonce: hpo_ajax.nonce,
+                            nonce: hpoAjax.nonce,
                             product_id: productId,
                             unique_id: '{$unique_id}'
                         },
