@@ -134,7 +134,6 @@ class HPO_Shortcodes {
             array(
                 'button_text' => 'ثبت سفارش',
                 'button_class' => 'hpo-order-button',
-                'container_class' => '', // New parameter for custom container class
             ),
             $atts,
             'hpo_order_button'
@@ -142,16 +141,16 @@ class HPO_Shortcodes {
         
         ob_start();
         ?>
-        <div class="hpo-order-button-container <?php echo esc_attr($atts['container_class']); ?>">
+        <div class="hpo-order-button-container">
             <button class="<?php echo esc_attr($atts['button_class']); ?>" id="hpo-order-button">
                 <?php echo esc_html($atts['button_text']); ?>
                 <i class="hpo-cart-icon-button"></i>
             </button>
         </div>
         
-        <div class="hpo-popup-overlay <?php echo esc_attr($atts['container_class']); ?>" id="hpo-popup-overlay" style="display: none;">
+        <div class="hpo-popup-overlay" id="hpo-popup-overlay" style="display: none;">
         
-            <div class="hpo-popup-container <?php echo esc_attr($atts['container_class']); ?>">
+            <div class="hpo-popup-container">
                 <div class="hpo-popup-header">
                 <div class="hpo-back-button" id="hpo-popup-close">
                     <span>بستن</span>
@@ -164,7 +163,7 @@ class HPO_Shortcodes {
                     </div>
                 </div>
                 <div class="hpo-popup-content">
-                    <div class="hpo-product-list <?php echo esc_attr($atts['container_class']); ?>" id="hpo-product-list">
+                    <div class="hpo-product-list" id="hpo-product-list">
                         <span class="hpo-product-list-title">محصولات</span>
                         <!-- Products will be loaded here via AJAX -->
                         <div class="hpo-loading">در حال بارگذاری...</div>
