@@ -24,18 +24,6 @@ You can customize the button text and CSS class:
 
 - `button_text`: Changes the text displayed on the button (default: "ثبت سفارش")
 - `button_class`: Adds a custom CSS class to the button, in addition to the default class (default: "hpo-order-button")
-- `id`: Adds a unique identifier to the shortcode, which allows you to have multiple independent shortcodes on the same page (default: "")
-
-## Using Multiple Shortcodes on the Same Page
-
-If you need to use multiple instances of the order button on the same page with different configurations, use the `id` parameter to make each instance unique:
-
-```
-[hpo_order_button id="coffee"]
-[hpo_order_button id="tea" button_text="سفارش چای"]
-```
-
-Each instance will function independently, allowing you to customize each order button separately without affecting others.
 
 ## How It Works
 
@@ -76,13 +64,6 @@ For a custom button with different text:
 
 ```php
 <?php echo do_shortcode('[hpo_order_button button_text="خرید آنلاین قهوه"]'); ?>
-```
-
-For multiple buttons on the same page:
-
-```php
-<?php echo do_shortcode('[hpo_order_button id="coffee" button_text="سفارش قهوه"]'); ?>
-<?php echo do_shortcode('[hpo_order_button id="tea" button_text="سفارش چای"]'); ?>
 ```
 
 ## Styling
