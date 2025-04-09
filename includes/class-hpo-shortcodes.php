@@ -134,40 +134,40 @@ class HPO_Shortcodes {
             array(
                 'button_text' => 'ثبت سفارش',
                 'button_class' => 'hpo-order-button',
-                'unique_id' => '', // Added unique ID parameter
+                'id' => '', // Add ID parameter
             ),
             $atts,
             'hpo_order_button'
         );
         
-        // Generate random ID if not provided
-        $unique_id = !empty($atts['unique_id']) ? sanitize_html_class($atts['unique_id']) : 'hpo-' . wp_rand(1000, 9999);
+        // Generate a unique ID if none provided
+        $unique_id = !empty($atts['id']) ? '-' . esc_attr($atts['id']) : '';
         
         ob_start();
         ?>
-        <div class="hpo-order-button-container">
-            <button class="<?php echo esc_attr($atts['button_class']); ?>" id="hpo-order-button-<?php echo esc_attr($unique_id); ?>">
+        <div class="hpo-order-button-container<?php echo $unique_id; ?>">
+            <button class="<?php echo esc_attr($atts['button_class']); ?>" id="hpo-order-button<?php echo $unique_id; ?>">
                 <?php echo esc_html($atts['button_text']); ?>
                 <i class="hpo-cart-icon-button"></i>
             </button>
         </div>
         
-        <div class="hpo-popup-overlay" id="hpo-popup-overlay-<?php echo esc_attr($unique_id); ?>" style="display: none;">
+        <div class="hpo-popup-overlay" id="hpo-popup-overlay<?php echo $unique_id; ?>" style="display: none;">
         
             <div class="hpo-popup-container">
                 <div class="hpo-popup-header">
-                <div class="hpo-back-button" id="hpo-popup-close-<?php echo esc_attr($unique_id); ?>">
+                <div class="hpo-back-button" id="hpo-popup-close<?php echo $unique_id; ?>">
                     <span>بستن</span>
                 </div>
 
                     
                     <div class="hpo-header-price">
                         <i class="hpo-cart-icon"></i>
-                        <span class="hpo-total-value" id="hpo-total-price-<?php echo esc_attr($unique_id); ?>">0 تومان</span>
+                        <span class="hpo-total-value" id="hpo-total-price<?php echo $unique_id; ?>">0 تومان</span>
                     </div>
                 </div>
                 <div class="hpo-popup-content">
-                    <div class="hpo-product-list" id="hpo-product-list-<?php echo esc_attr($unique_id); ?>">
+                    <div class="hpo-product-list" id="hpo-product-list<?php echo $unique_id; ?>">
                         <span class="hpo-product-list-title">محصولات</span>
                         <!-- Products will be loaded here via AJAX -->
                         <div class="hpo-loading">در حال بارگذاری...</div>
@@ -175,63 +175,195 @@ class HPO_Shortcodes {
                 </div>
             </div>
         </div>
-        <?php
-        $html = ob_get_clean();
         
-        // Add JavaScript to handle this specific instance
-        $html .= "<script>
-            jQuery(document).ready(function($) {
-                $('#hpo-order-button-{$unique_id}').on('click', function() {
-                    $('#hpo-popup-overlay-{$unique_id}').fadeIn();
+        <script type="text/javascript">
+        jQuery(document).ready(function($) {
+            // Order button click - open product selection popup
+            $('#hpo-order-button<?php echo $unique_id; ?>').on('click', function() {
+                $('#hpo-popup-overlay<?php echo $unique_id; ?>').fadeIn(300);
+                $('body').addClass('hpo-popup-open');
+                
+                // Initialize popup height
+                setTimeout(function() {
+                    const windowHeight = $(window).height();
+                    const popupContent = $('#hpo-popup-overlay<?php echo $unique_id; ?> .hpo-popup-container');
+                    popupContent.css('max-height', windowHeight * 0.9 + 'px');
+                }, 100);
+                
+                // Load products via AJAX
+                $.ajax({
+                    url: hpoAjax.ajaxUrl,
+                    type: 'POST',
+                    data: {
+                        action: 'hpo_load_products',
+                        nonce: hpoAjax.nonce
+                    },
+                    beforeSend: function() {
+                        $('#hpo-product-list<?php echo $unique_id; ?>').html('<div class="hpo-loading"><div class="hpo-spinner"></div><span>در حال بارگذاری...</span></div>');
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            $('#hpo-product-list<?php echo $unique_id; ?>').html(response.data.html);
+                            
+                            // Initialize product selection for this instance
+                            initProductSelection<?php echo str_replace('-', '_', $unique_id); ?>();
+                        } else {
+                            $('#hpo-product-list<?php echo $unique_id; ?>').html('<div class="hpo-error-message">خطا در بارگذاری محصولات.</div>');
+                        }
+                    },
+                    error: function() {
+                        $('#hpo-product-list<?php echo $unique_id; ?>').html('<div class="hpo-error-message">خطا در ارتباط با سرور.</div>');
+                    }
+                });
+            });
+            
+            // Close product list popup
+            $('#hpo-popup-close<?php echo $unique_id; ?>').on('click', function() {
+                $('#hpo-popup-overlay<?php echo $unique_id; ?>').fadeOut(300);
+                $('body').removeClass('hpo-popup-open');
+            });
+            
+            // Initialize product selection functionality for this instance
+            function initProductSelection<?php echo str_replace('-', '_', $unique_id); ?>() {
+                // Create new local variable for product ID
+                let selectedProductId = null;
+                
+                // Add the next step button in disabled state if not there
+                if (!$('#hpo-product-list<?php echo $unique_id; ?> .hpo-next-step').length) {
+                    $('#hpo-product-list<?php echo $unique_id; ?>').append('<button class="hpo-next-step disabled">مرحله بعد</button>');
+                } else {
+                    $('#hpo-product-list<?php echo $unique_id; ?> .hpo-next-step').addClass('disabled');
+                }
+
+                // Handle product item click for this instance
+                $('#hpo-product-list<?php echo $unique_id; ?> .hpo-product-item').on('click', function() {
+                    // Remove selection from other products
+                    $('#hpo-product-list<?php echo $unique_id; ?> .hpo-product-item').removeClass('selected');
+                    // Add selection to clicked product
+                    $(this).addClass('selected');
+                    // Store the selected product ID
+                    selectedProductId = $(this).data('product-id');
                     
-                    // Load products via AJAX
-                    $.ajax({
-                        url: hpoAjax.ajaxUrl,
-                        type: 'POST',
-                        data: {
-                            action: 'hpo_load_products',
-                            nonce: hpoAjax.nonce,
-                            unique_id: '{$unique_id}'
-                        },
-                        success: function(response) {
-                            if (response.success) {
-                                $('#hpo-product-list-{$unique_id}').html(response.data.html);
-                                
-                                // Handle product selection
-                                $('#hpo-product-list-{$unique_id} .hpo-product-item').on('click', function() {
-                                    var productId = $(this).data('product-id');
-                                    loadProductDetails(productId);
+                    // Enable the next step button
+                    $('#hpo-product-list<?php echo $unique_id; ?> .hpo-next-step').removeClass('disabled');
+                });
+
+                // Handle next step button click for this instance
+                $('#hpo-product-list<?php echo $unique_id; ?>').on('click', '.hpo-next-step', function() {
+                    // Only proceed if not disabled
+                    if(!$(this).hasClass('disabled')) {
+                        if (selectedProductId) {
+                            loadProductDetails<?php echo str_replace('-', '_', $unique_id); ?>(selectedProductId);
+                        }
+                    }
+                });
+            }
+            
+            // Load product details for this instance
+            function loadProductDetails<?php echo str_replace('-', '_', $unique_id); ?>(productId) {
+                $.ajax({
+                    url: hpoAjax.ajaxUrl,
+                    type: 'POST',
+                    data: {
+                        action: 'hpo_load_product_details',
+                        nonce: hpoAjax.nonce,
+                        product_id: productId
+                    },
+                    beforeSend: function() {
+                        // Show loading in the same popup
+                        $('#hpo-product-list<?php echo $unique_id; ?>').html('<div class="hpo-loading"><div class="hpo-spinner"></div><span>در حال بارگذاری...</span></div>');
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            // Update the content in the same popup for this instance
+                            $('#hpo-product-list<?php echo $unique_id; ?>').html(response.data.html);
+                            
+                            // Handle back button for this instance
+                            $('#hpo-popup-overlay<?php echo $unique_id; ?> .hpo-back-button').off('click').on('click', function() {
+                                // Reload the products list
+                                $.ajax({
+                                    url: hpoAjax.ajaxUrl,
+                                    type: 'POST',
+                                    data: {
+                                        action: 'hpo_load_products',
+                                        nonce: hpoAjax.nonce
+                                    },
+                                    beforeSend: function() {
+                                        $('#hpo-product-list<?php echo $unique_id; ?>').html('<div class="hpo-loading"><div class="hpo-spinner"></div><span>در حال بارگذاری...</span></div>');
+                                    },
+                                    success: function(response) {
+                                        if (response.success) {
+                                            $('#hpo-product-list<?php echo $unique_id; ?>').html(response.data.html);
+                                            
+                                            // Reinitialize product selection for this instance
+                                            initProductSelection<?php echo str_replace('-', '_', $unique_id); ?>();
+                                        } else {
+                                            $('#hpo-product-list<?php echo $unique_id; ?>').html('<div class="hpo-error-message">خطا در بارگذاری محصولات.</div>');
+                                        }
+                                    },
+                                    error: function() {
+                                        $('#hpo-product-list<?php echo $unique_id; ?>').html('<div class="hpo-error-message">خطا در ارتباط با سرور.</div>');
+                                    }
+                                });
+                            });
+                            
+                            // Initialize other functionality for the product options form
+                            if ($('#hpo-product-list<?php echo $unique_id; ?> .hpo-product-options-form').length) {
+                                // Initialize event handlers specific to this instance
+                                $('#hpo-product-list<?php echo $unique_id; ?> .hpo-add-to-cart-button').on('click', function(e) {
+                                    e.preventDefault();
+                                    
+                                    // Get form data
+                                    var formData = $('#hpo-product-list<?php echo $unique_id; ?> .hpo-product-options-form').serialize();
+                                    
+                                    // Add to cart via AJAX
+                                    $.ajax({
+                                        url: hpoAjax.ajaxUrl,
+                                        type: 'POST',
+                                        data: formData + '&action=hpo_add_to_cart&nonce=' + hpoAjax.nonce,
+                                        beforeSend: function() {
+                                            $('#hpo-product-list<?php echo $unique_id; ?> .hpo-add-to-cart-button').prop('disabled', true).text('در حال افزودن...');
+                                        },
+                                        success: function(response) {
+                                            if (response.success) {
+                                                // Close the popup and update cart fragments
+                                                $('#hpo-popup-overlay<?php echo $unique_id; ?>').fadeOut(300);
+                                                $('body').removeClass('hpo-popup-open');
+                                                
+                                                // Trigger cart update if WooCommerce is available
+                                                if (typeof wc_add_to_cart_params !== 'undefined') {
+                                                    $(document.body).trigger('added_to_cart', [response.data.fragments, response.data.cart_hash]);
+                                                }
+                                                
+                                                // Show success message
+                                                if (response.data.message) {
+                                                    alert(response.data.message);
+                                                }
+                                            } else {
+                                                alert(response.data.message || 'خطا در افزودن به سبد خرید.');
+                                                $('#hpo-product-list<?php echo $unique_id; ?> .hpo-add-to-cart-button').prop('disabled', false).text('افزودن به سبد خرید');
+                                            }
+                                        },
+                                        error: function() {
+                                            alert('خطا در ارتباط با سرور.');
+                                            $('#hpo-product-list<?php echo $unique_id; ?> .hpo-add-to-cart-button').prop('disabled', false).text('افزودن به سبد خرید');
+                                        }
+                                    });
                                 });
                             }
+                        } else {
+                            $('#hpo-product-list<?php echo $unique_id; ?>').html('<div class="hpo-error-message">خطا در بارگذاری جزئیات محصول.</div>');
                         }
-                    });
+                    },
+                    error: function() {
+                        $('#hpo-product-list<?php echo $unique_id; ?>').html('<div class="hpo-error-message">خطا در ارتباط با سرور.</div>');
+                    }
                 });
-                
-                $('#hpo-popup-close-{$unique_id}').on('click', function() {
-                    $('#hpo-popup-overlay-{$unique_id}').fadeOut();
-                });
-                
-                function loadProductDetails(productId) {
-                    $.ajax({
-                        url: hpoAjax.ajaxUrl,
-                        type: 'POST',
-                        data: {
-                            action: 'hpo_load_product_details',
-                            nonce: hpoAjax.nonce,
-                            product_id: productId,
-                            unique_id: '{$unique_id}'
-                        },
-                        success: function(response) {
-                            if (response.success) {
-                                $('#hpo-product-list-{$unique_id}').html(response.data.html);
-                            }
-                        }
-                    });
-                }
-            });
-        </script>";
-        
-        return $html;
+            }
+        });
+        </script>
+        <?php
+        return ob_get_clean();
     }
     
     /**
@@ -242,9 +374,6 @@ class HPO_Shortcodes {
         
         global $wpdb;
         $db = new Hierarchical_Product_Options_DB();
-        
-        // Get unique_id if provided
-        $unique_id = isset($_POST['unique_id']) ? sanitize_text_field($_POST['unique_id']) : '';
         
         // Get all products that have hierarchical options
         $assignments = $db->get_category_product_assignments();
@@ -277,7 +406,7 @@ class HPO_Shortcodes {
                 
                 if ($product) {
                     ?>
-                    <div class="hpo-product-item" data-product-id="<?php echo esc_attr($product_id); ?>" data-unique-id="<?php echo esc_attr($unique_id); ?>">
+                    <div class="hpo-product-item" data-product-id="<?php echo esc_attr($product_id); ?>">
                         <div class="hpo-product-info">
                             <h4><?php echo esc_html($product->get_name()); ?></h4>
                             <?php
@@ -303,7 +432,7 @@ class HPO_Shortcodes {
         }
         
         $html = ob_get_clean();
-        wp_send_json_success(array('html' => $html, 'unique_id' => $unique_id));
+        wp_send_json_success(array('html' => $html));
     }
     
     /**
@@ -319,9 +448,6 @@ class HPO_Shortcodes {
         
         $product_id = intval($_POST['product_id']);
         $product = wc_get_product($product_id);
-        
-        // Get unique_id if provided
-        $unique_id = isset($_POST['unique_id']) ? sanitize_text_field($_POST['unique_id']) : '';
         
         if (!$product) {
             wp_send_json_error(array('message' => 'محصول یافت نشد.'));
@@ -398,12 +524,12 @@ class HPO_Shortcodes {
         
         ob_start();
         ?>
-        <div class="hpo-product-details" data-unique-id="<?php echo esc_attr($unique_id); ?>">
+        <div class="hpo-product-details">
+
             
-            <form class="hpo-product-options-form" id="hpo-product-options-form-<?php echo esc_attr($unique_id); ?>">
+            <form class="hpo-product-options-form">
                 <span class="header-title"><?php echo esc_attr($product_name) ?></span>
                 <input type="hidden" name="product_id" value="<?php echo esc_attr($product_id); ?>">
-                <input type="hidden" name="unique_id" value="<?php echo esc_attr($unique_id); ?>">
                 <input type="hidden" name="hpo_base_price" value="<?php echo esc_attr($product->get_price()); ?>">
                 <div class="description-title">
                     <span>در لیست زیر می‌توانید محصول موردنظر خود را از دسته قهوه‌های <?php echo esc_attr($product_name) ?> انتخاب کرده و سپس وزن و وضعیت آسیاب موردنظر را برای ثبت سفارش تعیین کنید.</span>
@@ -567,8 +693,7 @@ class HPO_Shortcodes {
         $html = ob_get_clean();
         wp_send_json_success(array(
             'html' => $html,
-            'product_title' => $product->get_name(),
-            'unique_id' => $unique_id
+            'product_title' => $product->get_name()
         ));
     }
     
@@ -593,7 +718,6 @@ class HPO_Shortcodes {
         
         $product_id = absint($data['product_id']);
         $quantity = isset($data['quantity']) ? absint($data['quantity']) : 1;
-        $unique_id = isset($data['unique_id']) ? sanitize_text_field($data['unique_id']) : '';
         
         // Get product to get base price
         $product = wc_get_product($product_id);
@@ -776,7 +900,6 @@ class HPO_Shortcodes {
                 'cart_item_key' => $cart_item_key,
                 'price' => $total_price,
                 'unique_key' => $unique_key,
-                'unique_id' => $unique_id,
                 'success_popup_html' => $success_popup_html
             ));
         } else {
