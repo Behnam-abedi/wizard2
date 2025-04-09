@@ -134,36 +134,40 @@ class HPO_Shortcodes {
             array(
                 'button_text' => 'ثبت سفارش',
                 'button_class' => 'hpo-order-button',
+                'unique_id' => '', // Added unique ID parameter
             ),
             $atts,
             'hpo_order_button'
         );
         
+        // Generate random ID if not provided
+        $unique_id = !empty($atts['unique_id']) ? sanitize_html_class($atts['unique_id']) : 'hpo-' . wp_rand(1000, 9999);
+        
         ob_start();
         ?>
         <div class="hpo-order-button-container">
-            <button class="<?php echo esc_attr($atts['button_class']); ?>" id="hpo-order-button">
+            <button class="<?php echo esc_attr($atts['button_class']); ?>" id="hpo-order-button-<?php echo esc_attr($unique_id); ?>">
                 <?php echo esc_html($atts['button_text']); ?>
                 <i class="hpo-cart-icon-button"></i>
             </button>
         </div>
         
-        <div class="hpo-popup-overlay" id="hpo-popup-overlay" style="display: none;">
+        <div class="hpo-popup-overlay" id="hpo-popup-overlay-<?php echo esc_attr($unique_id); ?>" style="display: none;">
         
             <div class="hpo-popup-container">
                 <div class="hpo-popup-header">
-                <div class="hpo-back-button" id="hpo-popup-close">
+                <div class="hpo-back-button" id="hpo-popup-close-<?php echo esc_attr($unique_id); ?>">
                     <span>بستن</span>
                 </div>
 
                     
                     <div class="hpo-header-price">
                         <i class="hpo-cart-icon"></i>
-                        <span class="hpo-total-value" id="hpo-total-price">0 تومان</span>
+                        <span class="hpo-total-value" id="hpo-total-price-<?php echo esc_attr($unique_id); ?>">0 تومان</span>
                     </div>
                 </div>
                 <div class="hpo-popup-content">
-                    <div class="hpo-product-list" id="hpo-product-list">
+                    <div class="hpo-product-list" id="hpo-product-list-<?php echo esc_attr($unique_id); ?>">
                         <span class="hpo-product-list-title">محصولات</span>
                         <!-- Products will be loaded here via AJAX -->
                         <div class="hpo-loading">در حال بارگذاری...</div>
@@ -172,7 +176,62 @@ class HPO_Shortcodes {
             </div>
         </div>
         <?php
-        return ob_get_clean();
+        $html = ob_get_clean();
+        
+        // Add JavaScript to handle this specific instance
+        $html .= "<script>
+            jQuery(document).ready(function($) {
+                $('#hpo-order-button-{$unique_id}').on('click', function() {
+                    $('#hpo-popup-overlay-{$unique_id}').fadeIn();
+                    
+                    // Load products via AJAX
+                    $.ajax({
+                        url: hpo_ajax.ajaxUrl,
+                        type: 'POST',
+                        data: {
+                            action: 'hpo_load_products',
+                            nonce: hpo_ajax.nonce,
+                            unique_id: '{$unique_id}'
+                        },
+                        success: function(response) {
+                            if (response.success) {
+                                $('#hpo-product-list-{$unique_id}').html(response.data.html);
+                                
+                                // Handle product selection
+                                $('#hpo-product-list-{$unique_id} .hpo-product-item').on('click', function() {
+                                    var productId = $(this).data('product-id');
+                                    loadProductDetails(productId);
+                                });
+                            }
+                        }
+                    });
+                });
+                
+                $('#hpo-popup-close-{$unique_id}').on('click', function() {
+                    $('#hpo-popup-overlay-{$unique_id}').fadeOut();
+                });
+                
+                function loadProductDetails(productId) {
+                    $.ajax({
+                        url: hpo_ajax.ajaxUrl,
+                        type: 'POST',
+                        data: {
+                            action: 'hpo_load_product_details',
+                            nonce: hpo_ajax.nonce,
+                            product_id: productId,
+                            unique_id: '{$unique_id}'
+                        },
+                        success: function(response) {
+                            if (response.success) {
+                                $('#hpo-product-list-{$unique_id}').html(response.data.html);
+                            }
+                        }
+                    });
+                }
+            });
+        </script>";
+        
+        return $html;
     }
     
     /**
@@ -183,6 +242,9 @@ class HPO_Shortcodes {
         
         global $wpdb;
         $db = new Hierarchical_Product_Options_DB();
+        
+        // Get unique_id if provided
+        $unique_id = isset($_POST['unique_id']) ? sanitize_text_field($_POST['unique_id']) : '';
         
         // Get all products that have hierarchical options
         $assignments = $db->get_category_product_assignments();
@@ -215,7 +277,7 @@ class HPO_Shortcodes {
                 
                 if ($product) {
                     ?>
-                    <div class="hpo-product-item" data-product-id="<?php echo esc_attr($product_id); ?>">
+                    <div class="hpo-product-item" data-product-id="<?php echo esc_attr($product_id); ?>" data-unique-id="<?php echo esc_attr($unique_id); ?>">
                         <div class="hpo-product-info">
                             <h4><?php echo esc_html($product->get_name()); ?></h4>
                             <?php
@@ -241,7 +303,7 @@ class HPO_Shortcodes {
         }
         
         $html = ob_get_clean();
-        wp_send_json_success(array('html' => $html));
+        wp_send_json_success(array('html' => $html, 'unique_id' => $unique_id));
     }
     
     /**
@@ -257,6 +319,9 @@ class HPO_Shortcodes {
         
         $product_id = intval($_POST['product_id']);
         $product = wc_get_product($product_id);
+        
+        // Get unique_id if provided
+        $unique_id = isset($_POST['unique_id']) ? sanitize_text_field($_POST['unique_id']) : '';
         
         if (!$product) {
             wp_send_json_error(array('message' => 'محصول یافت نشد.'));
@@ -333,12 +398,12 @@ class HPO_Shortcodes {
         
         ob_start();
         ?>
-        <div class="hpo-product-details">
-
+        <div class="hpo-product-details" data-unique-id="<?php echo esc_attr($unique_id); ?>">
             
-            <form class="hpo-product-options-form">
+            <form class="hpo-product-options-form" id="hpo-product-options-form-<?php echo esc_attr($unique_id); ?>">
                 <span class="header-title"><?php echo esc_attr($product_name) ?></span>
                 <input type="hidden" name="product_id" value="<?php echo esc_attr($product_id); ?>">
+                <input type="hidden" name="unique_id" value="<?php echo esc_attr($unique_id); ?>">
                 <input type="hidden" name="hpo_base_price" value="<?php echo esc_attr($product->get_price()); ?>">
                 <div class="description-title">
                     <span>در لیست زیر می‌توانید محصول موردنظر خود را از دسته قهوه‌های <?php echo esc_attr($product_name) ?> انتخاب کرده و سپس وزن و وضعیت آسیاب موردنظر را برای ثبت سفارش تعیین کنید.</span>
@@ -502,7 +567,8 @@ class HPO_Shortcodes {
         $html = ob_get_clean();
         wp_send_json_success(array(
             'html' => $html,
-            'product_title' => $product->get_name()
+            'product_title' => $product->get_name(),
+            'unique_id' => $unique_id
         ));
     }
     
@@ -527,6 +593,7 @@ class HPO_Shortcodes {
         
         $product_id = absint($data['product_id']);
         $quantity = isset($data['quantity']) ? absint($data['quantity']) : 1;
+        $unique_id = isset($data['unique_id']) ? sanitize_text_field($data['unique_id']) : '';
         
         // Get product to get base price
         $product = wc_get_product($product_id);
@@ -709,6 +776,7 @@ class HPO_Shortcodes {
                 'cart_item_key' => $cart_item_key,
                 'price' => $total_price,
                 'unique_key' => $unique_key,
+                'unique_id' => $unique_id,
                 'success_popup_html' => $success_popup_html
             ));
         } else {
