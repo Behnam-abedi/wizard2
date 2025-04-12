@@ -1388,6 +1388,7 @@ body.hpo-popup-open {
     justify-content: center!important;
     font-size: 20px!important;
     font-weight: 800!important;
+    color: #555!important;
 }
 .description-title{
     padding: 10px;
