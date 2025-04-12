@@ -641,7 +641,9 @@
     flex-direction: row-reverse;
     gap: 30px;
 }
-
+.hpo-add-to-cart input[type=number]{
+    color:#555;
+}
 .hpo-add-to-cart-button {
     padding: 12px 24px!important;
     font-size: 16px!important;
