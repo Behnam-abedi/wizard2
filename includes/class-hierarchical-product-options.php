@@ -91,13 +91,13 @@ class Hierarchical_Product_Options {
         add_action('add_meta_boxes', array($this, 'add_order_meta_box'));
         
         // Hide products with hierarchical options from shop and other archives
-        add_filter('woocommerce_product_query_tax_query', array($this, 'hide_hierarchical_products_from_shop'), 20, 1);
+        // add_filter('woocommerce_product_query_tax_query', array($this, 'hide_hierarchical_products_from_shop'), 20, 1);
         
         // Exclude products from search results
         add_filter('pre_get_posts', array($this, 'exclude_products_from_search'), 10);
         
         // Hide products from related products
-        add_filter('woocommerce_related_products', array($this, 'exclude_from_related_products'), 10, 3);
+        // add_filter('woocommerce_related_products', array($this, 'exclude_from_related_products'), 10, 3);
         
         // Redirect single product pages of hierarchical products to home
         add_action('template_redirect', array($this, 'redirect_hierarchical_product_pages'));
