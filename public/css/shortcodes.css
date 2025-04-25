@@ -634,16 +634,16 @@
 
 /* Add to Cart Button */
 .hpo-add-to-cart {
-    margin-top: 20px;
-    text-align: center;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    flex-direction: row-reverse;
-    gap: 30px;
+    margin-top: 20px!important;
+    text-align: center!important;
+    display: flex!important;
+    justify-content: center!important;
+    align-items: center!important;
+    flex-direction: row-reverse!important;
+    gap: 30px!important;
 }
 .hpo-add-to-cart input[type=number]{
-    color:#555;
+    color:#555!important;
 }
 .hpo-add-to-cart-button {
     padding: 12px 24px!important;
@@ -658,17 +658,17 @@
 }
 
 .hpo-add-to-cart-button:hover {
-    background-color: #135e96;
+    background-color: #135e96!important;
 }
 
 /* Disabled Add to Cart Button */
 .hpo-add-to-cart-button.disabled,
 .hpo-add-to-cart-button:disabled {
-    background-color: #f0f0f0;
-    color: #aaaaaa;
-    cursor: not-allowed;
-    opacity: 0.7;
-    pointer-events: none;
+    background-color: #f0f0f0!important;
+    color: #aaaaaa!important;
+    cursor: not-allowed!important;
+    opacity: 0.7!important;
+    pointer-events: none!important;
 }
 
 .hpo-add-to-cart-button.disabled:hover,
@@ -1166,7 +1166,7 @@
     
     /* Add to cart button adjustments */
     .hpo-add-to-cart {
-        margin-bottom: 20px; /* Add space before the fixed total price bar */
+        margin-bottom: 20px!important; /* Add space before the fixed total price bar */
     }
     
     /* Better product grid for small screens */
