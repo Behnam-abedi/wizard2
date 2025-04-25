@@ -268,14 +268,14 @@
     align-items: center;
 }
 
-.hpo-quantity-input {
+/* .hpo-quantity-input {
     width: 50px;
     text-align: center;
     margin: 0 5px;
     padding: 5px;
     border: 1px solid #ddd;
     border-radius: 4px;
-}
+} */
 
 .hpo-quantity-decrease,
 .hpo-quantity-increase {
