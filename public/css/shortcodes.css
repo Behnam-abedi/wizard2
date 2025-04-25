@@ -506,10 +506,10 @@
     max-width: 360px!important;
     box-shadow: inset 0 1px 3px rgba(0,0,0,0.1)!important;
     color: #555 !important;
-    -webkit-appearance: none;  /* غیرفعال کردن پیکان پیش‌فرض در Chrome/Safari */
-  -moz-appearance: none;     /* غیرفعال کردن پیکان پیش‌فرض در Firefox */
-  appearance: none;          /* غیرفعال کردن پیکان پیش‌فرض در مرورگرهای مدرن */
-  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23000'%3e%3cpath d='M7 10l5 5 5-5z'/%3e%3c/svg%3e");
+    -webkit-appearance: none!important;  /* غیرفعال کردن پیکان پیش‌فرض در Chrome/Safari */
+    -moz-appearance: none!important;     /* غیرفعال کردن پیکان پیش‌فرض در Firefox */
+    appearance: none!important;          /* غیرفعال کردن پیکان پیش‌فرض در مرورگرهای مدرن */
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23000'%3e%3cpath d='M7 10l5 5 5-5z'/%3e%3c/svg%3e")!important;
 }
 .hp
 .hpo-grinding-machines select:focus {
