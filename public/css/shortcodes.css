@@ -518,8 +518,8 @@
 
 
 .hpo-grinding-machines select option {
-    padding: 8px;
-    background-color:#f5f5f5 ;
+    padding: 8px!important;
+    background-color:#f5f5f5 !important;
 }
 
 /* Notes Textarea */
