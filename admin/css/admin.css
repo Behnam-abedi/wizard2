@@ -831,4 +831,21 @@
     font-size: 12px;
     margin-top: 5px;
     display: block;
+}
+
+/* Image in product items */
+.hpo-item-image {
+    display: inline-block;
+    margin-right: 8px;
+    vertical-align: middle;
+}
+
+.hpo-item-image img {
+    border-radius: 3px;
+    object-fit: cover;
+    width: 40px;
+    height: 40px;
+    border: 1px solid #ddd;
+    background-color: #fff;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.1);
 } 

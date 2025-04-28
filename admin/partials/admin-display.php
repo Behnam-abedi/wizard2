@@ -369,6 +369,10 @@
             </div>
             
             <div class="hpo-form-row">
+                <label for="hpo-product-image-url"><?php echo esc_html__('Image URL', 'hierarchical-product-options'); ?></label>
+                <input type="text" id="hpo-product-image-url" name="image_url" placeholder="<?php echo esc_attr__('Enter product image URL', 'hierarchical-product-options'); ?>">
+            </div>
+            <div class="hpo-form-row">
                 <label for="hpo-product-category"><?php echo esc_html__('Category', 'hierarchical-product-options'); ?></label>
                 <select id="hpo-product-category" name="category_id" required>
                     <option value=""><?php echo esc_html__('Select a category...', 'hierarchical-product-options'); ?></option>
@@ -449,11 +453,11 @@ if (!method_exists($this, 'render_categories_recursive')) {
                     </button>
                 </div>
             </div>
-            
             <?php if (!empty($category->products)): ?>
             <ul class="hpo-products-list" data-category-id="<?php echo esc_attr($category->id); ?>">
+
                 <?php foreach ($category->products as $product): ?>
-                <li class="hpo-product-item" data-id="<?php echo esc_attr($product->id); ?>">
+                <li class="hpo-product-item" data-id="<?php echo esc_attr($product->id); ?>" data-image-url="<?php echo esc_attr($product->image_url); ?>">
                     <div class="hpo-item-header">
                         <span class="hpo-drag-handle dashicons dashicons-menu"></span>
                         <span class="hpo-item-name"><?php echo esc_html($product->name); ?></span>

@@ -361,7 +361,23 @@ class HPO_Shortcodes {
                                         <?php echo esc_html($category_paths[$parent->id]); ?>
 
                                     </div>
-                                    
+                                    <div class="hpo-product-image" style="position: relative;">
+                                        <?php if (!empty($opt_product->image_url)) : ?>
+                                            <div class="hpo-loader-container">
+                                                <div class="hpo-loader"></div>
+                                            </div>
+                                            <img src="<?php echo esc_html($opt_product->image_url); ?>" alt=""
+                                                onload="this.style.opacity='1'; this.previousElementSibling.style.display='none';"
+                                                style="opacity: 0; transition: opacity 0.5s ease;">
+                                        <?php else : ?>
+                                            <div class="hpo-product-no-image">
+                                                بدون تصویر
+                                            </div>
+                                        <?php endif; ?>
+                                    </div>
+
+
+
                                     <label>
                                         <div class="hpo-product-option-name-price">
                                             <input type="radio" name="hpo_option[<?php echo esc_attr($parent->id); ?>]" 
@@ -374,6 +390,7 @@ class HPO_Shortcodes {
                                     <div class="hpo-product-option-description">
                                         <?php echo !empty($opt_product->description) ? esc_html($opt_product->description) : '<span class="no-description">بدون توضیحات</span>'; ?>
                                     </div>
+
                                 </div>
                                 <?php endforeach; ?>
                             </div>
@@ -396,6 +413,21 @@ class HPO_Shortcodes {
                                             <div class="hpo-product-option-header">
                                                 <?php echo esc_html($category_paths[$child->id]); ?>
                                             </div>
+                                            <div class="hpo-product-image" style="position: relative;">
+                                        <?php if (!empty($child_product->image_url)) : ?>
+                                            <div class="hpo-loader-container">
+                                                <div class="hpo-loader"></div>
+                                            </div>
+                                            <img src="<?php echo esc_html($child_product->image_url); ?>" alt=""
+                                                onload="this.style.opacity='1'; this.previousElementSibling.style.display='none';"
+                                                style="opacity: 0; transition: opacity 0.5s ease;">
+                                        <?php else : ?>
+                                            <div class="hpo-product-no-image">
+                                                بدون تصویر
+                                            </div>
+                                        <?php endif; ?>
+                                    </div>
+
                                             <label>
                                                 <div class="hpo-product-option-name-price">
                                                     <input type="radio" name="hpo_option[<?php echo esc_attr($child->id); ?>]" 
@@ -1371,6 +1403,7 @@ class HPO_Shortcodes {
                 display: inline-block;
                 margin-right: 2px;
             }
+            
         </style>
         <?php
     }

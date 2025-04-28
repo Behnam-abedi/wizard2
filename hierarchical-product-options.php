@@ -19,6 +19,7 @@ if (!defined('WPINC')) {
 define('HPO_VERSION', '1.0.0');
 define('HPO_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('HPO_PLUGIN_URL', plugin_dir_url(__FILE__));
+define('HPO_PLUGIN_FILE', __FILE__);
 
 // Include the main plugin class
 require_once HPO_PLUGIN_DIR . 'includes/class-hierarchical-product-options.php';

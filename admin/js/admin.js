@@ -185,7 +185,8 @@
                     name: $(this).find('[name="name"]').val(),
                     price: $(this).find('[name="price"]').val(),
                     category_id: $(this).find('[name="category_id"]').val(),
-                    description: $(this).find('[name="description"]').val()
+                    description: $(this).find('[name="description"]').val(),
+                    image_url: $(this).find('[name="image_url"]').val()
                 };
                 
                 $.post(hpo_data.ajax_url, data, function(response) {
@@ -307,7 +308,8 @@
                     name: $(this).find('[name="name"]').val(),
                     price: $(this).find('[name="price"]').val(),
                     category_id: $(this).find('[name="category_id"]').val(),
-                    description: $(this).find('[name="description"]').val()
+                    description: $(this).find('[name="description"]').val(),
+                    image_url: $(this).find('[name="image_url"]').val()
                 };
                 
                 $.post(hpo_data.ajax_url, data, function(response) {
@@ -380,6 +382,9 @@
             var productName = $(this).closest('.hpo-item-header').find('.hpo-item-name').text();
             var productPrice = $(this).closest('.hpo-item-header').find('.hpo-item-price').text().replace(/[^0-9.]/g, '');
             var productDescription = $(this).closest('.hpo-product-item').find('.hpo-item-description').text();
+            var productImageUrl = $(this).closest('.hpo-product-item').data('image-url') || '';
+            
+
             
             // اگر "بدون توضیحات" بود، آن را خالی کنیم
             if (productDescription.trim() === 'No description' || productDescription.trim() === 'بدون توضیحات') {
@@ -387,6 +392,10 @@
             }
             
             var categoryId = $(this).closest('.hpo-products-list').data('category-id');
+            
+            // Double check productImageUrl from data attribute
+            productImageUrl = $(this).closest('.hpo-product-item').attr('data-image-url') || '';
+            console.log('Image URL from data attribute: ', productImageUrl);
             
             // Clone the template
             var template = $('#hpo-new-product-template').html();
@@ -396,8 +405,19 @@
             $form.find('[name="name"]').val(productName);
             $form.find('[name="price"]').val(productPrice);
             $form.find('[name="description"]').val(productDescription);
+            
+            // Set image URL with direct attribute access
+            $form.find('[name="image_url"]').val(productImageUrl);
+            // Force update
+            setTimeout(function() {
+                console.log('Image URL input after timeout: ', $form.find('[name="image_url"]').val());
+                $form.find('[name="image_url"]').val(productImageUrl).trigger('change');
+            }, 100);
+            
             $form.find('[name="category_id"]').val(categoryId);
             $form.find('button[type="submit"]').text(hpo_data.strings.save);
+            
+
             
             // Add to the page
             $('body').append($form);
@@ -413,8 +433,10 @@
                     name: $(this).find('[name="name"]').val(),
                     price: $(this).find('[name="price"]').val(),
                     category_id: $(this).find('[name="category_id"]').val(),
-                    description: $(this).find('[name="description"]').val()
+                    description: $(this).find('[name="description"]').val(),
+                    image_url: $(this).find('[name="image_url"]').val()
                 };
+                
                 
                 $.post(hpo_data.ajax_url, data, function(response) {
                     if (response.success) {

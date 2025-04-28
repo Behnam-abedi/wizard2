@@ -52,6 +52,7 @@ class Hierarchical_Product_Options_DB {
             price decimal(10,2) NOT NULL,
             category_id mediumint(9) NOT NULL,
             description text DEFAULT '',
+            image_url varchar(255) DEFAULT '',
             sort_order int(11) DEFAULT 0,
             PRIMARY KEY  (id),
             KEY category_id (category_id)
@@ -229,10 +230,11 @@ class Hierarchical_Product_Options_DB {
      * @param float $price Product price
      * @param int $category_id Category ID
      * @param string $description Product description
+     * @param string $image_url Product image URL
      * @param int $sort_order Sort order
      * @return int New product ID
      */
-    public function add_product($name, $price, $category_id, $description = '', $sort_order = 0) {
+    public function add_product($name, $price, $category_id, $description = '', $image_url = '', $sort_order = 0) {
         global $wpdb;
         
         $wpdb->insert(
@@ -242,6 +244,7 @@ class Hierarchical_Product_Options_DB {
                 'price' => $price,
                 'category_id' => $category_id,
                 'description' => $description,
+                'image_url' => $image_url,
                 'sort_order' => $sort_order
             )
         );

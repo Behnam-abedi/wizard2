@@ -11,5 +11,6 @@ $db = new Hierarchical_Product_Options_DB();
 // Update tables
 $db->create_tables();
 
-echo "Database tables updated successfully!";
+/**
+ * Update";
 ?> 

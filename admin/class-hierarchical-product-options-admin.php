@@ -130,6 +130,8 @@ class Hierarchical_Product_Options_Admin {
         // Get all assignments
         $assignments = $db->get_category_product_assignments();
         
+        // Show notice about database update for the image URL featur
+        
         // Clean up any orphaned assignments (where category no longer exists)
         $valid_category_ids = array_map(function($category) {
             return $category->id;
@@ -346,6 +348,7 @@ class Hierarchical_Product_Options_Admin {
         $price = isset($_POST['price']) ? floatval($_POST['price']) : 0;
         $category_id = isset($_POST['category_id']) ? intval($_POST['category_id']) : 0;
         $description = isset($_POST['description']) ? sanitize_textarea_field($_POST['description']) : '';
+        $image_url = isset($_POST['image_url']) ? esc_url_raw($_POST['image_url']) : '';
         
         // محدود کردن طول توضیحات به 53 کاراکتر
         $description = mb_substr($description, 0, 53);
@@ -355,7 +358,7 @@ class Hierarchical_Product_Options_Admin {
         }
         
         $db = new Hierarchical_Product_Options_DB();
-        $id = $db->add_product($name, $price, $category_id, $description);
+        $id = $db->add_product($name, $price, $category_id, $description, $image_url);
         
         if ($id) {
             wp_send_json_success(array(
@@ -363,7 +366,8 @@ class Hierarchical_Product_Options_Admin {
                 'name' => $name,
                 'price' => $price,
                 'category_id' => $category_id,
-                'description' => $description
+                'description' => $description,
+                'image_url' => $image_url
             ));
         } else {
             wp_send_json_error(__('Failed to add product', 'hierarchical-product-options'));
@@ -385,6 +389,16 @@ class Hierarchical_Product_Options_Admin {
         $price = isset($_POST['price']) ? floatval($_POST['price']) : 0;
         $category_id = isset($_POST['category_id']) ? intval($_POST['category_id']) : 0;
         $description = isset($_POST['description']) ? sanitize_textarea_field($_POST['description']) : '';
+        $image_url = isset($_POST['image_url']) ? esc_url_raw($_POST['image_url']) : '';
+        
+        // Debug log
+        error_log('Update product - data received:');
+        error_log('ID: ' . $id);
+        error_log('Name: ' . $name);
+        error_log('Price: ' . $price);
+        error_log('Category: ' . $category_id);
+        error_log('Description: ' . $description);
+        error_log('Image URL: ' . $image_url);
         
         // محدود کردن طول توضیحات به 53 کاراکتر
         $description = mb_substr($description, 0, 53);
@@ -399,8 +413,14 @@ class Hierarchical_Product_Options_Admin {
             'name' => $name,
             'price' => $price,
             'category_id' => $category_id,
-            'description' => $description
+            'description' => $description,
+            'image_url' => $image_url
         ));
+        
+        // Check if the image_url was saved correctly
+        $product_after_update = $db->get_product($id);
+        error_log('Product after update:');
+        error_log('Image URL in DB: ' . (isset($product_after_update->image_url) ? $product_after_update->image_url : 'Not set'));
         
         if ($result !== false) {
             wp_send_json_success();
@@ -1240,6 +1260,11 @@ class Hierarchical_Product_Options_Admin {
                 <li class="hpo-product-item" data-id="<?php echo esc_attr($product->id); ?>">
                     <div class="hpo-item-header">
                         <span class="hpo-drag-handle dashicons dashicons-menu"></span>
+                        <div class="hpo-item-image">
+                            <?php if (!empty($product->image_url)): ?>
+                                <img src="<?php echo esc_url($product->image_url); ?>" alt="<?php echo esc_attr($product->name); ?>" width="40" height="40">
+                            <?php endif; ?>
+                        </div>
                         <span class="hpo-item-name"><?php echo esc_html($product->name); ?></span>
                         <span class="hpo-item-price"><?php echo wc_price($product->price); ?></span>
                         <div class="hpo-item-actions">
