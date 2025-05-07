@@ -356,12 +356,12 @@ class HPO_Shortcodes {
                                 $parent_products = $db->get_products_by_category_with_assignment_order($parent->id, $product_id);
                                 foreach ($parent_products as $opt_product): 
                                 ?>
-                                <div class="hpo-product-option">
-                                    <div class="hpo-product-option-header">
+                                <div class="hpo-product-option new-style-view">
+                                    <div class="hpo-product-option-header" style="grid-area:item1">
                                         <?php echo esc_html($category_paths[$parent->id]); ?>
 
                                     </div>
-                                    <div class="hpo-product-image" style="position: relative;">
+                                    <div class="hpo-product-image" style="position: relative;grid-area:item2">
                                         <?php if (!empty($opt_product->image_url)) : ?>
                                             <div class="hpo-loader-container">
                                                 <div class="hpo-loader"></div>
@@ -371,14 +371,13 @@ class HPO_Shortcodes {
                                                 style="opacity: 0; transition: opacity 0.5s ease;">
                                         <?php else : ?>
                                             <div class="hpo-product-no-image">
-                                                بدون تصویر
-                                            </div>
+                                            <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADIAAAAyCAYAAAAeP4ixAAAACXBIWXMAAAsTAAALEwEAmpwYAAAEw0lEQVR4nO1aW4gcRRTt+ECNLxAF3+9XjCg+kigq0Q/Rj4gKSoJfvj78WJGNGFEQRY2K+OOPkA9/jJgQ4ogYHyCCiBsj8YGgSAZ1obfrnOqZccHdZKPZjS03e9vtLD3VXT29s/uxFwp2Zqpv3XPvrVvnVm8QLMqiLBwBcAWAjSS/JtkBMAWAAHaSfMEYc3mwkCWO44tIfgDgX5JJtwHgIMntJC8IFppYax8luc8FIAfQGMmHgoUiAF71AZAzXkqSZMl8g1jvMPAfkiuNMTeViM7GeQNBcp3mezfj3tR5y0tG5sG+gxgZGTlbc7wbiAPtdvtMBbK9JJB9cRxf3FcgJBsFRn2SKcXOKjZrfNW3/UJyTdk0qVIIjDH39gUIgKEiY1qt1iU6d5cvEADfzDmIOI6vLmNMGIbHyXySf5Y0fhLAhyTXGmOWzjkQkptKpschY0hOFACYIrk5jaBIkiRHk1ylpb0BoJk5bCdI/gpgh7X2iUrsIEmSI8p62BhzrjwDwDhADAFYluoHcB6AV0i2PNLwIID3so4oFGvtVR65vkoj8mXOb/tJPpUkyZEpAJLbNDpe+4kzgMZKFwmSA2UVS9jVyNdmLWgBrMik0AYAe6sC4OG6pcyvKwQCYKuH4oaCX5n5bo+19kL5Poqic0j+UAcAHj4mCtOM5PceCveHYXiKOuAn3aCnyWdjzLWuvVNDZD4qikjsqXC97q3bZR+ojjsBjNdo9GqSt85OMWfzVlRKcxZhHMcnZByx2ldHgf4x0Str5Pz2nCsi3lUlrSTaPY7WnEJD6uArc3773BURL0MAfCslVqvTj3WC4PQYUAcP5qwNV0T+8AAxJeeOOmDDHIDY02w2jxFHkfwlZ/1JOcC7AfEhgJvlGTnh6zonOGPkX9KsqZMe6TLnQM88S6IRRdFl+sy2miMxIsQ10+t0q4BtV2o9VhLIjgx3qkw7ck7td4wxp6ruZSRDx/xmHVzr/jx6UnEI690k3g9m7Li7BHn9uCsQNe63As+NyyaUIeGt6H1qGq9J+xpN0/MBbCmp5+kiIK8XKPhM5hljbqlg/BtydZStNvK3MeZm4XkAJsvqs9be6AQim9h1BUTyGQ3/syUXlRQZkAima0hTZoy5B8DbvrSIyrDl7HIC0RC/71B0l875tMSCu1qt1hnq+SXyrLa7vdKYlwtBaHpd1y0q6aYE8HvBYo3h4eFjM2m4u0fjE11/UlqEUkDU42/lKUqpu4vOAPiZ5PEKeNAn91kMZEvgI6OjoyeTjGYr6nQ6J0mauM4PANcr2IfrAkBlw3IDGviKtfYG7b//VyYAhf84Uu8QK43j+PQ6KT2ndQ96g8iAeSBrdNrQdKs2wg40Gi/WCYLk7iRJjqoMRI1aS/JvBXKHAvkib0Fpc/X3nTWC6MhhGdQhUnkADIun1dDn8xZNK4qQv5pATMiBWQuIDJilAO5TQ5fn3cK32+0TFehYDXtiXO4AgrkWIW45BtymRaLXSERRFF0T9EOiKLq07srE6fFdGIZnBfPwes7nRY8rlfYCeLLn6lRVpH/Q9rQqAHnlsDW9GJ9X0eugd306RmGxQgC9uFO/RN5nkHxc/kNCrlGl+dIDtaWfG8q/VsxbCi3KogSl5T905j+mDjkasAAAAABJRU5ErkJggg==" alt="coffee-beans---v2">                                             </div>
                                         <?php endif; ?>
                                     </div>
 
 
 
-                                    <label>
+                                    <label style="grid-area:item3">
                                         <div class="hpo-product-option-name-price">
                                             <input type="radio" name="hpo_option[<?php echo esc_attr($parent->id); ?>]" 
                                                    value="<?php echo esc_attr($opt_product->id); ?>" 
@@ -387,7 +386,7 @@ class HPO_Shortcodes {
                                         </div>
                                         <span class="hpo-option-price"><?php echo number_format($opt_product->price); ?> تومان</span>
                                     </label>
-                                    <div class="hpo-product-option-description">
+                                    <div class="hpo-product-option-description" style="grid-area:item4">
                                         <?php echo !empty($opt_product->description) ? esc_html($opt_product->description) : '<span class="no-description">بدون توضیحات</span>'; ?>
                                     </div>
 
@@ -409,12 +408,12 @@ class HPO_Shortcodes {
                                         $child_products = $db->get_products_by_category_with_assignment_order($child->id, $product_id);
                                         foreach ($child_products as $child_product): 
                                         ?>
-                                        <div class="hpo-product-option">
-                                            <div class="hpo-product-option-header">
+                                        <div class="hpo-product-option new-style-view">
+                                            <div class="hpo-product-option-header" style="grid-area:item1">
                                                 <?php echo esc_html($category_paths[$child->id]); ?>
                                             </div>
-                                            <div class="hpo-product-image" style="position: relative;">
-                                        <?php if (!empty($child_product->image_url)) : ?>
+                                            <div class="hpo-product-image" style="position: relative;grid-area:item2">
+                                             <?php if (!empty($child_product->image_url)) : ?>
                                             <div class="hpo-loader-container">
                                                 <div class="hpo-loader"></div>
                                             </div>
@@ -428,7 +427,7 @@ class HPO_Shortcodes {
                                         <?php endif; ?>
                                     </div>
 
-                                            <label>
+                                            <label style="grid-area:item3">
                                                 <div class="hpo-product-option-name-price">
                                                     <input type="radio" name="hpo_option[<?php echo esc_attr($child->id); ?>]" 
                                                            value="<?php echo esc_attr($child_product->id); ?>" 
@@ -437,7 +436,7 @@ class HPO_Shortcodes {
                                                 </div>
                                                 <span class="hpo-option-price"><?php echo number_format($child_product->price); ?> تومان</span>
                                             </label>
-                                            <div class="hpo-product-option-description">
+                                            <div class="hpo-product-option-description" style="grid-area:item4">
                                                 <?php echo !empty($child_product->description) ? esc_html($child_product->description) : '<span class="no-description">بدون توضیحات</span>'; ?>
                                             </div>
                                         </div>
