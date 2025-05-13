@@ -498,18 +498,8 @@ class Hierarchical_Product_Options {
         // Make sure we're using the correct decimal format for toman/rial
         $current_price = round($current_price);
         
-        // Get the quantity
-        $quantity = isset($cart_item['quantity']) ? (int)$cart_item['quantity'] : 1;
-        
-        // Calculate line total
-        $line_total = $current_price * $quantity;
-        
-        // Update cart item line totals
-        WC()->cart->cart_contents[$cart_item_key]['line_total'] = $line_total;
-        WC()->cart->cart_contents[$cart_item_key]['line_subtotal'] = $line_total;
-        
-        // Format the line total with WooCommerce's currency formatter
-        return wc_price($line_total);
+        // Format the unit price with WooCommerce's currency formatter
+        return wc_price($current_price);
     }
 
     /**
