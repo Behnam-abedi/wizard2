@@ -980,16 +980,6 @@ class HPO_Shortcodes {
         
         // Only update if we have a valid price
         if ($price_value > 0) {
-            // Check if this is for the subtotal column
-            $backtrace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 5);
-            $is_subtotal = false;
-            foreach ($backtrace as $trace) {
-                if (isset($trace['function']) && $trace['function'] === 'get_item_subtotal') {
-                    $is_subtotal = true;
-                    break;
-                }
-            }
-
             // If we're on a cart page, update the data object to ensure consistent pricing
             if (is_cart() || is_checkout()) {
                 WC()->cart->cart_contents[$cart_item_key]['data']->set_price($price_value);
@@ -1003,12 +993,6 @@ class HPO_Shortcodes {
                     WC()->cart->cart_contents[$cart_item_key]['hpo_custom_data']['calculated_price'] = $price_value;
                     WC()->cart->cart_contents[$cart_item_key]['hpo_custom_data']['custom_price'] = $price_value;
                 }
-            }
-            
-            // For subtotal column, multiply by quantity
-            if ($is_subtotal) {
-                $quantity = isset($cart_item['quantity']) ? (int)$cart_item['quantity'] : 1;
-                $price_value = $price_value * $quantity;
             }
             
             // Format the price with the exact HTML structure WooCommerce expects

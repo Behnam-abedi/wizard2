@@ -498,7 +498,7 @@ class Hierarchical_Product_Options {
         // Make sure we're using the correct decimal format for toman/rial
         $current_price = round($current_price);
         
-        // Format the unit price with WooCommerce's currency formatter
+        // Format the price with WooCommerce's currency formatter
         return wc_price($current_price);
     }
 
