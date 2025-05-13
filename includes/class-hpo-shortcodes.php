@@ -23,14 +23,9 @@ class HPO_Shortcodes {
         
         // Add cart hooks
         add_filter('woocommerce_get_item_data', array($this, 'add_cart_item_custom_data'), 100, 2);
-        add_filter('woocommerce_cart_item_price', array($this, 'update_cart_item_price'), 99999, 3);
-        add_filter('woocommerce_cart_item_subtotal', array($this, 'update_cart_item_price'), 99999, 3);
-        
-        // Checkout specific hooks with high priority
-        add_filter('woocommerce_checkout_cart_item_quantity', array($this, 'update_checkout_item_quantity'), 99999, 3);
-        add_filter('woocommerce_order_formatted_line_subtotal', array($this, 'update_checkout_line_subtotal'), 99999, 3);
-        add_filter('woocommerce_checkout_item_subtotal', array($this, 'update_checkout_line_subtotal'), 99999, 3);
-        
+        add_filter('woocommerce_cart_item_price', array($this, 'update_cart_item_price'), 10, 3);
+        add_filter('woocommerce_cart_item_subtotal', array($this, 'update_cart_item_price'), 999, 3);
+        add_filter('woocommerce_checkout_cart_item_quantity', array($this, 'update_checkout_item_quantity'), 999, 3);
         add_filter('woocommerce_before_calculate_totals', array($this, 'calculate_cart_item_prices'), 10, 1);
         
         // Add for price display
@@ -55,10 +50,10 @@ class HPO_Shortcodes {
         add_filter('woocommerce_product_variation_get_price', array($this, 'filter_product_price'), 99, 2);
         
         // Order review hooks - Very Important
-        add_filter('woocommerce_order_formatted_line_subtotal', array($this, 'update_checkout_line_subtotal'), 99999, 3);
-        add_filter('woocommerce_cart_subtotal', array($this, 'update_cart_subtotal'), 99999, 3);
-        add_filter('woocommerce_order_subtotal_to_display', array($this, 'update_order_subtotal'), 99999, 3);
-        add_filter('woocommerce_calculated_total', array($this, 'update_calculated_total'), 99999, 2);
+        add_filter('woocommerce_order_formatted_line_subtotal', array($this, 'update_checkout_line_subtotal'), 999, 3);
+        add_filter('woocommerce_cart_subtotal', array($this, 'update_cart_subtotal'), 999, 3);
+        add_filter('woocommerce_order_subtotal_to_display', array($this, 'update_order_subtotal'), 999, 3);
+        add_filter('woocommerce_calculated_total', array($this, 'update_calculated_total'), 999, 2);
         
         // Order item meta data
         add_action('woocommerce_checkout_create_order_line_item', array($this, 'save_order_item_meta'), 10, 4);
@@ -85,7 +80,7 @@ class HPO_Shortcodes {
             if (WC()->cart) {
                 $this->after_calculate_totals(WC()->cart);
             }
-        }, 99999);
+        }, 999);
         
         // Add CSS/JS to pages
         add_action('wp_footer', array($this, 'add_custom_cart_css'));
@@ -1705,7 +1700,7 @@ class HPO_Shortcodes {
                 add_filter('woocommerce_cart_subtotal', function($cart_subtotal, $compound, $cart) use ($subtotal) {
                     // Format the subtotal with WooCommerce's currency format
                     return wc_price($subtotal);
-                }, 99999, 3);
+                }, 999, 3);
                 
                 // If there's no shipping or fees, we can also set the total directly in the cart object
                 if (count($cart->get_shipping_packages()) === 0 && count($cart->get_fees()) === 0) {
@@ -1747,7 +1742,7 @@ class HPO_Shortcodes {
                     
                     add_filter('woocommerce_cart_total', function($total) use ($total_after_discount) {
                         return wc_price($total_after_discount);
-                    }, 99999);
+                    }, 999);
                     
                     // Add filter to ensure the discount total is displayed correctly
                     add_filter('woocommerce_cart_totals_coupon_html', function($coupon_html, $coupon, $discount_amount_html) use ($discount_total, $applied_coupons) {
