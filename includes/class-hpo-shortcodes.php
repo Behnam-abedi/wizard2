@@ -28,10 +28,6 @@ class HPO_Shortcodes {
         add_filter('woocommerce_checkout_cart_item_quantity', array($this, 'update_checkout_item_quantity'), 999, 3);
         add_filter('woocommerce_before_calculate_totals', array($this, 'calculate_cart_item_prices'), 10, 1);
         
-        // Add specific filters for checkout page
-        add_filter('woocommerce_checkout_item_subtotal', array($this, 'update_checkout_item_subtotal'), 99999, 3);
-        add_filter('woocommerce_order_formatted_line_subtotal', array($this, 'update_checkout_line_subtotal'), 99999, 3);
-        
         // Add for price display
         add_filter('woocommerce_get_price_html', array($this, 'format_price_html'), 100, 2);
         
@@ -1795,33 +1791,43 @@ class HPO_Shortcodes {
      * @return string Modified subtotal
      */
     public function update_checkout_line_subtotal($subtotal, $item, $order) {
-        // Get the product ID and quantity
+        // Try to get the cart item key from the item
         $product_id = $item->get_product_id();
-        $quantity = $item->get_quantity();
-
+        $found_item = null;
+        $found_key = null;
+        
         // Find the matching cart item
         foreach (WC()->cart->get_cart() as $cart_item_key => $cart_item) {
-            if ($cart_item['product_id'] == $product_id && isset($cart_item['hpo_custom_data'])) {
-                $price_value = 0;
-                
-                // Get the unit price
-                if (isset($cart_item['hpo_custom_data']['price_per_unit'])) {
-                    $price_value = floatval($cart_item['hpo_custom_data']['price_per_unit']);
-                } elseif (isset($cart_item['hpo_custom_data']['calculated_price'])) {
-                    $price_value = floatval($cart_item['hpo_custom_data']['calculated_price']);
-                } elseif (isset($cart_item['hpo_custom_data']['custom_price'])) {
-                    $price_value = floatval($cart_item['hpo_custom_data']['custom_price']);
-                }
-
-                if ($price_value > 0) {
-                    $total = $price_value * $quantity;
-                    return wc_price($total);
-                }
-                
+            if ($cart_item['product_id'] == $product_id) {
+                $found_item = $cart_item;
+                $found_key = $cart_item_key;
                 break;
             }
         }
-
+        
+        // If found and it's our custom item, recalculate the subtotal
+        if ($found_item && isset($found_item['hpo_custom_data'])) {
+            $price = 0;
+            
+            // Get price with our priority order
+            if (isset($found_item['hpo_custom_data']['price_per_unit'])) {
+                $price = floatval($found_item['hpo_custom_data']['price_per_unit']);
+            } elseif (isset($found_item['hpo_custom_data']['calculated_price'])) {
+                $price = floatval($found_item['hpo_custom_data']['calculated_price']);
+            } elseif (isset($found_item['hpo_custom_data']['custom_price'])) {
+                $price = floatval($found_item['hpo_custom_data']['custom_price']);
+            }
+            
+            // Calculate line total based on quantity
+            if ($price > 0) {
+                $quantity = $found_item['quantity'];
+                $line_total = $price * $quantity;
+                
+                // Format using WooCommerce's currency formatter
+                return wc_price($line_total);
+            }
+        }
+        
         return $subtotal;
     }
     
@@ -2101,32 +2107,6 @@ class HPO_Shortcodes {
         
         // If we couldn't match the pattern, use our CSS to handle the minus sign
         return '<span class="woocommerce-Price-amount amount">' . $formatted_discount . '</span>';
-    }
-
-    /**
-     * Update checkout item subtotal
-     */
-    public function update_checkout_item_subtotal($subtotal, $cart_item, $cart_item_key) {
-        if (!isset($cart_item['hpo_custom_data'])) {
-            return $subtotal;
-        }
-
-        $price_value = 0;
-        if (isset($cart_item['hpo_custom_data']['price_per_unit'])) {
-            $price_value = floatval($cart_item['hpo_custom_data']['price_per_unit']);
-        } elseif (isset($cart_item['hpo_custom_data']['calculated_price'])) {
-            $price_value = floatval($cart_item['hpo_custom_data']['calculated_price']);
-        } elseif (isset($cart_item['hpo_custom_data']['custom_price'])) {
-            $price_value = floatval($cart_item['hpo_custom_data']['custom_price']);
-        }
-
-        if ($price_value > 0) {
-            $quantity = isset($cart_item['quantity']) ? (int)$cart_item['quantity'] : 1;
-            $total = $price_value * $quantity;
-            return wc_price($total);
-        }
-
-        return $subtotal;
     }
 }
 
