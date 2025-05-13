@@ -23,62 +23,10 @@ class HPO_Shortcodes {
         
         // Add cart hooks
         add_filter('woocommerce_get_item_data', array($this, 'add_cart_item_custom_data'), 100, 2);
-        add_filter('woocommerce_cart_item_price', array($this, 'update_cart_item_price'), 99999, 3);
-        add_filter('woocommerce_cart_item_subtotal', array($this, 'update_cart_item_price'), 99999, 3);
+        add_filter('woocommerce_cart_item_price', array($this, 'update_cart_item_price'), 10, 3);
+        add_filter('woocommerce_cart_item_subtotal', array($this, 'update_cart_item_price'), 999, 3);
         add_filter('woocommerce_checkout_cart_item_quantity', array($this, 'update_checkout_item_quantity'), 999, 3);
         add_filter('woocommerce_before_calculate_totals', array($this, 'calculate_cart_item_prices'), 10, 1);
-        
-        // Add this new action to modify cart item prices after WoodMart theme
-        add_action('wp_footer', function() {
-            if (is_cart() || is_checkout()) {
-                ?>
-                <script type="text/javascript">
-                jQuery(document).ready(function($) {
-                    function updateCartPrices() {
-                        // For cart page
-                        $('.cart_item, .cart-item, .cart_items tr, #order_review .shop_table tr').each(function() {
-                            var $row = $(this);
-                            var qty = parseInt($row.find('input.qty').val()) || parseInt($row.find('.product-quantity').text()) || parseInt($row.find('.quantity').text());
-                            var unitPrice = parseFloat($row.find('.product-price .amount').first().text().replace(/[^0-9]/g, ''));
-                            
-                            if (!isNaN(qty) && !isNaN(unitPrice)) {
-                                var total = qty * unitPrice;
-                                $row.find('.product-subtotal .amount, .product-total .amount').html(new Intl.NumberFormat('fa-IR').format(total) + ' تومان');
-                            }
-                        });
-
-                        // For checkout review table
-                        $('.woocommerce-checkout-review-order-table tr.cart_item').each(function() {
-                            var $row = $(this);
-                            var qtyText = $row.find('.product-quantity').text();
-                            var qty = parseInt(qtyText.replace(/[^\d]/g, ''));
-                            var unitPrice = parseFloat($row.find('.product-total .amount').first().text().replace(/[^0-9]/g, '')) / qty;
-                            
-                            if (!isNaN(qty) && !isNaN(unitPrice)) {
-                                var total = qty * unitPrice;
-                                $row.find('.product-total .amount').html(new Intl.NumberFormat('fa-IR').format(total) + ' تومان');
-                            }
-                        });
-                    }
-
-                    // Run on page load
-                    setTimeout(updateCartPrices, 500);
-
-                    // Run when quantity changes
-                    $(document.body).on('updated_cart_totals updated_checkout', updateCartPrices);
-                    $(document.body).on('change', 'input.qty', updateCartPrices);
-                    
-                    // Additional triggers for WoodMart theme
-                    $(document.body).on('updated_wc_div', updateCartPrices);
-                    $(document).on('woodmart-quick-view-displayed', updateCartPrices);
-                    
-                    // Run periodically to catch any dynamic updates
-                    setInterval(updateCartPrices, 1000);
-                });
-                </script>
-                <?php
-            }
-        }, 99999);
         
         // Add for price display
         add_filter('woocommerce_get_price_html', array($this, 'format_price_html'), 100, 2);
