@@ -35,24 +35,45 @@ class HPO_Shortcodes {
                 <script type="text/javascript">
                 jQuery(document).ready(function($) {
                     function updateCartPrices() {
-                        $('.cart_item').each(function() {
+                        // For cart page
+                        $('.cart_item, .cart-item, .cart_items tr, #order_review .shop_table tr').each(function() {
                             var $row = $(this);
-                            var qty = parseInt($row.find('input.qty').val());
+                            var qty = parseInt($row.find('input.qty').val()) || parseInt($row.find('.product-quantity').text()) || parseInt($row.find('.quantity').text());
                             var unitPrice = parseFloat($row.find('.product-price .amount').first().text().replace(/[^0-9]/g, ''));
                             
                             if (!isNaN(qty) && !isNaN(unitPrice)) {
                                 var total = qty * unitPrice;
-                                $row.find('.product-subtotal .amount').html(new Intl.NumberFormat('fa-IR').format(total) + ' تومان');
+                                $row.find('.product-subtotal .amount, .product-total .amount').html(new Intl.NumberFormat('fa-IR').format(total) + ' تومان');
+                            }
+                        });
+
+                        // For checkout review table
+                        $('.woocommerce-checkout-review-order-table tr.cart_item').each(function() {
+                            var $row = $(this);
+                            var qtyText = $row.find('.product-quantity').text();
+                            var qty = parseInt(qtyText.replace(/[^\d]/g, ''));
+                            var unitPrice = parseFloat($row.find('.product-total .amount').first().text().replace(/[^0-9]/g, '')) / qty;
+                            
+                            if (!isNaN(qty) && !isNaN(unitPrice)) {
+                                var total = qty * unitPrice;
+                                $row.find('.product-total .amount').html(new Intl.NumberFormat('fa-IR').format(total) + ' تومان');
                             }
                         });
                     }
 
                     // Run on page load
-                    updateCartPrices();
+                    setTimeout(updateCartPrices, 500);
 
                     // Run when quantity changes
-                    $(document.body).on('updated_cart_totals', updateCartPrices);
+                    $(document.body).on('updated_cart_totals updated_checkout', updateCartPrices);
                     $(document.body).on('change', 'input.qty', updateCartPrices);
+                    
+                    // Additional triggers for WoodMart theme
+                    $(document.body).on('updated_wc_div', updateCartPrices);
+                    $(document).on('woodmart-quick-view-displayed', updateCartPrices);
+                    
+                    // Run periodically to catch any dynamic updates
+                    setInterval(updateCartPrices, 1000);
                 });
                 </script>
                 <?php
