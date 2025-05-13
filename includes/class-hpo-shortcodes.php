@@ -1820,8 +1820,14 @@ class HPO_Shortcodes {
             
             // Calculate line total based on quantity
             if ($price > 0) {
-                $quantity = $found_item['quantity'];
+                $quantity = $item->get_quantity(); // Get quantity from order item instead of cart
                 $line_total = $price * $quantity;
+                
+                // Update the cart item's line total for consistency
+                if ($found_key) {
+                    WC()->cart->cart_contents[$found_key]['line_total'] = $line_total;
+                    WC()->cart->cart_contents[$found_key]['line_subtotal'] = $line_total;
+                }
                 
                 // Format using WooCommerce's currency formatter
                 return wc_price($line_total);
