@@ -24,7 +24,7 @@ class HPO_Shortcodes {
         // Add cart hooks
         add_filter('woocommerce_get_item_data', array($this, 'add_cart_item_custom_data'), 100, 2);
         add_filter('woocommerce_cart_item_price', array($this, 'update_cart_item_price'), 10, 3);
-        add_filter('woocommerce_cart_item_subtotal', array($this, 'update_cart_item_price'), 999, 3);
+        add_filter('woocommerce_cart_item_subtotal', array($this, 'update_cart_item_subtotal'), 999, 3);
         add_filter('woocommerce_checkout_cart_item_quantity', array($this, 'update_checkout_item_quantity'), 999, 3);
         add_filter('woocommerce_before_calculate_totals', array($this, 'calculate_cart_item_prices'), 10, 1);
         
@@ -2107,6 +2107,82 @@ class HPO_Shortcodes {
         
         // If we couldn't match the pattern, use our CSS to handle the minus sign
         return '<span class="woocommerce-Price-amount amount">' . $formatted_discount . '</span>';
+    }
+
+    /**
+     * Update cart item subtotal
+     */
+    public function update_cart_item_subtotal($subtotal, $cart_item, $cart_item_key) {
+        if (!isset($cart_item['hpo_custom_data'])) {
+            return $subtotal;
+        }
+
+        $price_value = 0;
+        
+        // Get the unit price
+        if (isset($cart_item['hpo_custom_data']['price_per_unit'])) {
+            $price_value = floatval($cart_item['hpo_custom_data']['price_per_unit']);
+        } elseif (isset($cart_item['hpo_custom_data']['calculated_price'])) {
+            $price_value = floatval($cart_item['hpo_custom_data']['calculated_price']);
+        } elseif (isset($cart_item['hpo_custom_data']['custom_price'])) {
+            $price_value = floatval($cart_item['hpo_custom_data']['custom_price']);
+        }
+
+        if ($price_value > 0) {
+            $quantity = isset($cart_item['quantity']) ? (int)$cart_item['quantity'] : 1;
+            $total = $price_value * $quantity;
+
+            // Update the cart item data to ensure consistency
+            if (isset(WC()->cart->cart_contents[$cart_item_key])) {
+                WC()->cart->cart_contents[$cart_item_key]['line_total'] = $total;
+                WC()->cart->cart_contents[$cart_item_key]['line_subtotal'] = $total;
+            }
+
+            return wc_price($total);
+        }
+
+        return $subtotal;
+    }
+
+    /**
+     * Update checkout line total
+     */
+    public function update_checkout_line_total($subtotal, $cart_item, $cart_item_key = '') {
+        if (!isset($cart_item['hpo_custom_data'])) {
+            return $subtotal;
+        }
+
+        $price_value = 0;
+        
+        // Get the unit price
+        if (isset($cart_item['hpo_custom_data']['price_per_unit'])) {
+            $price_value = floatval($cart_item['hpo_custom_data']['price_per_unit']);
+        } elseif (isset($cart_item['hpo_custom_data']['calculated_price'])) {
+            $price_value = floatval($cart_item['hpo_custom_data']['calculated_price']);
+        } elseif (isset($cart_item['hpo_custom_data']['custom_price'])) {
+            $price_value = floatval($cart_item['hpo_custom_data']['custom_price']);
+        }
+
+        if ($price_value > 0) {
+            $quantity = isset($cart_item['quantity']) ? (int)$cart_item['quantity'] : 1;
+            $total = $price_value * $quantity;
+
+            // Update the cart item data
+            if (isset(WC()->cart->cart_contents[$cart_item_key])) {
+                WC()->cart->cart_contents[$cart_item_key]['line_total'] = $total;
+                WC()->cart->cart_contents[$cart_item_key]['line_subtotal'] = $total;
+                WC()->cart->cart_contents[$cart_item_key]['line_tax'] = 0;
+                WC()->cart->cart_contents[$cart_item_key]['line_subtotal_tax'] = 0;
+            }
+
+            // Format with WooCommerce price format
+            return sprintf(
+                '<span class="woocommerce-Price-amount amount"><bdi>%s&nbsp;<span class="woocommerce-Price-currencySymbol">تومان</span></bdi></span>',
+                number_format($total)
+            );
+        }
+
+        return $subtotal;
     }
 }
 
