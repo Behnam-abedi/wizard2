@@ -592,10 +592,10 @@
     border-color: rgb(226, 232, 240)!important;
     height: 66px!important;
     min-height:66px!important;
-    color:#555;
+    color:#555!important;
 }
 .hpo-option-section textarea::placeholder{
-    color:#555
+    color: #555!important;
 }
 
 /* Quantity Input */
