@@ -84,6 +84,7 @@ class HPO_Shortcodes {
         
         // Add CSS/JS to pages
         add_action('wp_footer', array($this, 'add_custom_cart_css'));
+        add_action('wp_footer', array($this, 'add_checkout_price_js'));
         
         // Ensure scripts are loaded
         add_action('wp_enqueue_scripts', array($this, 'enqueue_scripts'));
@@ -918,93 +919,30 @@ class HPO_Shortcodes {
     public function update_cart_item_price($price, $cart_item, $cart_item_key) {
         // Skip if this is not our custom item
         if (!isset($cart_item['hpo_custom_data'])) {
-            return $price; // Return original price for regular WooCommerce products
+            return $price;
         }
-        
-        // Priority for price sources:
-        // 1. Custom data price_per_unit
-        // 2. Custom data calculated_price
-        // 3. Custom data custom_price
-        // 4. Direct cart item properties
-        // 5. Product object price
-        // 6. Meta data
+
+        // Get the unit price
         $price_value = 0;
-        
-        // Priority 1: Custom data price_per_unit
-        if (isset($cart_item['hpo_custom_data']) && 
-            isset($cart_item['hpo_custom_data']['price_per_unit']) && 
-            $cart_item['hpo_custom_data']['price_per_unit'] > 0) {
-            
+        if (isset($cart_item['hpo_custom_data']['price_per_unit'])) {
             $price_value = floatval($cart_item['hpo_custom_data']['price_per_unit']);
-        } 
-        // Priority 2: Custom data calculated_price
-        elseif (isset($cart_item['hpo_custom_data']) && 
-                isset($cart_item['hpo_custom_data']['calculated_price']) && 
-                $cart_item['hpo_custom_data']['calculated_price'] > 0) {
-            
+        } elseif (isset($cart_item['hpo_custom_data']['calculated_price'])) {
             $price_value = floatval($cart_item['hpo_custom_data']['calculated_price']);
-        }
-        // Priority 3: Custom data custom_price
-        elseif (isset($cart_item['hpo_custom_data']) && 
-                isset($cart_item['hpo_custom_data']['custom_price']) && 
-                $cart_item['hpo_custom_data']['custom_price'] > 0) {
-            
+        } elseif (isset($cart_item['hpo_custom_data']['custom_price'])) {
             $price_value = floatval($cart_item['hpo_custom_data']['custom_price']);
         }
-        // Priority 4: Direct cart item properties
-        elseif (isset($cart_item['data_price']) && $cart_item['data_price'] > 0) {
-            $price_value = floatval($cart_item['data_price']);
-        }
-        elseif (isset($cart_item['hpo_total_price']) && $cart_item['hpo_total_price'] > 0) {
-            $price_value = floatval($cart_item['hpo_total_price']);
-        }
-        // Priority 5: Product object price
-        elseif (isset($cart_item['data'])) {
-            $price_value = floatval($cart_item['data']->get_price());
-            
-            // If product price is still zero, try to get it from meta
-            if ($price_value <= 0) {
-                // Try _hpo_custom_price first
-                $price_meta = $cart_item['data']->get_meta('_hpo_custom_price');
-                if ($price_meta && floatval($price_meta) > 0) {
-                    $price_value = floatval($price_meta);
-                } else {
-                    // Then try _price
-                    $price_meta = $cart_item['data']->get_meta('_price');
-                    if ($price_meta && floatval($price_meta) > 0) {
-                        $price_value = floatval($price_meta);
-                    }
-                }
-            }
-        }
-        
-        // Only update if we have a valid price
+
         if ($price_value > 0) {
-            // If we're on a cart page, update the data object to ensure consistent pricing
-            if (is_cart() || is_checkout()) {
-                WC()->cart->cart_contents[$cart_item_key]['data']->set_price($price_value);
-                
-                // Only update our custom meta
-                WC()->cart->cart_contents[$cart_item_key]['data']->update_meta_data('_hpo_custom_price', $price_value);
-                
-                // Also update our custom data for consistency
-                if (isset(WC()->cart->cart_contents[$cart_item_key]['hpo_custom_data'])) {
-                    WC()->cart->cart_contents[$cart_item_key]['hpo_custom_data']['price_per_unit'] = $price_value;
-                    WC()->cart->cart_contents[$cart_item_key]['hpo_custom_data']['calculated_price'] = $price_value;
-                    WC()->cart->cart_contents[$cart_item_key]['hpo_custom_data']['custom_price'] = $price_value;
-                }
-            }
-            
-            // Format the price with the exact HTML structure WooCommerce expects
+            // Add the unit price as a data attribute for JavaScript
             $formatted_price = sprintf(
-                '<span class="woocommerce-Price-amount amount"><bdi>%s&nbsp;<span class="woocommerce-Price-currencySymbol">تومان</span></bdi></span>',
+                '<span class="woocommerce-Price-amount amount" data-unit-price="%s"><bdi>%s&nbsp;<span class="woocommerce-Price-currencySymbol">تومان</span></bdi></span>',
+                esc_attr($price_value),
                 number_format($price_value)
             );
             
             return $formatted_price;
         }
-        
-        // Fallback to default price format if our price is zero or invalid
+
         return $price;
     }
     
@@ -2107,6 +2045,62 @@ class HPO_Shortcodes {
         
         // If we couldn't match the pattern, use our CSS to handle the minus sign
         return '<span class="woocommerce-Price-amount amount">' . $formatted_discount . '</span>';
+    }
+
+    /**
+     * Add JavaScript to handle checkout price updates
+     */
+    public function add_checkout_price_js() {
+        if (!is_checkout()) {
+            return;
+        }
+        ?>
+        <script type="text/javascript">
+        jQuery(document).ready(function($) {
+            function updateCheckoutPrices() {
+                // Get all checkout rows
+                $('.woocommerce-checkout-review-order-table tbody tr.cart_item').each(function() {
+                    var $row = $(this);
+                    var $priceCell = $row.find('.product-total');
+                    var $quantityText = $row.find('.product-quantity');
+                    
+                    // Extract quantity from text (e.g., "× 2" -> 2)
+                    var quantity = parseInt($quantityText.text().replace(/[^\d]/g, '')) || 1;
+                    
+                    // Get unit price from data attribute or price cell
+                    var unitPrice = parseFloat($row.find('.product-total').data('unit-price')) || 
+                                  parseFloat($row.find('.product-total').text().replace(/[^\d]/g, ''));
+                    
+                    if (unitPrice && quantity) {
+                        var total = unitPrice * quantity;
+                        
+                        // Format price with WooCommerce currency format
+                        var formattedPrice = '<span class="woocommerce-Price-amount amount">' + 
+                                           numberWithCommas(total) + 
+                                           '&nbsp;<span class="woocommerce-Price-currencySymbol">تومان</span></span>';
+                        
+                        // Update the total price cell
+                        $priceCell.html(formattedPrice);
+                    }
+                });
+            }
+
+            function numberWithCommas(x) {
+                return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+            }
+
+            // Run on page load
+            setTimeout(updateCheckoutPrices, 500);
+
+            // Run when cart/checkout is updated
+            $(document.body).on('updated_checkout', updateCheckoutPrices);
+            $(document.body).on('updated_cart_totals', updateCheckoutPrices);
+            
+            // Also run periodically to catch any missed updates
+            setInterval(updateCheckoutPrices, 1000);
+        });
+        </script>
+        <?php
     }
 }
 
