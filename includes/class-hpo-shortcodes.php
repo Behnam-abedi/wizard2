@@ -23,10 +23,41 @@ class HPO_Shortcodes {
         
         // Add cart hooks
         add_filter('woocommerce_get_item_data', array($this, 'add_cart_item_custom_data'), 100, 2);
-        add_filter('woocommerce_cart_item_price', array($this, 'update_cart_item_price'), 10, 3);
-        add_filter('woocommerce_cart_item_subtotal', array($this, 'update_cart_item_price'), 999, 3);
+        add_filter('woocommerce_cart_item_price', array($this, 'update_cart_item_price'), 99999, 3);
+        add_filter('woocommerce_cart_item_subtotal', array($this, 'update_cart_item_price'), 99999, 3);
         add_filter('woocommerce_checkout_cart_item_quantity', array($this, 'update_checkout_item_quantity'), 999, 3);
         add_filter('woocommerce_before_calculate_totals', array($this, 'calculate_cart_item_prices'), 10, 1);
+        
+        // Add this new action to modify cart item prices after WoodMart theme
+        add_action('wp_footer', function() {
+            if (is_cart() || is_checkout()) {
+                ?>
+                <script type="text/javascript">
+                jQuery(document).ready(function($) {
+                    function updateCartPrices() {
+                        $('.cart_item').each(function() {
+                            var $row = $(this);
+                            var qty = parseInt($row.find('input.qty').val());
+                            var unitPrice = parseFloat($row.find('.product-price .amount').first().text().replace(/[^0-9]/g, ''));
+                            
+                            if (!isNaN(qty) && !isNaN(unitPrice)) {
+                                var total = qty * unitPrice;
+                                $row.find('.product-subtotal .amount').html(new Intl.NumberFormat('fa-IR').format(total) + ' تومان');
+                            }
+                        });
+                    }
+
+                    // Run on page load
+                    updateCartPrices();
+
+                    // Run when quantity changes
+                    $(document.body).on('updated_cart_totals', updateCartPrices);
+                    $(document.body).on('change', 'input.qty', updateCartPrices);
+                });
+                </script>
+                <?php
+            }
+        }, 99999);
         
         // Add for price display
         add_filter('woocommerce_get_price_html', array($this, 'format_price_html'), 100, 2);
