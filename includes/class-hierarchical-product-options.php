@@ -745,10 +745,14 @@ class Hierarchical_Product_Options {
                         <th>تعداد</th>
                         <th>توضیحات مشتری</th>
                         <th>قیمت نهایی (هر واحد)</th>
+                        <th>قیمت کل</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <?php foreach ($order->get_items() as $item_id => $item): ?>
+                    <?php 
+                    $total_sum = 0;
+                    foreach ($order->get_items() as $item_id => $item): 
+                    ?>
                     <tr>
                         <td class="row-title">
                             <label><?php echo esc_html($item->get_name()); ?></label>
@@ -770,13 +774,9 @@ class Hierarchical_Product_Options {
                                             $product_name = $product['name'];
                                         }
                                         
-                                        // حذف کلمه "تومان" و اعداد شبیه قیمت (سه رقم سه رقم جدا شده با کاما) از اسم محصول
                                         if (!empty($product_name)) {
                                             $clean_name = preg_replace('/\b\d{1,3}(,\d{3})+\s*تومان?\b|\b\d{1,3}(,\d{3})+\b|\bتومان\b/u', '', $product_name);
-                                            
-                                            // حذف فاصله‌های اضافی که ممکن است بعد از حذف ایجاد شده باشد
                                             $clean_name = trim(preg_replace('/\s+/', ' ', $clean_name));
-                                            
                                             $product_names[] = $clean_name;
                                         }
                                     }
@@ -834,16 +834,66 @@ class Hierarchical_Product_Options {
                         <td>
                             <?php
                             $calculated_price = $item->get_meta('_hpo_calculated_price');
-                            if (!empty($calculated_price)) {
-                                echo '<strong class="final-price">' . wc_price($calculated_price) . '</strong>';
-                            } else {
-                                echo wc_price($item->get_subtotal() / $quantity);
-                            }
+                            $unit_price = !empty($calculated_price) ? $calculated_price : ($item->get_subtotal() / $quantity);
+                            echo '<strong class="final-price">' . wc_price($unit_price) . '</strong>';
+                            ?>
+                        </td>
+                        <td>
+                            <?php
+                            $total_price = $unit_price * $quantity;
+                            $total_sum += $total_price;
+                            echo '<strong class="total-price">' . wc_price($total_price) . '</strong>';
                             ?>
                         </td>
                     </tr>
                     <?php endforeach; ?>
                 </tbody>
+                <tfoot>
+                    <tr class="summary-row">
+                        <td colspan="7" class="summary-label">جمع کل سفارش:</td>
+                        <td><strong><?php echo wc_price($total_sum); ?></strong></td>
+                    </tr>
+                    <tr class="summary-row shipping-row">
+                        <td colspan="7" class="summary-label">
+                            روش ارسال: 
+                            <?php 
+                            $shipping_methods = $order->get_shipping_methods();
+                            $shipping_method = reset($shipping_methods);
+                            echo $shipping_method ? esc_html($shipping_method->get_name()) : 'تعیین نشده';
+                            ?>
+                        </td>
+                        <td>
+                            <?php
+                            $shipping_total = $order->get_shipping_total();
+                            echo wc_price($shipping_total);
+                            ?>
+                        </td>
+                    </tr>
+                    <tr class="summary-row discount-row">
+                        <td colspan="7" class="summary-label">
+                            کد تخفیف: 
+                            <?php
+                            $coupons = $order->get_coupon_codes();
+                            if (!empty($coupons)) {
+                                $coupon = new WC_Coupon($coupons[0]);
+                                echo 'استفاده شده (' . $coupon->get_amount() . ($coupon->get_discount_type() === 'percent' ? '%' : ' تومان') . ')';
+                            } else {
+                                echo 'بدون کد تخفیف';
+                            }
+                            ?>
+                        </td>
+                        <td>
+                            <?php
+                            $discount_total = $order->get_total_discount();
+                            echo $discount_total > 0 ? '- ' . wc_price($discount_total) : '-';
+                            ?>
+                        </td>
+                    </tr>
+                    <tr class="summary-row final-total-row">
+                        <td colspan="7" class="summary-label">مبلغ نهایی:</td>
+                        <td><strong class="final-total"><?php echo wc_price($order->get_total()); ?></strong></td>
+                    </tr>
+                </tfoot>
             </table>
         </div>
         <style>
@@ -869,7 +919,7 @@ class Hierarchical_Product_Options {
                 padding: 12px;
                 border-bottom: 1px solid #f0f0f1;
                 vertical-align: top;
-                direction: rtl;  /* یا ltr، ولی بهتر است پیش‌فرض rtl باشد */
+                direction: rtl;
                 unicode-bidi: plaintext;
                 text-align: right;
             }
@@ -912,6 +962,26 @@ class Hierarchical_Product_Options {
                 color: #50575e;
                 max-width: 300px;
                 white-space: pre-wrap;
+            }
+            .summary-row {
+                background-color: #f8f9fa !important;
+            }
+            .summary-row td {
+                border-top: 2px solid #e5e5e5;
+            }
+            .summary-label {
+                font-weight: 600;
+                color: #1d2327;
+            }
+            .final-total-row {
+                background-color: #edf7ed !important;
+            }
+            .final-total {
+                color: #1e4620;
+                font-size: 1.2em;
+            }
+            .total-price {
+                color: #2271b1;
             }
         </style>
         <?php
