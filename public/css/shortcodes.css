@@ -857,17 +857,17 @@
     color: #000000!important;
     line-height: 1!important;
     font-weight: bold!important;
-    margin-bottom:5px!important;
+    margin-top:5px!important;
 }
 
 /* Step 2: Back arrow icon */
 .step-2 .hpo-back-button::before {
-    content: "⮜"!important;
+    content: "⏴"!important;
     font-size: 20px!important;
     color: #000000!important;
     line-height: 1!important;
     transform: rotate(180deg);
-    margin-top:7px!important;
+    margin-top:1px!important;
 }
 
 /* Close button in step 2 */
@@ -877,7 +877,7 @@
     color: #000000!important;
     line-height: 1!important;
     font-weight: bold!important;
-    margin-bottom:5px!important;
+    margin-top:5px!important;
 }
 
 /* Remove the text span since we're using icons */
