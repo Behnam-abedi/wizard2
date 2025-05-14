@@ -1675,12 +1675,12 @@ body.hpo-popup-open {
 }
 
 .hpo-loading-overlay .hpo-loading-message {
-    color: white;
+    color: rgb(46, 42, 250);
     font-size: 16px;
     margin-top: 15px;
     text-align: center;
-    background-color: #4c43ce;
-    border-radius: 15px;
+    background-color: #ffffff;
+    border-radius: 15px!important;
     padding: 10px;
 }
 
