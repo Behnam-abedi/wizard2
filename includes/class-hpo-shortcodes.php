@@ -2113,19 +2113,22 @@ class HPO_Shortcodes {
      * Update cart item subtotal
      */
     public function update_cart_item_subtotal($subtotal, $cart_item, $cart_item_key) {
-        if (!isset($cart_item['hpo_custom_data'])) {
-            return $subtotal;
-        }
-
         $price_value = 0;
         
-        // Get the unit price
-        if (isset($cart_item['hpo_custom_data']['price_per_unit'])) {
-            $price_value = floatval($cart_item['hpo_custom_data']['price_per_unit']);
-        } elseif (isset($cart_item['hpo_custom_data']['calculated_price'])) {
-            $price_value = floatval($cart_item['hpo_custom_data']['calculated_price']);
-        } elseif (isset($cart_item['hpo_custom_data']['custom_price'])) {
-            $price_value = floatval($cart_item['hpo_custom_data']['custom_price']);
+        if (isset($cart_item['hpo_custom_data'])) {
+            // Get price for our custom products
+            if (isset($cart_item['hpo_custom_data']['price_per_unit'])) {
+                $price_value = floatval($cart_item['hpo_custom_data']['price_per_unit']);
+            } elseif (isset($cart_item['hpo_custom_data']['calculated_price'])) {
+                $price_value = floatval($cart_item['hpo_custom_data']['calculated_price']);
+            } elseif (isset($cart_item['hpo_custom_data']['custom_price'])) {
+                $price_value = floatval($cart_item['hpo_custom_data']['custom_price']);
+            }
+        } else {
+            // Get price for regular WooCommerce products
+            if (isset($cart_item['data'])) {
+                $price_value = floatval($cart_item['data']->get_price());
+            }
         }
 
         if ($price_value > 0) {
@@ -2148,19 +2151,22 @@ class HPO_Shortcodes {
      * Update checkout line total
      */
     public function update_checkout_line_total($subtotal, $cart_item, $cart_item_key = '') {
-        if (!isset($cart_item['hpo_custom_data'])) {
-            return $subtotal;
-        }
-
         $price_value = 0;
         
-        // Get the unit price
-        if (isset($cart_item['hpo_custom_data']['price_per_unit'])) {
-            $price_value = floatval($cart_item['hpo_custom_data']['price_per_unit']);
-        } elseif (isset($cart_item['hpo_custom_data']['calculated_price'])) {
-            $price_value = floatval($cart_item['hpo_custom_data']['calculated_price']);
-        } elseif (isset($cart_item['hpo_custom_data']['custom_price'])) {
-            $price_value = floatval($cart_item['hpo_custom_data']['custom_price']);
+        if (isset($cart_item['hpo_custom_data'])) {
+            // Get price for our custom products
+            if (isset($cart_item['hpo_custom_data']['price_per_unit'])) {
+                $price_value = floatval($cart_item['hpo_custom_data']['price_per_unit']);
+            } elseif (isset($cart_item['hpo_custom_data']['calculated_price'])) {
+                $price_value = floatval($cart_item['hpo_custom_data']['calculated_price']);
+            } elseif (isset($cart_item['hpo_custom_data']['custom_price'])) {
+                $price_value = floatval($cart_item['hpo_custom_data']['custom_price']);
+            }
+        } else {
+            // Get price for regular WooCommerce products
+            if (isset($cart_item['data'])) {
+                $price_value = floatval($cart_item['data']->get_price());
+            }
         }
 
         if ($price_value > 0) {
