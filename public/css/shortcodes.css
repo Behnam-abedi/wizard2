@@ -1679,6 +1679,8 @@ body.hpo-popup-open {
     font-size: 16px;
     margin-top: 15px;
     text-align: center;
+    background-color: #2e25ae;
+    padding: 10px;
 }
 
 .hpo-loading-overlay .hpo-spinner {
