@@ -116,8 +116,10 @@ jQuery(document).ready(function($) {
                 $('#hpo-popup-overlay').fadeOut(300);
                 unlockBodyScroll();
             });
+            // Remove close button in step 1
+            $('.hpo-close-button').remove();
         } else {
-            $('.hpo-popup-header').prepend('<div class="hpo-back-button" id="hpo-popup-close"><span>بستن</span></div>');
+            $('.hpo-popup-header').prepend('<div class="hpo-back-button" id="hpo-popup-close"><span></span></div>');
             $('.hpo-back-button').on('click', function() {
                 $('#hpo-popup-overlay').fadeOut(300);
                 unlockBodyScroll();
@@ -181,6 +183,9 @@ jQuery(document).ready(function($) {
                     if($('.hpo-back-button').length) {
                         $('.hpo-back-button span').text('بازگشت');
                         $('.hpo-back-button').off('click').on('click', function() {
+                            // Remove close button before going back
+                            $('.hpo-close-button').remove();
+                            
                             // Handle back button click
                             $('#hpo-product-list').html('<div class="hpo-loading"><div class="hpo-spinner"></div><span>در حال بارگذاری...</span></div>');
                             resetPrice();
@@ -203,8 +208,6 @@ jQuery(document).ready(function($) {
                                 success: function(response) {
                                     if (response.success) {
                                         $('#hpo-product-list').html(response.data.html);
-                                        
-                                        // Reinitialize product selection with clean state
                                         initProductSelection();
                                     } else {
                                         $('#hpo-product-list').html('<div class="hpo-error-message">خطا در بارگذاری محصولات.</div>');
@@ -214,6 +217,48 @@ jQuery(document).ready(function($) {
                                     $('#hpo-product-list').html('<div class="hpo-error-message">خطا در ارتباط با سرور.</div>');
                                 }
                             });
+                        });
+                        
+                        // Add close button in step 2
+                        $('.hpo-back-button').before('<div class="hpo-close-button"><span></span></div>');
+                        
+                        // Add click handler for close button
+                        $('.hpo-close-button').on('click', function() {
+                            // First reset all selections and prices
+                            $('#hpo-product-list').html('<div class="hpo-loading"><div class="hpo-spinner"></div><span>در حال بارگذاری...</span></div>');
+                            resetPrice();
+                            resetAllFields();
+                            
+                            // Reset product options
+                            $('.hpo-product-option').removeClass('selected');
+                            $('input[name^="hpo_option"]').prop('checked', false);
+                            
+                            // Reset weight options
+                            $('.hpo-weight-item').removeClass('selected');
+                            $('input[name="hpo_weight"]').prop('checked', false);
+                            
+                            // Reset grinding options
+                            const $input = $('input[name="hpo_grinding"]');
+                            $input.val('whole');
+                            $('.hpo-toggle-container').attr('data-active', 'whole');
+                            $('.hpo-toggle-option.whole').addClass('active');
+                            $('.hpo-toggle-option.ground').removeClass('active');
+                            $('.hpo-grinding-machines').removeClass('show');
+                            $('select[name="hpo_grinding_machine"]').val('');
+                            
+                            // Reset customer notes
+                            $('textarea[name="hpo_customer_notes"]').val('');
+                            
+                            // Reset quantity
+                            resetQuantity();
+                            
+                            // Update price and validate selections
+                            updateTotalPrice();
+                            validateSelections();
+                            
+                            // Finally close the popup
+                            $('#hpo-popup-overlay').fadeOut(300);
+                            unlockBodyScroll();
                         });
                     } else {
                         $('.hpo-popup-header').prepend('<div class="hpo-back-button"><span>بازگشت</span></div>');
@@ -225,6 +270,50 @@ jQuery(document).ready(function($) {
                             
                             // Update header before AJAX request
                             $('.hpo-popup-header h3').text('انتخاب محصول');
+                            
+                            // Add close button in step 2
+                            if (!$('.hpo-close-button').length) {
+                                $('.hpo-back-button').after('<div class="hpo-close-button"><span></span></div>');
+                                
+                                // Add click handler for close button
+                                $('.hpo-close-button').on('click', function() {
+                                    // First reset all selections and prices
+                                    $('#hpo-product-list').html('<div class="hpo-loading"><div class="hpo-spinner"></div><span>در حال بارگذاری...</span></div>');
+                                    resetPrice();
+                                    resetAllFields();
+                                    
+                                    // Reset product options
+                                    $('.hpo-product-option').removeClass('selected');
+                                    $('input[name^="hpo_option"]').prop('checked', false);
+                                    
+                                    // Reset weight options
+                                    $('.hpo-weight-item').removeClass('selected');
+                                    $('input[name="hpo_weight"]').prop('checked', false);
+                                    
+                                    // Reset grinding options
+                                    const $input = $('input[name="hpo_grinding"]');
+                                    $input.val('whole');
+                                    $('.hpo-toggle-container').attr('data-active', 'whole');
+                                    $('.hpo-toggle-option.whole').addClass('active');
+                                    $('.hpo-toggle-option.ground').removeClass('active');
+                                    $('.hpo-grinding-machines').removeClass('show');
+                                    $('select[name="hpo_grinding_machine"]').val('');
+                                    
+                                    // Reset customer notes
+                                    $('textarea[name="hpo_customer_notes"]').val('');
+                                    
+                                    // Reset quantity
+                                    resetQuantity();
+                                    
+                                    // Update price and validate selections
+                                    updateTotalPrice();
+                                    validateSelections();
+                                    
+                                    // Finally close the popup
+                                    $('#hpo-popup-overlay').fadeOut(300);
+                                    unlockBodyScroll();
+                                });
+                            }
                             
                             // Reload the products list
                             $.ajax({
@@ -526,13 +615,13 @@ jQuery(document).ready(function($) {
                             
                             // تغییر متن دکمه back-button به "بستن" و اطمینان از وجود آن در هدر
                             if($('.hpo-back-button').length) {
-                                $('.hpo-back-button span').text('بستن');
+                                $('.hpo-back-button span').text('');
                                 $('.hpo-back-button').off('click').on('click', function() {
                                     $('#hpo-popup-overlay').fadeOut(300);
                                     unlockBodyScroll();
                                 });
                             } else {
-                                $('.hpo-popup-header').prepend('<div class="hpo-back-button" id="hpo-popup-close"><span>بستن</span></div>');
+                                $('.hpo-popup-header').prepend('<div class="hpo-back-button" id="hpo-popup-close"><span></span></div>');
                                 $('.hpo-back-button').on('click', function() {
                                     $('#hpo-popup-overlay').fadeOut(300);
                                     unlockBodyScroll();

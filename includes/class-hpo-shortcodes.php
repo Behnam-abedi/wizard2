@@ -153,7 +153,7 @@ class HPO_Shortcodes {
             <div class="hpo-popup-container">
                 <div class="hpo-popup-header">
                 <div class="hpo-back-button" id="hpo-popup-close">
-                    <span>بستن</span>
+                    <span></span>
                 </div>
 
                     
