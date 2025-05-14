@@ -835,9 +835,11 @@
     align-items: center!important;
     background-color: #f1f1f1!important;
     border-radius: 30px!important;
-    padding: 5px 6px 5px 15px!important;
+    padding: 5px 6px!important;
     white-space: nowrap!important;
-    min-width: 105px!important;
+    min-width: 40px!important;
+    height: 40px!important;
+    justify-content: center!important;
     cursor: pointer!important;
     transition: all 0.3s ease!important;
     margin-right: 10px!important;
@@ -848,52 +850,40 @@
     background-color: #e6e6e6!important;
 }
 
-.hpo-back-button::before,
-.hpo-close-button::before {
-    content: "➦";
+/* Step 1: X icon for close */
+.hpo-back-button::before {
+    content: "×"!important;
+    font-size: 24px!important;
     color: #000000!important;
-    background-color: #ffffff!important;
-    border-radius: 50%!important;
-    width: 30px!important;
-    height: 30px!important;
-    display: flex!important;
-    justify-content: center!important;
-    align-items: center!important;
-    flex-shrink: 0!important;
-    padding-top: 4px !important;
+    line-height: 1!important;
+    font-weight: bold!important;
+    margin-bottom:5px!important;
 }
 
+/* Step 2: Back arrow icon */
+.step-2 .hpo-back-button::before {
+    content: "⮜"!important;
+    font-size: 20px!important;
+    color: #000000!important;
+    line-height: 1!important;
+    transform: rotate(180deg);
+    margin-top:7px!important;
+}
+
+/* Close button in step 2 */
 .hpo-close-button::before {
-    content: "✕"!important;
-    padding-top: 0px !important;
+    content: "×"!important;
+    font-size: 24px!important;
+    color: #000000!important;
+    line-height: 1!important;
+    font-weight: bold!important;
+    margin-bottom:5px!important;
 }
 
+/* Remove the text span since we're using icons */
 .hpo-back-button span,
 .hpo-close-button span {
-    font-size: 14px!important;
-    font-weight: 500!important;
-    text-align: center!important;
-    overflow: hidden!important;
-    text-overflow: ellipsis!important;
-    display: block!important;
-    flex: auto!important;
-    color: #000000!important;
-}
-
-@media (max-width: 768px) {
-    .hpo-back-button,
-    .hpo-close-button {
-        /* padding: 3px 6px 3px 15px!important; */
-    }
-    .hpo-back-button::before,
-    .hpo-close-button::before {
-        width: 25px!important;
-        height: 25px!important;
-    }
-    .hpo-back-button span,
-    .hpo-close-button span {
-        font-size: 12px!important;
-    }
+    display: none!important;
 }
 
 .hpo-weight-options {

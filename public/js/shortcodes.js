@@ -111,7 +111,7 @@ jQuery(document).ready(function($) {
         
         // Update back button text and functionality for product selection step
         if($('.hpo-back-button').length) {
-            $('.hpo-back-button span').text('بستن');
+            $('.hpo-back-button span').text('');
             $('.hpo-back-button').off('click').on('click', function() {
                 $('#hpo-popup-overlay').fadeOut(300);
                 unlockBodyScroll();
@@ -171,18 +171,22 @@ jQuery(document).ready(function($) {
                 // Show loading in the same popup
                 $('#hpo-product-list').html('<div class="hpo-loading"><div class="hpo-spinner"></div><span>در حال بارگذاری...</span></div>');
                 $('.hpo-popup-header h3').text('جزئیات محصول');
+                // Add step-2 class to popup header
+                $('.hpo-popup-header').addClass('step-2');
             },
             success: function(response) {
                 if (response.success) {
                     // Update the content in the same popup
-                    
                     $('#hpo-product-list').html(response.data.html);
                     $('.hpo-popup-header h3').text(response.data.product_title);
                     
-                    // Update back button text and functionality for product details step
+                    // Update back button functionality for product details step
                     if($('.hpo-back-button').length) {
-                        $('.hpo-back-button span').text('بازگشت');
+                        $('.hpo-back-button span').text('');
                         $('.hpo-back-button').off('click').on('click', function() {
+                            // Remove step-2 class when going back
+                            $('.hpo-popup-header').removeClass('step-2');
+                            
                             // Remove close button before going back
                             $('.hpo-close-button').remove();
                             
@@ -261,7 +265,7 @@ jQuery(document).ready(function($) {
                             unlockBodyScroll();
                         });
                     } else {
-                        $('.hpo-popup-header').prepend('<div class="hpo-back-button"><span>بازگشت</span></div>');
+                        $('.hpo-popup-header').prepend('<div class="hpo-back-button"><span></span></div>');
                         $('.hpo-back-button').on('click', function() {
                             // Handle back button click
                             $('#hpo-product-list').html('<div class="hpo-loading"><div class="hpo-spinner"></div><span>در حال بارگذاری...</span></div>');
