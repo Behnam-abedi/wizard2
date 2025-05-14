@@ -62,6 +62,11 @@ jQuery(document).ready(function($) {
         $('#hpo-popup-overlay').fadeIn(300);
         lockBodyScroll();
         
+        // Ensure we start in step 1
+        $('.hpo-popup-header').removeClass('step-2');
+        
+        // Add history state for step 1
+        window.history.pushState({ step: 1 }, '');
         
         // Initialize popup height
         setTimeout(adjustPopupHeight, 100);
@@ -109,12 +114,17 @@ jQuery(document).ready(function($) {
         // Create new local variable for product ID
         let selectedProductId = null;
         
+        // Make sure we're in step 1 by removing step-2 class
+        $('.hpo-popup-header').removeClass('step-2');
+        
         // Update back button text and functionality for product selection step
         if($('.hpo-back-button').length) {
             $('.hpo-back-button span').text('');
             $('.hpo-back-button').off('click').on('click', function() {
                 $('#hpo-popup-overlay').fadeOut(300);
                 unlockBodyScroll();
+                // Ensure step-2 class is removed when closing
+                $('.hpo-popup-header').removeClass('step-2');
             });
             // Remove close button in step 1
             $('.hpo-close-button').remove();
@@ -123,6 +133,8 @@ jQuery(document).ready(function($) {
             $('.hpo-back-button').on('click', function() {
                 $('#hpo-popup-overlay').fadeOut(300);
                 unlockBodyScroll();
+                // Ensure step-2 class is removed when closing
+                $('.hpo-popup-header').removeClass('step-2');
             });
         }
         
@@ -173,6 +185,9 @@ jQuery(document).ready(function($) {
                 $('.hpo-popup-header h3').text('جزئیات محصول');
                 // Add step-2 class to popup header
                 $('.hpo-popup-header').addClass('step-2');
+                
+                // Add history state for step 2
+                window.history.pushState({ step: 2 }, '');
             },
             success: function(response) {
                 if (response.success) {
@@ -260,6 +275,9 @@ jQuery(document).ready(function($) {
                             updateTotalPrice();
                             validateSelections();
                             
+                            // Remove step-2 class from header
+                            $('.hpo-popup-header').removeClass('step-2');
+                            
                             // Finally close the popup
                             $('#hpo-popup-overlay').fadeOut(300);
                             unlockBodyScroll();
@@ -312,6 +330,9 @@ jQuery(document).ready(function($) {
                                     // Update price and validate selections
                                     updateTotalPrice();
                                     validateSelections();
+                                    
+                                    // Remove step-2 class from header
+                                    $('.hpo-popup-header').removeClass('step-2');
                                     
                                     // Finally close the popup
                                     $('#hpo-popup-overlay').fadeOut(300);
@@ -1002,5 +1023,70 @@ jQuery(document).ready(function($) {
         // Handle visual selection for weight options
         $('.hpo-weight-item').removeClass('selected');
         $(this).closest('.hpo-weight-item').addClass('selected');
+    });
+
+    // Handle browser back button
+    $(window).on('popstate', function(event) {
+        const state = event.originalEvent.state;
+        
+        // If we have state information
+        if (state) {
+            if (state.step === 1) {
+                // If we're in step 1, close the popup
+                $('#hpo-popup-overlay').fadeOut(300);
+                unlockBodyScroll();
+                $('.hpo-popup-header').removeClass('step-2');
+            } else if (state.step === 2) {
+                // If we're in step 2, go back to step 1
+                // Remove step-2 class when going back
+                $('.hpo-popup-header').removeClass('step-2');
+                
+                // Remove close button before going back
+                $('.hpo-close-button').remove();
+                
+                // Handle back button click
+                $('#hpo-product-list').html('<div class="hpo-loading"><div class="hpo-spinner"></div><span>در حال بارگذاری...</span></div>');
+                resetPrice();
+                resetAllFields();
+                
+                // Update header before AJAX request
+                $('.hpo-popup-header h3').text('انتخاب محصول');
+                
+                // Reload the products list
+                $.ajax({
+                    url: hpoAjax.ajaxUrl,
+                    type: 'POST',
+                    data: {
+                        action: 'hpo_load_products',
+                        nonce: hpoAjax.nonce
+                    },
+                    beforeSend: function() {
+                        $('#hpo-product-list').html('<div class="hpo-loading"><div class="hpo-spinner"></div><span>در حال بارگذاری...</span></div>');
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            $('#hpo-product-list').html(response.data.html);
+                            initProductSelection();
+                        } else {
+                            $('#hpo-product-list').html('<div class="hpo-error-message">خطا در بارگذاری محصولات.</div>');
+                        }
+                    },
+                    error: function() {
+                        $('#hpo-product-list').html('<div class="hpo-error-message">خطا در ارتباط با سرور.</div>');
+                    }
+                });
+            }
+        } else {
+            // If no state (first page load or direct URL), close popup
+            $('#hpo-popup-overlay').fadeOut(300);
+            unlockBodyScroll();
+            $('.hpo-popup-header').removeClass('step-2');
+        }
+    });
+
+    // Also handle popup close button to update history
+    $('.hpo-back-button, .hpo-close-button').on('click', function() {
+        // Go back in history instead of just closing
+        window.history.back();
     });
 }); 
