@@ -1791,6 +1791,11 @@ class HPO_Shortcodes {
      * @return string Modified subtotal
      */
     public function update_checkout_line_subtotal($subtotal, $item, $order) {
+        // Prevent fatal error if WC()->cart is not available (e.g. in emails or order admin)
+        if (!function_exists('WC') || !WC()->cart) {
+            return $subtotal;
+        }
+        
         // Try to get the cart item key from the item
         $product_id = $item->get_product_id();
         $found_item = null;
